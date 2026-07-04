@@ -1,0 +1,72 @@
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { AuthProvider } from "./firebase/auth";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Sidebar from "./components/Sidebar";
+
+// Pages
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Bookings from "./pages/Bookings";
+import CalendarView from "./pages/CalendarView";
+import Employees from "./pages/Employees";
+import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
+
+// General Layout Wrapper
+const DashboardLayout = () => {
+  return (
+    <div className="app-container">
+      <Sidebar />
+      <main className="main-content">
+        <Outlet />
+      </main>
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Authentication Route */}
+          <Route path="/login" element={<Login />} />
+
+          {/* Protected Administrative & Employee Routing */}
+          <Route element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route path="/" element={<Dashboard />} />
+            
+            <Route path="/bookings" element={<Bookings />} />
+            
+            <Route path="/calendar" element={<CalendarView />} />
+            
+            <Route path="/reports" element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <Reports />
+              </ProtectedRoute>
+            } />
+
+            {/* Admin-Only Restricted Pages */}
+            <Route path="/employees" element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <Employees />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+
+          {/* Wildcard Fallback redirection */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
+
+export default App;

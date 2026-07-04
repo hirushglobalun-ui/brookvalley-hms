@@ -1,0 +1,17 @@
+{
+  "short_name": "Brookvalley HMS",
+  "name": "Brookvalley Hotel HMS & Staff Portal",
+  "icons": [
+    {
+      "src": "/image-Photoroom (27).png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#f8fafc",
+  "theme_color": "#10b981",
+  "display": "standalone",
+  "orientation": "portrait"
+}
