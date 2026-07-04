@@ -214,7 +214,7 @@ const Reports = () => {
       </div>
 
       {/* Summary Stat Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
+      <div className="grid-stats-responsive">
         {[
           { label: "Total Bookings",   value: totalBookings,               color: "var(--primary)",  bg: "rgba(59,130,246,0.1)" },
           { label: "Active Bookings",  value: confirmedCount,              color: "var(--success)",  bg: "var(--success-glow)" },
@@ -558,7 +558,7 @@ const Reports = () => {
 
       {/* ── SECTION: REVENUE CHART ── */}
       {activeSection === "revenue" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+        <div className="grid-form-2col" style={{ gap: "1.25rem" }}>
 
           {/* Revenue by Room Type - Horizontal Bars */}
           <div className="card" style={{ padding: "1.5rem" }}>

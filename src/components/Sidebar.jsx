@@ -88,11 +88,13 @@ const Sidebar = () => {
 
       <aside className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
         <div className="sidebar-logo" style={{ gap: "0.5rem" }}>
-          <img 
-            src="/image-Photoroom (27).png" 
-            alt="Brookvalley Logo" 
-            style={{ width: "32px", height: "32px", objectFit: "contain" }} 
-          />
+          <div style={{ width: "32px", height: "32px", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#000000", flexShrink: 0 }}>
+            <img 
+              src="/image-Photoroom (27).png" 
+              alt="Brookvalley Logo" 
+              style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+            />
+          </div>
           <span className="logo-text">Brookvalley HMS</span>
           {/* Mobile close button */}
           <button

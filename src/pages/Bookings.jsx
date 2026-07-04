@@ -365,100 +365,167 @@ const Bookings = () => {
         </div>
       </div>
 
-      {/* Bookings Table */}
-      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-        <div className="table-wrapper">
-          {loading ? (
-            <div className="no-data">Loading reservations...</div>
-          ) : filteredBookings.length > 0 ? (
-            <table className="table-custom">
-              <thead>
-                <tr>
-                  <th>Booking ID</th>
-                  <th>Customer Name</th>
-                  <th>Phone Number</th>
-                   <th>Stay Dates</th>
-                  <th>Created By</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: "right" }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBookings.map(b => {
-                  const typeObj = roomTypes.find(rt => rt.id === b.roomType);
-                  return (
-                    <tr key={b.bookingId}>
-                      <td style={{ fontFamily: "monospace", fontWeight: 600 }}>{b.bookingId}</td>
-                      <td>{mask(b.customerName, b)}</td>
-                      <td>{mask(b.customerPhone, b)}</td>
-                      <td>
-                        <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                          {b.checkInDate} to {b.checkOutDate}
-                        </span>
-                      </td>
-                      <td>
-                        <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                          {b.createdByName}
-                        </span>
-                        <br />
-                        <span className="badge" style={{ padding: "1px 4px", fontSize: "0.65rem", backgroundColor: "var(--bg-tertiary)" }}>
-                          {b.createdByRole}
-                        </span>
-                      </td>
-                      <td>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                          <span className={`badge badge-${
-                            b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
-                            b.bookingStatus === "cancelled" ? "danger" : "warning"
-                          }`} style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 6px" }}>
-                            {b.bookingStatus}
-                          </span>
-                          <span className={`badge badge-${b.paymentStatus === "paid" ? "success" : b.paymentStatus === "partial" ? "warning" : "danger"}`} style={{ width: "fit-content", fontSize: "0.65rem", padding: "1px 4px", border: "1px solid currentColor", background: "none" }}>
-                            {b.paymentStatus}
-                          </span>
-                        </div>
-                      </td>
-                      <td style={{ textAlign: "right" }}>
-                        <div style={{ display: "inline-flex", gap: "0.5rem" }}>
-                          {isOwner(b) && (
-                            <>
-                              <button 
-                                className="btn btn-secondary btn-icon" 
-                                title="View Booking Details"
-                                onClick={() => handleOpenDetails(b)}
-                              >
-                                <Eye size={14} />
-                              </button>
-                              
-                              <button 
-                                className="btn btn-secondary btn-icon" 
-                                title="Edit Booking"
-                                onClick={() => handleOpenEdit(b)}
-                              >
-                                <Edit2 size={14} />
-                              </button>
-                              
-                              <button 
-                                className="btn btn-danger btn-icon" 
-                                title="Delete Booking"
-                                onClick={() => handleDelete(b)}
-                              >
-                                <Trash2 size={14} style={{ color: "white" }} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          ) : (
-            <div className="no-data">No bookings match the search criteria.</div>
-          )}
+      {/* Bookings Table / Cards wrapper */}
+      {loading ? (
+        <div className="card" style={{ padding: "3rem", textAlign: "center" }}>
+          <div className="no-data">Loading reservations...</div>
         </div>
-      </div>
+      ) : filteredBookings.length > 0 ? (
+        <>
+          {/* DESKTOP TABLE VIEW */}
+          <div className="card desktop-only" style={{ padding: 0, overflow: "hidden" }}>
+            <div className="table-wrapper">
+              <table className="table-custom">
+                <thead>
+                  <tr>
+                    <th>Booking ID</th>
+                    <th>Customer Name</th>
+                    <th>Phone Number</th>
+                    <th>Stay Dates</th>
+                    <th>Created By</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: "right" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredBookings.map(b => {
+                    const typeObj = roomTypes.find(rt => rt.id === b.roomType);
+                    return (
+                      <tr key={b.bookingId}>
+                        <td style={{ fontFamily: "monospace", fontWeight: 600 }}>{b.bookingId}</td>
+                        <td>{mask(b.customerName, b)}</td>
+                        <td>{mask(b.customerPhone, b)}</td>
+                        <td>
+                          <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                            {b.checkInDate} to {b.checkOutDate}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                            {b.createdByName}
+                          </span>
+                          <br />
+                          <span className="badge" style={{ padding: "1px 4px", fontSize: "0.65rem", backgroundColor: "var(--bg-tertiary)" }}>
+                            {b.createdByRole}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                            <span className={`badge badge-${
+                              b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                              b.bookingStatus === "cancelled" ? "danger" : "warning"
+                            }`} style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 6px" }}>
+                              {b.bookingStatus}
+                            </span>
+                            <span className={`badge badge-${b.paymentStatus === "paid" ? "success" : b.paymentStatus === "partial" ? "warning" : "danger"}`} style={{ width: "fit-content", fontSize: "0.65rem", padding: "1px 4px", border: "1px solid currentColor", background: "none" }}>
+                              {b.paymentStatus}
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          <div style={{ display: "inline-flex", gap: "0.5rem" }}>
+                            {isOwner(b) && (
+                              <>
+                                <button 
+                                  className="btn btn-secondary btn-icon" 
+                                  title="View Booking Details"
+                                  onClick={() => handleOpenDetails(b)}
+                                >
+                                  <Eye size={14} />
+                                </button>
+                                
+                                <button 
+                                  className="btn btn-secondary btn-icon" 
+                                  title="Edit Booking"
+                                  onClick={() => handleOpenEdit(b)}
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                                
+                                <button 
+                                  className="btn btn-danger btn-icon" 
+                                  title="Delete Booking"
+                                  onClick={() => handleDelete(b)}
+                                >
+                                  <Trash2 size={14} style={{ color: "white" }} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* MOBILE CARDS VIEW */}
+          <div className="mobile-only" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            {filteredBookings.map(b => {
+              const typeObj = roomTypes.find(rt => rt.id === b.roomType);
+              return (
+                <div key={b.bookingId} className="card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem", borderLeft: `4px solid ${
+                  b.bookingStatus === "checked-in" ? "#3b82f6" :
+                  b.bookingStatus === "confirmed" ? "#10b981" :
+                  b.bookingStatus === "cancelled" ? "#ef4444" : "#f59e0b"
+                }` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: "0.95rem", color: "var(--text-primary)" }}>{b.bookingId}</span>
+                    <div style={{ display: "flex", gap: "0.35rem" }}>
+                      <span className={`badge badge-${
+                        b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                        b.bookingStatus === "cancelled" ? "danger" : "warning"
+                      }`} style={{ fontSize: "0.65rem", padding: "1px 6px" }}>
+                        {b.bookingStatus}
+                      </span>
+                      <span className={`badge badge-${b.paymentStatus === "paid" ? "success" : b.paymentStatus === "partial" ? "warning" : "danger"}`} style={{ fontSize: "0.65rem", padding: "1px 4px", border: "1px solid currentColor", background: "none" }}>
+                        {b.paymentStatus}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                    <div style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "0.95rem" }}>
+                      {mask(b.customerName, b)}
+                    </div>
+                    <div>📞 {mask(b.customerPhone, b)}</div>
+                    <div>📅 {b.checkInDate} to {b.checkOutDate}</div>
+                    <div style={{ marginTop: "0.25rem", fontWeight: 500, color: "var(--text-primary)" }}>🚪 Room {b.roomNumber} ({typeObj?.name || b.roomType})</div>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px dashed var(--card-border)", paddingTop: "0.65rem", marginTop: "0.25rem" }}>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                      By {b.createdByName} ({b.createdByRole})
+                    </div>
+
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      {isOwner(b) && (
+                        <>
+                          <button className="btn btn-secondary btn-icon" onClick={() => handleOpenDetails(b)} title="View Details">
+                            <Eye size={14} />
+                          </button>
+                          <button className="btn btn-secondary btn-icon" onClick={() => handleOpenEdit(b)} title="Edit">
+                            <Edit2 size={14} />
+                          </button>
+                          <button className="btn btn-danger btn-icon" onClick={() => handleDelete(b)} title="Delete">
+                            <Trash2 size={14} style={{ color: "white" }} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <div className="card" style={{ padding: "3rem", textAlign: "center" }}>
+          <div className="no-data">No bookings match the search criteria.</div>
+        </div>
+      )}
 
       {/* ADD / EDIT MODAL */}
       {isModalOpen && (

@@ -232,6 +232,15 @@ button, input, select, textarea {
     padding-top: 4rem;
   }
 
+  .search-bar-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .search-bar-container > * {
+    width: 100% !important;
+  }
+
   /* Stacked grids */
   .grid-stats {
     grid-template-columns: 1fr 1fr !important;
@@ -407,13 +416,14 @@ button, input, select, textarea {
   background-color: var(--bg-secondary);
   border-right: 1px solid var(--card-border);
   height: 100vh;
-  position: fixed;
+  position: fixed !important;
   left: 0;
   top: 0;
   display: flex;
   flex-direction: column;
   z-index: 100;
   transition: width 0.3s ease;
+  overflow-y: auto;
 }
 
 .sidebar-logo {
@@ -1285,6 +1295,39 @@ button, input, select, textarea {
 @media (max-width: 480px) {
   .grid-form-4col, .grid-form-2col {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Responsive stats cards grid */
+.grid-stats-responsive {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+@media (max-width: 1200px) {
+  .grid-stats-responsive {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 576px) {
+  .grid-stats-responsive {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Responsive Display Helpers */
+.desktop-only {
+  display: block;
+}
+.mobile-only {
+  display: none;
+}
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .mobile-only {
+    display: block !important;
   }
 }
 
