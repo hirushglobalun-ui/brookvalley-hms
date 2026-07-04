@@ -13,14 +13,19 @@ import Employees from "./pages/Employees";
 import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 
+import Header from "./components/Header";
+
 // General Layout Wrapper
 const DashboardLayout = () => {
   return (
     <div className="app-container">
       <Sidebar />
-      <main className="main-content">
-        <Outlet />
-      </main>
+      <div className="main-layout-container">
+        <Header />
+        <main className="main-content">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 };

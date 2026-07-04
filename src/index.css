@@ -85,11 +85,19 @@ button, input, select, textarea {
   min-height: 100vh;
 }
 
-.main-content {
+.main-layout-container {
   flex: 1;
   margin-left: var(--sidebar-width);
-  padding: 2rem;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  transition: margin-left 0.3s ease;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -97,7 +105,7 @@ button, input, select, textarea {
 }
 
 @media (max-width: 1024px) {
-  .main-content {
+  .main-layout-container {
     margin-left: 80px;
   }
 }
@@ -226,19 +234,13 @@ button, input, select, textarea {
     padding: 0.6rem !important;
   }
 
-  .main-content {
+  .main-layout-container {
     margin-left: 0 !important;
-    padding: 1rem;
-    padding-top: 4rem;
   }
 
-  .search-bar-container {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-  .search-bar-container > * {
-    width: 100% !important;
+  .main-content {
+    padding: 1rem;
+    padding-top: 1.5rem;
   }
 
   /* Stacked grids */
@@ -1315,19 +1317,268 @@ button, input, select, textarea {
   }
 }
 
-/* Responsive Display Helpers */
-.desktop-only {
-  display: block;
+/* Top Header Bar */
+.top-header {
+  height: 64px;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 80;
 }
-.mobile-only {
-  display: none;
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-left: auto;
+}
+
+.header-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  position: relative;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.header-icon-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.notification-badge-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--danger);
+  border-radius: 50%;
+  border: 1.5px solid var(--card-bg);
+}
+
+.header-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-left: 1px solid var(--card-border);
+  padding-left: 1.25rem;
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.profile-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.profile-role {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.profile-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #34d399);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 768px) {
-  .desktop-only {
+  .top-header {
+    padding: 0 1rem;
+    padding-left: 3.5rem; /* make space for hamburger button */
+  }
+}
+
+/* 2-column layout grid that stacks on tablets and mobile screens */
+.grid-2col-responsive {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+@media (max-width: 992px) {
+  .grid-2col-responsive {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Responsive mobile bookings list card styling */
+.recent-bookings-cards {
+  display: none;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.booking-mobile-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.booking-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.booking-card-room {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+
+.booking-card-amount {
+  font-weight: 700;
+  color: var(--success);
+  font-size: 0.95rem;
+}
+
+.booking-card-customer {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.booking-card-dates {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background-color: var(--bg-tertiary);
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-xs);
+  width: fit-content;
+}
+
+.booking-card-footer {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border-top: 1px dashed var(--card-border);
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 768px) {
+  .recent-bookings-cards {
+    display: flex !important;
+  }
+  .recent-bookings-table {
     display: none !important;
   }
-  .mobile-only {
-    display: block !important;
+}
+
+/* Bookings list page mobile card styles */
+.bookings-mobile-cards {
+  display: none;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+@media (max-width: 768px) {
+  .bookings-main-table {
+    display: none !important;
+  }
+  .bookings-mobile-cards {
+    display: flex !important;
+  }
+}
+
+/* Responsive Calendar Styles */
+.calendar-cell {
+  background-color: var(--card-bg);
+  min-height: 120px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.calendar-booking-bar {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-more-badge {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Mobile dot indicator */
+.calendar-mobile-dots {
+  display: none;
+  justify-content: center;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.calendar-mobile-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+@media (max-width: 768px) {
+  .calendar-cell {
+    min-height: 65px !important;
+    padding: 0.25rem !important;
+    gap: 0.25rem !important;
+    justify-content: space-between;
+  }
+  
+  .calendar-booking-bar, .calendar-more-badge, .calendar-booking-bar-wrapper {
+    display: none !important; /* Hide details on mobile cells */
+  }
+  
+  .calendar-mobile-dots {
+    display: flex !important; /* Show dots on mobile cells instead */
+  }
+
+  .calendar-weekday-header {
+    padding: 0.4rem 0.2rem !important;
+    font-size: 0.75rem !important;
   }
 }
 

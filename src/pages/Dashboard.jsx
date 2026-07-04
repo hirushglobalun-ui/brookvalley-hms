@@ -128,19 +128,31 @@ const Dashboard = () => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {/* Welcome Banner */}
-      <div className="card" style={{ padding: "1.25rem 1.5rem" }}>
-        <div className="flex-between">
+      <div className="card welcome-card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
           <div>
-            <h1 style={{ fontSize: "1.6rem", fontWeight: 700, letterSpacing: "-0.02em" }}>
+            <h1 style={{ fontSize: "1.7rem", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.02em", margin: 0 }}>
               Welcome, {user.fullName}!
             </h1>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginTop: "0.25rem" }}>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginTop: "0.40rem", margin: 0 }}>
               Here is what's happening at Brookvalley Hotel today.
             </p>
           </div>
-          <div className="badge badge-info" style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}>
-            <UserCheck size={14} style={{ marginRight: "4px" }} />
-            <span>Role: {user.role}</span>
+          <div style={{
+            backgroundColor: "rgba(59, 130, 246, 0.08)",
+            color: "var(--primary)",
+            padding: "0.55rem 1.25rem",
+            borderRadius: "99px",
+            fontSize: "0.8rem",
+            fontWeight: 700,
+            letterSpacing: "0.05em",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            border: "1px solid rgba(59, 130, 246, 0.15)"
+          }}>
+            <UserCheck size={14} />
+            <span>ROLE: {user.role?.toUpperCase()}</span>
           </div>
         </div>
       </div>
@@ -233,7 +245,7 @@ const Dashboard = () => {
 
 
       {/* Bottom Section: Recent Activity / Today Checklist */}
-      <div style={{ display: "grid", gridTemplateColumns: user.role === "admin" ? "1fr 1fr" : "1fr", gap: "1.5rem" }}>
+      <div className={user.role === "admin" ? "grid-2col-responsive" : ""} style={{ marginTop: "0.5rem" }}>
         
         {/* Recent Bookings Feed (Masked for employee) */}
         <div className="card">
@@ -242,28 +254,52 @@ const Dashboard = () => {
           </div>
           <div className="table-wrapper">
             {recentBookings.length > 0 ? (
-              <table className="table-custom" style={{ fontSize: "0.85rem" }}>
-                <thead>
-                  <tr>
-                    <th>Room</th>
-                    <th>Customer Name</th>
-                    <th>Dates</th>
-                    <th>Created By</th>
-                    <th>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentBookings.map(b => (
-                    <tr key={b.bookingId}>
-                      <td>Room {b.roomNumber}</td>
-                      <td>{maskText(b.customerName, b)}</td>
-                      <td>{b.checkInDate} to {b.checkOutDate}</td>
-                      <td>{b.createdByName} ({b.createdByRole})</td>
-                      <td style={{ fontWeight: 600 }}>₹{maskText(b.totalAmount, b)}</td>
+              <>
+                {/* Desktop/Tablet Table Layout */}
+                <table className="table-custom recent-bookings-table" style={{ fontSize: "0.85rem" }}>
+                  <thead>
+                    <tr>
+                      <th>Room</th>
+                      <th>Customer Name</th>
+                      <th>Dates</th>
+                      <th>Created By</th>
+                      <th>Amount</th>
                     </tr>
+                  </thead>
+                  <tbody>
+                    {recentBookings.map(b => (
+                      <tr key={b.bookingId}>
+                        <td>Room {b.roomNumber}</td>
+                        <td>{maskText(b.customerName, b)}</td>
+                        <td>{b.checkInDate} to {b.checkOutDate}</td>
+                        <td>{b.createdByName} ({b.createdByRole})</td>
+                        <td style={{ fontWeight: 600 }}>₹{maskText(b.totalAmount, b)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Mobile Card List Layout */}
+                <div className="recent-bookings-cards">
+                  {recentBookings.map(b => (
+                    <div key={b.bookingId} className="booking-mobile-card">
+                      <div className="booking-card-row">
+                        <span className="booking-card-room">Room {b.roomNumber}</span>
+                        <span className="booking-card-amount">₹{maskText(b.totalAmount, b)}</span>
+                      </div>
+                      <div className="booking-card-row">
+                        <span className="booking-card-customer">{maskText(b.customerName, b)}</span>
+                      </div>
+                      <div className="booking-card-dates">
+                        <span>{b.checkInDate} to {b.checkOutDate}</span>
+                      </div>
+                      <div className="booking-card-footer">
+                        <span>By: {b.createdByName} ({b.createdByRole})</span>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </>
             ) : (
               <div className="no-data">No bookings recorded.</div>
             )}
@@ -279,33 +315,53 @@ const Dashboard = () => {
                 <span>Recent Audit Logs</span>
               </h2>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: "250px", overflowY: "auto", paddingRight: "0.25rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: "350px", overflowY: "auto", paddingRight: "0.25rem" }}>
               {logs.length > 0 ? (
                 logs.map(log => {
                   const date = log.createdAt?.seconds 
                     ? new Date(log.createdAt.seconds * 1000).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' })
                     : "";
+                  const isAdmin = log.userRole === "admin";
                   return (
                     <div 
                       key={log.id} 
                       style={{ 
-                        padding: "0.6rem 0.85rem", 
-                        backgroundColor: "var(--bg-primary)", 
+                        padding: "0.75rem 1rem", 
+                        backgroundColor: "var(--bg-secondary)", 
                         border: "1px solid var(--card-border)", 
                         borderRadius: "var(--radius-sm)",
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        gap: "0.5rem"
+                        alignItems: "center",
+                        gap: "1rem",
+                        boxShadow: "var(--shadow-sm)"
                       }}
                     >
-                      <div>
-                        <p style={{ fontSize: "0.825rem", fontWeight: 600, color: "var(--text-primary)" }}>{log.details}</p>
-                        <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>
-                          By: {log.userName} ({log.userRole})
-                        </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", flex: 1 }}>
+                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>
+                          {log.details}
+                        </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                            By: {log.userName}
+                          </span>
+                          <span style={{ 
+                            fontSize: "0.65rem", 
+                            fontWeight: 700, 
+                            padding: "2px 8px", 
+                            borderRadius: "99px", 
+                            textTransform: "uppercase",
+                            backgroundColor: isAdmin ? "rgba(168, 85, 247, 0.1)" : "rgba(16, 185, 129, 0.1)",
+                            color: isAdmin ? "#a855f7" : "#10b981",
+                            border: `1px solid ${isAdmin ? "rgba(168, 85, 247, 0.15)" : "rgba(16, 185, 129, 0.15)"}`
+                          }}>
+                            {log.userRole}
+                          </span>
+                        </div>
                       </div>
-                      <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{date}</span>
+                      <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", whiteSpace: "nowrap", fontWeight: 500 }}>
+                        {date}
+                      </span>
                     </div>
                   );
                 })

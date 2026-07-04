@@ -340,7 +340,7 @@ const CalendarView = () => {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "1px", backgroundColor: "var(--card-border)", borderRadius: "var(--radius-md)", overflow: "hidden", border: "1px solid var(--card-border)" }}>
               {/* Weekday headers */}
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
-                <div key={day} style={{ backgroundColor: "var(--bg-secondary)", padding: "0.75rem", textAlign: "center", fontWeight: 600, fontSize: "0.85rem", color: "var(--text-secondary)", borderBottom: "1px solid var(--card-border)" }}>
+                <div key={day} className="calendar-weekday-header" style={{ backgroundColor: "var(--bg-secondary)", padding: "0.75rem", textAlign: "center", fontWeight: 600, fontSize: "0.85rem", color: "var(--text-secondary)", borderBottom: "1px solid var(--card-border)" }}>
                   {day}
                 </div>
               ))}
@@ -402,17 +402,9 @@ const CalendarView = () => {
                     <div 
                       key={idx} 
                       onClick={() => setClickedDayInfo({ date: cell.date, bookings: cellBookings })}
+                      className="calendar-cell"
                       style={{
-                        backgroundColor: "var(--card-bg)",
-                        minHeight: "120px",
-                        padding: "0.5rem",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "0.5rem",
-                        cursor: "pointer",
-                        transition: "background-color 0.2s ease",
                         opacity: cell.isCurrentMonth ? 1 : 0.4,
-                        position: "relative"
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-secondary)"}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "var(--card-bg)"}
@@ -459,8 +451,8 @@ const CalendarView = () => {
                         </button>
                       </div>
 
-                      {/* Cell Bookings list */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: "2px", overflowY: "auto", flexGrow: 1, maxHeight: "80px" }}>
+                      {/* Cell Bookings list (Desktop/Tablet) */}
+                      <div className="calendar-booking-bar-wrapper" style={{ display: "flex", flexDirection: "column", gap: "2px", overflowY: "auto", flexGrow: 1, maxHeight: "80px" }}>
                         {cellBookings.slice(0, 3).map((b, bIdx) => {
                           const owner = isOwner(b);
                           const statusColor = 
@@ -471,16 +463,11 @@ const CalendarView = () => {
                           return (
                             <div 
                               key={bIdx}
+                              className="calendar-booking-bar"
                               style={{
-                                fontSize: "0.75rem",
-                                padding: "2px 6px",
-                                borderRadius: "3px",
                                 backgroundColor: owner ? `${statusColor}15` : "#e2e8f0",
                                 color: owner ? statusColor : "var(--text-muted)",
                                 borderLeft: `3px solid ${owner ? statusColor : "#94a3b8"}`,
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis"
                               }}
                               title={owner ? `${b.customerName} (Rm ${b.roomNumber})` : "Booked"}
                             >
@@ -489,9 +476,29 @@ const CalendarView = () => {
                           );
                         })}
                         {cellBookings.length > 3 && (
-                          <div style={{ fontSize: "0.7rem", color: "var(--text-secondary)", textAlign: "center", fontWeight: 500 }}>
+                          <div className="calendar-more-badge">
                             + {cellBookings.length - 3} more
                           </div>
+                        )}
+                      </div>
+
+                      {/* Mobile Indicator Dots */}
+                      <div className="calendar-mobile-dots">
+                        {cellBookings.slice(0, 4).map((b, bIdx) => {
+                          const statusColor = 
+                            b.bookingStatus === "checked-in" ? "#3b82f6" :
+                            b.bookingStatus === "confirmed" ? "#10b981" :
+                            b.bookingStatus === "pending" ? "#f59e0b" : "#94a3b8";
+                          return (
+                            <span 
+                              key={bIdx} 
+                              className="calendar-mobile-dot" 
+                              style={{ backgroundColor: statusColor }}
+                            />
+                          );
+                        })}
+                        {cellBookings.length > 4 && (
+                          <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", lineHeight: 1 }}>+</span>
                         )}
                       </div>
                     </div>

@@ -68,13 +68,11 @@ const Login = () => {
     <div className="auth-page">
       <div className="card auth-card">
         <div className="auth-header" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
-          <div style={{ width: "96px", height: "96px", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#000000", marginBottom: "0.25rem", boxShadow: "var(--shadow-md)" }}>
-            <img 
-              src="/image-Photoroom (27).png" 
-              alt="Brookvalley Logo" 
-              style={{ width: "100%", height: "100%", objectFit: "cover" }} 
-            />
-          </div>
+          <img 
+            src="/image-Photoroom (27).png" 
+            alt="Brookvalley Logo" 
+            style={{ height: "96px", objectFit: "contain", marginBottom: "0.25rem" }} 
+          />
           <h1 className="auth-title" style={{ marginTop: 0, fontSize: "1.5rem" }}>Brookvalley HMS</h1>
         </div>
 
