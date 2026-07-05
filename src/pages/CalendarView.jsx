@@ -332,7 +332,7 @@ const CalendarView = () => {
       </div>
 
       {/* Month Calendar Grid Sheet */}
-      <div className="card" style={{ padding: "1.25rem", overflow: "hidden" }}>
+      <div className="card calendar-card" style={{ padding: "1.25rem", overflow: "hidden" }}>
         {loading ? (
           <div className="no-data">Loading calendar...</div>
         ) : (
@@ -398,6 +398,18 @@ const CalendarView = () => {
                   const cellBookings = getBookingsForDate(cell.date);
                   const cellIsToday = cell.date.toDateString() === new Date().toDateString();
                   
+                  // Calculate dynamic cell background based on bookings (especially for mobile visual cues)
+                  let cellBgColor = "";
+                  if (cellBookings.length > 0) {
+                    const firstBooking = cellBookings[0];
+                    const status = firstBooking.bookingStatus;
+                    const color = 
+                      status === "checked-in" ? "rgba(59, 130, 246, 0.05)" :
+                      status === "confirmed" ? "rgba(16, 185, 129, 0.05)" :
+                      status === "pending" ? "rgba(245, 158, 11, 0.05)" : "";
+                    cellBgColor = color;
+                  }
+                  
                   return (
                     <div 
                       key={idx} 
@@ -405,9 +417,10 @@ const CalendarView = () => {
                       className="calendar-cell"
                       style={{
                         opacity: cell.isCurrentMonth ? 1 : 0.4,
+                        backgroundColor: cellBgColor || undefined
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-secondary)"}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "var(--card-bg)"}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = cellBgColor || "var(--card-bg)"}
                     >
                       {/* Cell Header */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -431,6 +444,7 @@ const CalendarView = () => {
                         {/* Plus button to add booking */}
                         <button
                           type="button"
+                          className="calendar-cell-add-btn"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOpenCreate(dateStr);

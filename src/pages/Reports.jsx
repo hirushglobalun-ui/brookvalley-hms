@@ -19,7 +19,10 @@ import {
   User,
   CreditCard,
   MessageSquare,
-  Clock
+  Clock,
+  TrendingUp,
+  XCircle,
+  BookOpen
 } from "lucide-react";
 
 const statusColor = (status) => {
@@ -216,14 +219,14 @@ const Reports = () => {
       {/* Summary Stat Cards */}
       <div className="grid-stats-responsive">
         {[
-          { label: "Total Bookings",   value: totalBookings,               color: "var(--primary)",  bg: "rgba(59,130,246,0.1)" },
-          { label: "Active Bookings",  value: confirmedCount,              color: "var(--success)",  bg: "var(--success-glow)" },
-          { label: "Cancelled",        value: cancelledCount,              color: "var(--danger)",   bg: "var(--danger-glow)" },
-          { label: "Total Revenue",    value: `₹${totalRevenue.toLocaleString()}`, color: "#a855f7", bg: "rgba(168,85,247,0.1)" },
+          { label: "Total Bookings",   value: totalBookings,               color: "var(--primary)",  bg: "rgba(59,130,246,0.1)", icon: <BookOpen size={20} /> },
+          { label: "Active Bookings",  value: confirmedCount,              color: "var(--success)",  bg: "var(--success-glow)", icon: <TrendingUp size={20} /> },
+          { label: "Cancelled",        value: cancelledCount,              color: "var(--danger)",   bg: "var(--danger-glow)", icon: <XCircle size={20} /> },
+          { label: "Total Revenue",    value: `₹${totalRevenue.toLocaleString()}`, color: "#a855f7", bg: "rgba(168,85,247,0.1)", icon: <IndianRupee size={20} /> },
         ].map(s => (
           <div key={s.label} className="card" style={{ padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", gap: "1rem" }}>
-            <div style={{ width: 44, height: 44, borderRadius: "10px", background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <span style={{ fontSize: "1.3rem", fontWeight: 800, color: s.color }}>#</span>
+            <div style={{ width: 44, height: 44, borderRadius: "10px", background: s.bg, color: s.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {s.icon}
             </div>
             <div>
               <div style={{ fontSize: "1.5rem", fontWeight: 800, color: s.color, lineHeight: 1.1 }}>{s.value}</div>
@@ -234,12 +237,12 @@ const Reports = () => {
       </div>
 
       {/* Section Tabs */}
-      <div style={{ display: "flex", gap: "0.5rem", background: "var(--bg-secondary)", border: "1px solid var(--card-border)", borderRadius: "99px", padding: "0.35rem", width: "fit-content" }}>
+      <div className="report-tabs-container">
         {sections.map(s => (
           <button key={s.id} onClick={() => setActiveSection(s.id)} style={{
             display: "flex", alignItems: "center", gap: "0.5rem",
-            padding: "0.5rem 1.25rem", borderRadius: "99px", border: "none", cursor: "pointer",
-            fontSize: "0.875rem", fontWeight: 600, transition: "all 0.2s ease",
+            border: "none", cursor: "pointer",
+            fontWeight: 600, transition: "all 0.2s ease",
             background: activeSection === s.id ? "var(--primary)" : "transparent",
             color: activeSection === s.id ? "#fff" : "var(--text-secondary)",
             boxShadow: activeSection === s.id ? "0 2px 8px rgba(59,130,246,0.3)" : "none"
@@ -265,202 +268,81 @@ const Reports = () => {
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
-            <select className="input-control" style={{ width: "auto", margin: 0 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-              <option value="all">All Statuses</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="checked-in">Checked-In</option>
-              <option value="checked-out">Checked-Out</option>
-              <option value="pending">Pending</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            {user.role === "admin" && (
-              <select className="input-control" style={{ width: "auto", margin: 0 }} value={filterEmployee} onChange={e => setFilterEmployee(e.target.value)}>
-                <option value="all">All Employees</option>
-                {employees.map(emp => <option key={emp.uid} value={emp.uid}>{emp.fullName}</option>)}
+            <div className="report-filter-dropdowns">
+              <select className="input-control" style={{ width: "auto", margin: 0 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                <option value="all">All Statuses</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="checked-in">Checked-In</option>
+                <option value="checked-out">Checked-Out</option>
+                <option value="pending">Pending</option>
+                <option value="cancelled">Cancelled</option>
               </select>
-            )}
-            <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
-              {filteredBookings.length} records
-            </span>
+              {user.role === "admin" && (
+                <select className="input-control" style={{ width: "auto", margin: 0 }} value={filterEmployee} onChange={e => setFilterEmployee(e.target.value)}>
+                  <option value="all">All Employees</option>
+                  {employees.map(emp => <option key={emp.uid} value={emp.uid}>{emp.fullName}</option>)}
+                </select>
+              )}
+            </div>
           </div>
 
-          {/* Booking Cards — Expanded Details */}
+          {/* Booking Records Table */}
           {filteredBookings.length === 0 ? (
             <div className="card" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>No bookings found.</div>
           ) : (
-            filteredBookings.map(b => {
-              const isExpanded = expandedId === b.bookingId;
-              const sc = statusColor(b.bookingStatus);
-              const pc = payColor(b.paymentStatus);
-              const nights = b.checkInDate && b.checkOutDate
-                ? Math.max(1, Math.ceil((new Date(b.checkOutDate) - new Date(b.checkInDate)) / 86400000))
-                : "—";
-
-              return (
-                <div key={b.bookingId} className="card" style={{ overflow: "hidden", transition: "box-shadow 0.2s" }}>
-                  {/* Row Summary — always visible */}
-                  <div
-                    onClick={() => setExpandedId(isExpanded ? null : b.bookingId)}
-                    style={{ padding: "1rem 1.25rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}
-                  >
-                    {/* Booking ID */}
-                    <div style={{ minWidth: 100 }}>
-                      <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Booking ID</div>
-                      <div style={{ fontSize: "0.85rem", fontFamily: "monospace", fontWeight: 700, color: "var(--primary)", marginTop: 2 }}>{b.bookingId}</div>
-                    </div>
-
-                    {/* Customer */}
-                    <div style={{ flex: 1, minWidth: 140 }}>
-                      <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Customer</div>
-                      <div style={{ fontWeight: 700, fontSize: "0.95rem", marginTop: 2 }}>{b.customerName}</div>
-                      <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>{b.customerPhone}</div>
-                    </div>
-
-                    {/* Room */}
-                    <div style={{ minWidth: 100 }}>
-                      <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Room</div>
-                      <div style={{ fontWeight: 700, fontSize: "0.9rem", marginTop: 2 }}>#{b.roomNumber}</div>
-                      <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", textTransform: "capitalize" }}>{b.roomType}</div>
-                    </div>
-
-                    {/* Dates */}
-                    <div style={{ minWidth: 140 }}>
-                      <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Dates</div>
-                      <div style={{ fontSize: "0.85rem", marginTop: 2 }}>{b.checkInDate} → {b.checkOutDate}</div>
-                      <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{nights} night{nights !== 1 ? "s" : ""}</div>
-                    </div>
-
-                    {/* Amount */}
-                    <div style={{ minWidth: 80 }}>
-                      <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Amount</div>
-                      <div style={{ fontSize: "1rem", fontWeight: 800, color: "var(--success)", marginTop: 2 }}>₹{b.totalAmount?.toLocaleString()}</div>
-                    </div>
-
-                    {/* Status badges */}
-                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginLeft: "auto" }}>
-                      <span style={{ ...sc, padding: "3px 10px", borderRadius: "99px", fontSize: "0.75rem", fontWeight: 700, textTransform: "capitalize" }}>
-                        {b.bookingStatus}
-                      </span>
-                      <span style={{ ...pc, padding: "3px 10px", borderRadius: "99px", fontSize: "0.75rem", fontWeight: 700, textTransform: "capitalize" }}>
-                        {b.paymentStatus}
-                      </span>
-                    </div>
-
-                    <div style={{ color: "var(--text-muted)" }}>
-                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                    </div>
-                  </div>
-
-                  {/* Expanded Detail Panel */}
-                  {isExpanded && (
-                    <div style={{ borderTop: "1px solid var(--card-border)", padding: "1.5rem 1.25rem", background: "rgba(0,0,0,0.015)", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.25rem" }}>
-
-                        {/* Customer Info */}
-                        <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--card-border)", borderRadius: "10px", padding: "1rem" }}>
-                          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--primary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "5px" }}>
-                            <User size={13} /> Customer Details
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.85rem" }}>
-                            <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text-primary)" }}>{b.customerName}</div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-secondary)" }}>
-                              <Phone size={13} /> {b.customerPhone || "—"}
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-secondary)" }}>
-                              <Mail size={13} /> {b.customerEmail || "—"}
-                            </div>
-                            <div style={{ display: "flex", alignItems: "flex-start", gap: "6px", color: "var(--text-secondary)" }}>
-                              <MapPin size={13} style={{ marginTop: 2, flexShrink: 0 }} /> {b.customerAddress || "—"}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Booking Info */}
-                        <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--card-border)", borderRadius: "10px", padding: "1rem" }}>
-                          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#a855f7", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "5px" }}>
-                            <BedDouble size={13} /> Booking Details
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.85rem" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span style={{ color: "var(--text-secondary)" }}>Room Number</span>
-                              <strong>#{b.roomNumber}</strong>
-                            </div>
-                            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span style={{ color: "var(--text-secondary)" }}>Room Type</span>
-                              <strong style={{ textTransform: "capitalize" }}>{b.roomType}</strong>
-                            </div>
-                            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span style={{ color: "var(--text-secondary)" }}>Guests</span>
-                              <strong>{b.guestCount || 1} guest(s)</strong>
-                            </div>
-                            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span style={{ color: "var(--text-secondary)" }}>Check-In</span>
-                              <strong>{b.checkInDate}</strong>
-                            </div>
-                            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span style={{ color: "var(--text-secondary)" }}>Check-Out</span>
-                              <strong>{b.checkOutDate}</strong>
-                            </div>
-                            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span style={{ color: "var(--text-secondary)" }}>Duration</span>
-                              <strong>{nights} night(s)</strong>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Payment & Staff Info */}
-                        <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--card-border)", borderRadius: "10px", padding: "1rem" }}>
-                          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--success)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "5px" }}>
-                            <CreditCard size={13} /> Payment & Staff
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.85rem" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span style={{ color: "var(--text-secondary)" }}>Total Amount</span>
-                              <strong style={{ color: "var(--success)", fontSize: "1rem" }}>₹{b.totalAmount?.toLocaleString()}</strong>
-                            </div>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <span style={{ color: "var(--text-secondary)" }}>Payment</span>
-                              <span style={{ ...pc, padding: "2px 8px", borderRadius: "99px", fontSize: "0.73rem", fontWeight: 700, textTransform: "capitalize" }}>
+            <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+              <div className="table-wrapper">
+                <table className="table-custom">
+                  <thead>
+                    <tr>
+                      <th>Booking ID</th>
+                      <th>Customer Name</th>
+                      <th>Phone Number</th>
+                      <th>Stay Dates</th>
+                      <th>Created By</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredBookings.map(b => {
+                      const sc = statusColor(b.bookingStatus);
+                      const pc = payColor(b.paymentStatus);
+                      return (
+                        <tr key={b.bookingId}>
+                          <td style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--primary)" }}>{b.bookingId}</td>
+                          <td style={{ fontWeight: 600 }}>{b.customerName}</td>
+                          <td style={{ color: "var(--text-secondary)" }}>{b.customerPhone}</td>
+                          <td>
+                            <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                              {b.checkInDate} to {b.checkOutDate}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                              {b.createdByName}
+                            </span>
+                            <br />
+                            <span className="badge" style={{ padding: "1px 4px", fontSize: "0.65rem", backgroundColor: "var(--bg-tertiary)", textTransform: "uppercase" }}>
+                              {b.createdByRole}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                              <span style={{ ...sc, width: "fit-content", fontSize: "0.7rem", padding: "2px 8px", borderRadius: "99px", fontWeight: 700, textTransform: "uppercase" }}>
+                                {b.bookingStatus}
+                              </span>
+                              <span style={{ ...pc, width: "fit-content", fontSize: "0.65rem", padding: "1px 6px", borderRadius: "99px", fontWeight: 700, textTransform: "uppercase", border: "1px solid currentColor", background: "none" }}>
                                 {b.paymentStatus}
                               </span>
                             </div>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <span style={{ color: "var(--text-secondary)" }}>Booking Status</span>
-                              <span style={{ ...sc, padding: "2px 8px", borderRadius: "99px", fontSize: "0.73rem", fontWeight: 700, textTransform: "capitalize" }}>
-                                {b.bookingStatus}
-                              </span>
-                            </div>
-                            <div style={{ borderTop: "1px solid var(--card-border)", paddingTop: "0.5rem", marginTop: "0.25rem" }}>
-                              <div style={{ color: "var(--text-secondary)" }}>Created by</div>
-                              <div style={{ fontWeight: 700, marginTop: 2 }}>{b.createdByName}</div>
-                              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "capitalize" }}>{b.createdByRole}</div>
-                            </div>
-                            {b.createdAt && (
-                              <div style={{ display: "flex", alignItems: "center", gap: "5px", color: "var(--text-muted)", fontSize: "0.78rem" }}>
-                                <Clock size={12} />
-                                {new Date(b.createdAt.seconds * 1000).toLocaleString()}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Remarks */}
-                      {b.remarks && (
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "0.6rem", background: "var(--warning-glow)", padding: "0.75rem 1rem", borderRadius: "8px" }}>
-                          <MessageSquare size={15} style={{ color: "var(--warning)", flexShrink: 0, marginTop: 2 }} />
-                          <div>
-                            <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--warning)", textTransform: "uppercase" }}>Remarks / Notes</div>
-                            <div style={{ fontSize: "0.875rem", color: "var(--text-primary)", marginTop: "2px" }}>{b.remarks}</div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -471,7 +353,7 @@ const Reports = () => {
           {employeeStats.map((emp, idx) => (
             <div key={emp.uid} className="card" style={{ padding: "1.5rem" }}>
               {/* Employee Header */}
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem" }}>
+              <div className="report-employee-header">
                 <div style={{
                   width: 46, height: 46, borderRadius: "50%",
                   background: `hsl(${(idx * 47) % 360}, 65%, 55%)`,
@@ -480,17 +362,17 @@ const Reports = () => {
                 }}>
                   {emp.fullName?.charAt(0).toUpperCase()}
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: "120px" }}>
                   <div style={{ fontWeight: 700, fontSize: "1rem" }}>{emp.fullName}</div>
                   <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", textTransform: "capitalize" }}>{emp.role} · {emp.employeeId}</div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--primary)" }}>{emp.count}</div>
-                  <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Bookings</div>
+                <div className="emp-stats-col" style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--primary)", lineHeight: 1 }}>{emp.count}</div>
+                  <div style={{ fontSize: "0.7rem", color: "var(--text-secondary)", marginTop: "2px" }}>Bookings</div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--success)" }}>₹{emp.revenue.toLocaleString()}</div>
-                  <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Revenue</div>
+                <div className="emp-stats-col" style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--success)", lineHeight: 1 }}>₹{emp.revenue.toLocaleString()}</div>
+                  <div style={{ fontSize: "0.7rem", color: "var(--text-secondary)", marginTop: "2px" }}>Revenue</div>
                 </div>
               </div>
 

@@ -200,6 +200,7 @@ button, input, select, textarea {
   }
   .sidebar-overlay {
     display: block;
+    z-index: 240;
   }
 
   /* Sidebar: off-canvas drawer */
@@ -207,16 +208,18 @@ button, input, select, textarea {
     width: var(--sidebar-width);
     transform: translateX(-100%);
     transition: transform 0.3s ease;
-    z-index: 150;
+    z-index: 250 !important;
   }
   .sidebar.sidebar-open {
     transform: translateX(0);
   }
   .sidebar.sidebar-open .logo-text,
-  .sidebar.sidebar-open .user-info,
   .sidebar.sidebar-open .sidebar-item a span,
   .sidebar.sidebar-open .sidebar-footer .btn span {
     display: unset;
+  }
+  .sidebar.sidebar-open .user-info {
+    display: flex !important;
   }
   .sidebar.sidebar-open .sidebar-item a {
     justify-content: flex-start;
@@ -326,7 +329,7 @@ button, input, select, textarea {
 
   .main-content {
     padding: 0.75rem;
-    padding-top: 3.75rem;
+    padding-top: 1rem;
   }
 
   .card {
@@ -716,6 +719,7 @@ button, input, select, textarea {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .table-custom td {
@@ -723,6 +727,7 @@ button, input, select, textarea {
   border-bottom: 1px solid var(--card-border);
   font-size: 0.875rem;
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .table-custom tr:last-child td {
@@ -1579,6 +1584,134 @@ button, input, select, textarea {
   .calendar-weekday-header {
     padding: 0.4rem 0.2rem !important;
     font-size: 0.75rem !important;
+  }
+
+  .calendar-cell-add-btn {
+    display: none !important; /* Hide add button inside cell on mobile to prevent squishing */
+  }
+
+  .calendar-card {
+    padding: 0.5rem !important; /* Less padding on mobile card container */
+  }
+}
+
+/* Page Header flex layout that collapses and stretches button action on mobile */
+.page-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+@media (max-width: 576px) {
+  .page-header-flex {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .page-header-flex button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* Horizontal scroll wrapper for tables */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 0.5rem;
+}
+
+/* Scrollable summary row for booking details in reports */
+.scrollable-summary-row {
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.scrollable-summary-row > div {
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .scrollable-summary-row {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scrollable-summary-row::-webkit-scrollbar {
+    height: 4px;
+  }
+  .scrollable-summary-row::-webkit-scrollbar-thumb {
+    background: var(--bg-tertiary);
+    border-radius: 2px;
+  }
+}
+
+/* Employee Report Header styles */
+.report-employee-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 576px) {
+  .report-employee-header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .report-employee-header .emp-stats-col {
+    flex: 1;
+    min-width: 80px;
+    text-align: left !important;
+  }
+}
+
+/* Reports page tabs container scroll and size reduction for mobile */
+.report-tabs-container {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 99px;
+  padding: 0.35rem;
+  width: fit-content;
+}
+
+@media (max-width: 768px) {
+  .report-tabs-container {
+    width: 100% !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-md) !important;
+    padding: 0.25rem !important;
+    gap: 0.25rem !important;
+  }
+  .report-tabs-container button {
+    padding: 0.4rem 0.75rem !important;
+    font-size: 0.75rem !important;
+    border-radius: var(--radius-sm) !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+/* Reports filter dropdowns row styling on mobile */
+.report-filter-dropdowns {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .report-filter-dropdowns {
+    width: auto;
+  }
+  .report-filter-dropdowns select {
+    width: auto !important;
   }
 }
 

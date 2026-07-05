@@ -306,7 +306,7 @@ const Bookings = () => {
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {/* Title Header */}
       <div className="card" style={{ padding: "1.25rem 1.5rem" }}>
-        <div className="flex-between">
+        <div className="page-header-flex">
           <div>
             <h1 style={{ fontSize: "1.6rem", fontWeight: 700, letterSpacing: "-0.02em" }}>Bookings Management</h1>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginTop: "0.25rem" }}>Add, edit and monitor hotel bookings.</p>
