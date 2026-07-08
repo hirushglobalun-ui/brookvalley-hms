@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../firebase/auth";
-import { getBookings, getRooms, getEmployees, getActivityLogs } from "../firebase/db";
+import { getBookings, getRooms, getEmployees, getActivityLogs, getRoomTypes } from "../firebase/db";
 import { 
   BookOpen, 
   DoorOpen, 
@@ -19,23 +19,26 @@ const Dashboard = () => {
   const [rooms, setRooms] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [roomTypes, setRoomTypes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [bookingsData, roomsData, employeesData, logsData] = await Promise.all([
+        const [bookingsData, roomsData, employeesData, logsData, roomTypesData] = await Promise.all([
           getBookings(),
           getRooms(),
           getEmployees(),
-          user.role === "admin" ? getActivityLogs(8) : Promise.resolve([])
+          user.role === "admin" ? getActivityLogs(8) : Promise.resolve([]),
+          getRoomTypes()
         ]);
         
         setBookings(bookingsData);
         setRooms(roomsData);
         setEmployees(employeesData);
         setLogs(logsData);
+        setRoomTypes(roomTypesData);
       } catch (err) {
         console.error("Dashboard fetch error:", err);
       } finally {
@@ -64,11 +67,21 @@ const Dashboard = () => {
   const todayCheckOuts = bookings.filter(b => b.checkOutDate === todayStr && b.bookingStatus !== "cancelled");
 
   const occupiedRooms = rooms.filter(r => r.status === "occupied").length;
+  const occupiedRoomsList = rooms.filter(r => r.status === "occupied");
   const availableRooms = rooms.filter(r => r.status === "available").length;
   const maintenanceRooms = rooms.filter(r => r.status === "maintenance").length;
   const totalRoomsCount = rooms.length;
 
   const employeeCount = employees.length;
+
+  // Find checked-in guest booking for an occupied room
+  const findActiveBookingForRoom = (roomNo) => {
+    return bookings.find(b => {
+      if (b.bookingStatus !== "checked-in") return false;
+      const roomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
+      return roomNumbers.includes(roomNo);
+    });
+  };
 
   // Masking utility for employee view
   const maskText = (text, booking) => {
@@ -240,6 +253,64 @@ const Dashboard = () => {
             </div>
           </>
         )}
+      </div>
+
+      {/* Occupied Rooms Status Section */}
+      <div className="card" style={{ padding: "1.25rem" }}>
+        <div className="card-header" style={{ marginBottom: "1rem" }}>
+          <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <DoorOpen size={18} className="text-primary" />
+            <span>Current Room Occupancy ({occupiedRoomsList.length} occupied)</span>
+          </h2>
+        </div>
+        
+        <div className="table-wrapper">
+          {occupiedRoomsList.length > 0 ? (
+            <table className="table-custom" style={{ fontSize: "0.85rem" }}>
+              <thead>
+                <tr>
+                  <th>Room Number</th>
+                  <th>Room Type</th>
+                  <th>Guest Name</th>
+                  <th>Contact Info</th>
+                  <th>Stay Dates</th>
+                  <th>Guests Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {occupiedRoomsList.map(room => {
+                  const activeBooking = findActiveBookingForRoom(room.roomNumber);
+                  const displayTypeName = roomTypes.find(rt => rt.id === room.roomType)?.name || room.roomType;
+                  
+                  return (
+                    <tr key={room.roomNumber}>
+                      <td style={{ fontWeight: 700, color: "var(--primary)" }}>Room {room.roomNumber}</td>
+                      <td style={{ textTransform: "capitalize" }}>{displayTypeName}</td>
+                      {activeBooking ? (
+                        <>
+                          <td>{maskText(activeBooking.customerName, activeBooking)}</td>
+                          <td>{maskText(activeBooking.customerPhone, activeBooking)}</td>
+                          <td>
+                            <span style={{ fontWeight: 500 }}>
+                              {activeBooking.checkInDate} to {activeBooking.checkOutDate}
+                            </span>
+                          </td>
+                          <td>{activeBooking.guestCount || 1} Guests</td>
+                        </>
+                      ) : (
+                        <td colSpan="4" style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
+                          No active checked-in booking details found (status occupied).
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <div className="no-data" style={{ padding: "1.5rem" }}>No rooms are currently occupied.</div>
+          )}
+        </div>
       </div>
 
 

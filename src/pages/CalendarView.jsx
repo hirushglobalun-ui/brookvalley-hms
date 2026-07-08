@@ -39,13 +39,16 @@ const CalendarView = () => {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [selectedRoomType, setSelectedRoomType] = useState("");
-  const [selectedRoomNumber, setSelectedRoomNumber] = useState("");
+  const [selectedRoomNumbers, setSelectedRoomNumbers] = useState([]);
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
   const [guestCount, setGuestCount] = useState(1);
   const [totalAmount, setTotalAmount] = useState(0);
   const [paymentStatus, setPaymentStatus] = useState("unpaid");
   const [bookingStatus, setBookingStatus] = useState("confirmed");
+  const [paymentMethod, setPaymentMethod] = useState("none");
+  const [advanceAmount, setAdvanceAmount] = useState(0);
+  const [paymentProof, setPaymentProof] = useState("");
   const [remarks, setRemarks] = useState("");
   const [formError, setFormError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
@@ -89,34 +92,6 @@ const CalendarView = () => {
   const handleToday = () => {
     setCurrentDate(new Date());
   };
-
-  // Recalculate price dynamically based on room type selection and dates
-  useEffect(() => {
-    if (selectedRoomType && checkInDate && checkOutDate) {
-      const type = roomTypes.find(rt => rt.id === selectedRoomType);
-      const price = type ? type.price : 0;
-      
-      const start = new Date(checkInDate);
-      const end = new Date(checkOutDate);
-      
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        const utcStart = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
-        const utcEnd = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
-        const diffDays = Math.floor((utcEnd - utcStart) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays > 0) {
-          setTotalAmount(price * diffDays);
-        } else {
-          setTotalAmount(0);
-        }
-      } else {
-        setTotalAmount(0);
-      }
-    } else {
-      setTotalAmount(0);
-    }
-  }, [selectedRoomType, checkInDate, checkOutDate, roomTypes]);
-
   // Auto assign room number based on room type selection and check-in / check-out dates
   const autoAssignRoom = (roomTypeId, checkIn, checkOut, currentBookingId = null) => {
     const candidateRooms = rooms.filter(r => r.roomType === roomTypeId);
@@ -124,12 +99,16 @@ const CalendarView = () => {
 
     const start = new Date(checkIn);
     const end = new Date(checkOut);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) return null;
 
     for (const room of candidateRooms) {
       const isBooked = bookings.some(b => {
-        if (b.bookingStatus === "cancelled") return false;
+        const activeStatuses = ["confirmed", "pending", "checked-in"];
+        if (!activeStatuses.includes(b.bookingStatus)) return false;
         if (currentBookingId && b.bookingId === currentBookingId) return false;
-        if (b.roomNumber !== room.roomNumber) return false;
+        
+        const bookedRoomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
+        if (!bookedRoomNumbers.includes(room.roomNumber)) return false;
 
         const bStart = new Date(b.checkInDate);
         const bEnd = new Date(b.checkOutDate);
@@ -144,6 +123,92 @@ const CalendarView = () => {
     return null;
   };
 
+  // Reactive room availability check
+  useEffect(() => {
+    if (selectedRoomType && checkInDate && checkOutDate) {
+      const roomNo = autoAssignRoom(selectedRoomType, checkInDate, checkOutDate, selectedBooking?.bookingId);
+      if (!roomNo) {
+        setFormError("No available rooms of this type for the selected dates.");
+      } else {
+        setFormError(prev => prev === "No available rooms of this type for the selected dates." ? "" : prev);
+      }
+    } else {
+      setFormError(prev => prev === "No available rooms of this type for the selected dates." ? "" : prev);
+    }
+  }, [selectedRoomType, checkInDate, checkOutDate, rooms, bookings, selectedBooking]);
+  // Recalculate price dynamically based on room type selection, dates, and selected rooms
+  useEffect(() => {
+    if (selectedRoomType && checkInDate && checkOutDate) {
+      const type = roomTypes.find(rt => rt.id === selectedRoomType);
+      const price = type ? type.price : 0;
+      
+      const start = new Date(checkInDate);
+      const end = new Date(checkOutDate);
+      
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        const utcStart = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+        const utcEnd = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+        const diffDays = Math.floor((utcEnd - utcStart) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays > 0) {
+          const roomsCount = selectedRoomNumbers.length || 1;
+          setTotalAmount(price * diffDays * roomsCount);
+        } else {
+          setTotalAmount(0);
+        }
+      } else {
+        setTotalAmount(0);
+      }
+    } else {
+      setTotalAmount(0);
+    }
+  }, [selectedRoomType, checkInDate, checkOutDate, roomTypes, selectedRoomNumbers]);
+
+
+
+  // Helper to read uploaded files as Base64 strings
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 800 * 1024) {
+        alert("File is too large. Please select an image under 800KB.");
+        e.target.value = "";
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPaymentProof(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Filter available rooms of the selected type
+  const getAvailableRoomsForStay = () => {
+    if (!selectedRoomType || !checkInDate || !checkOutDate) return [];
+    
+    const start = new Date(checkInDate);
+    const end = new Date(checkOutDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) return [];
+    
+    const candidateRooms = rooms.filter(r => r.roomType === selectedRoomType);
+    
+    return candidateRooms.filter(room => {
+      const isBooked = bookings.some(b => {
+        const activeStatuses = ["confirmed", "pending", "checked-in"];
+        if (!activeStatuses.includes(b.bookingStatus)) return false;
+        
+        const bookedRoomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
+        if (!bookedRoomNumbers.includes(room.roomNumber)) return false;
+        
+        const bStart = new Date(b.checkInDate);
+        const bEnd = new Date(b.checkOutDate);
+        return (start < bEnd && end > bStart);
+      });
+      return !isBooked;
+    });
+  };
+
   // Open creation modal
   const handleOpenCreate = (prefillDate = "") => {
     setCustomerName("");
@@ -151,7 +216,7 @@ const CalendarView = () => {
     setCustomerEmail("");
     setCustomerAddress("");
     setSelectedRoomType("");
-    setSelectedRoomNumber("");
+    setSelectedRoomNumbers([]);
     setCheckInDate(prefillDate || "");
     
     if (prefillDate) {
@@ -178,6 +243,9 @@ const CalendarView = () => {
     setTotalAmount(0);
     setPaymentStatus("unpaid");
     setBookingStatus("confirmed");
+    setPaymentMethod("none");
+    setAdvanceAmount(0);
+    setPaymentProof("");
     setRemarks("");
     setFormError("");
     setIsModalOpen(true);
@@ -187,16 +255,22 @@ const CalendarView = () => {
   const handleSubmitBooking = async (e) => {
     e.preventDefault();
     setFormError("");
+
+    // Validate Phone: must be exactly 10 digits
+    const cleanPhone = customerPhone.replace(/[^0-9]/g, "");
+    if (cleanPhone.length !== 10) {
+      setFormError("Customer phone number must be exactly 10 digits.");
+      return;
+    }
     
     if (new Date(checkInDate) >= new Date(checkOutDate)) {
       setFormError("Check-out date must be after check-in date.");
       return;
     }
 
-    // Auto assign room number based on selected room type and dates
     const roomNo = autoAssignRoom(selectedRoomType, checkInDate, checkOutDate);
     if (!roomNo) {
-      setFormError("No rooms of this type are available for the selected dates.");
+      setFormError("No available rooms of this type for the selected dates.");
       return;
     }
 
@@ -215,6 +289,9 @@ const CalendarView = () => {
         totalAmount: Number(totalAmount),
         paymentStatus,
         bookingStatus,
+        paymentMethod,
+        advanceAmount: Number(advanceAmount),
+        paymentProof,
         remarks
       };
 
@@ -698,12 +775,13 @@ const CalendarView = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Phone Number *</label>
+                  <label>Phone Number * (10 Digits)</label>
                   <input 
                     type="tel" 
                     className="input-control" 
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e) => setCustomerPhone(e.target.value.replace(/[^0-9]/g, "").substring(0, 10))}
+                    placeholder="e.g. 9876543210"
                     required
                   />
                 </div>
@@ -741,7 +819,7 @@ const CalendarView = () => {
                     value={selectedRoomType}
                     onChange={(e) => {
                       setSelectedRoomType(e.target.value);
-                      setSelectedRoomNumber("");
+                      setSelectedRoomNumbers([]);
                     }}
                     required
                   >
@@ -774,25 +852,40 @@ const CalendarView = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Guests Count</label>
+                  <label>Guests Count *</label>
                   <input 
                     type="number" 
                     className="input-control" 
                     min="1"
                     value={guestCount}
                     onChange={(e) => setGuestCount(e.target.value)}
+                    required
                   />
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginBottom: "1.25rem" }}>
-                <label>Total Price (₹)</label>
-                <input 
-                  type="number" 
-                  className="input-control" 
-                  value={totalAmount}
-                  onChange={(e) => setTotalAmount(e.target.value)}
-                />
+
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label>Total Price (₹)</label>
+                  <input 
+                    type="number" 
+                    className="input-control" 
+                    value={totalAmount}
+                    onChange={(e) => setTotalAmount(e.target.value)}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label>Balance Amount (₹)</label>
+                  <input 
+                    type="number" 
+                    className="input-control" 
+                    style={{ backgroundColor: "var(--bg-tertiary)", cursor: "not-allowed" }}
+                    value={Number(totalAmount) - Number(advanceAmount)}
+                    readOnly
+                  />
+                </div>
               </div>
 
               <h3 style={{ fontSize: "0.9rem", color: "var(--primary)", textTransform: "uppercase", marginTop: "1.5rem", marginBottom: "1rem", letterSpacing: "0.05em" }}>
@@ -813,6 +906,22 @@ const CalendarView = () => {
                   </select>
                 </div>
                 <div className="form-group">
+                  <label>Payment Method</label>
+                  <select 
+                    className="input-control"
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
+                    <option value="none">None / Pending</option>
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                    <option value="online">Online</option>
+                    <option value="split-online-cash">Split: Online + Cash</option>
+                    <option value="split-card-cash">Split: Card + Cash</option>
+                    <option value="split-card-online">Split: Card + Online</option>
+                  </select>
+                </div>
+                <div className="form-group">
                   <label>Booking Status</label>
                   <select 
                     className="input-control"
@@ -825,6 +934,31 @@ const CalendarView = () => {
                     <option value="checked-out">Checked Out</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
+                </div>
+                <div className="form-group">
+                  <label>Advance Amount Paid (₹)</label>
+                  <input 
+                    type="number" 
+                    className="input-control" 
+                    min="0"
+                    value={advanceAmount}
+                    onChange={(e) => setAdvanceAmount(e.target.value)}
+                  />
+                </div>
+                <div className="form-group" style={{ gridColumn: "span 2" }}>
+                  <label>Upload Payment Proof (Receipt / Screenshot)</label>
+                  <input 
+                    type="file" 
+                    className="input-control" 
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                  {paymentProof && (
+                    <div style={{ marginTop: "0.5rem", display: "flex", gap: "1rem", alignItems: "flex-end" }}>
+                      <img src={paymentProof} alt="Payment Proof" style={{ maxWidth: "120px", maxHeight: "120px", borderRadius: "4px", border: "1px solid var(--card-border)" }} />
+                      <button type="button" className="btn btn-danger" style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem" }} onClick={() => setPaymentProof("")}>Remove</button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -954,6 +1088,48 @@ const CalendarView = () => {
                       {selectedBooking.paymentStatus}
                     </span>
                   </div>
+
+                  <div className="info-detail-item">
+                    <span className="info-detail-label">Payment Method</span>
+                    <span className="info-detail-value" style={{ textTransform: "capitalize" }}>
+                      {selectedBooking.paymentMethod || "None"}
+                    </span>
+                  </div>
+
+                  <div className="info-detail-item">
+                    <span className="info-detail-label">Advance Paid</span>
+                    <span className="info-detail-value">
+                      ₹{selectedBooking.advanceAmount || 0}
+                    </span>
+                  </div>
+
+                  <div className="info-detail-item">
+                    <span className="info-detail-label">Balance Due</span>
+                    <span className="info-detail-value" style={{ fontWeight: 700, color: "var(--danger)" }}>
+                      ₹{Number(selectedBooking.totalAmount || 0) - Number(selectedBooking.advanceAmount || 0)}
+                    </span>
+                  </div>
+
+                  {selectedBooking.paymentProof && (
+                    <div className="info-detail-full" style={{ marginTop: "0.75rem", borderTop: "1px dashed var(--card-border)", paddingTop: "0.75rem" }}>
+                      <span className="info-detail-label" style={{ display: "block", marginBottom: "0.5rem" }}>Payment Proof Attachment</span>
+                      <div style={{ display: "flex", gap: "1rem", alignItems: "flex-end" }}>
+                        <img 
+                          src={selectedBooking.paymentProof} 
+                          alt="Payment Proof" 
+                          style={{ maxWidth: "200px", maxHeight: "200px", borderRadius: "4px", border: "1px solid var(--card-border)", boxShadow: "var(--shadow-sm)" }} 
+                        />
+                        <a 
+                          href={selectedBooking.paymentProof} 
+                          download={`payment_proof_${selectedBooking.bookingId}`} 
+                          className="btn btn-secondary" 
+                          style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", height: "fit-content", display: "inline-flex", alignItems: "center" }}
+                        >
+                          Download Proof
+                        </a>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="info-detail-full" style={{ borderBottom: "1px dashed var(--card-border)", paddingBottom: "0.5rem", marginTop: "0.75rem", marginBottom: "0.5rem" }}>
                     <h3 style={{ fontSize: "0.85rem", color: "var(--primary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>

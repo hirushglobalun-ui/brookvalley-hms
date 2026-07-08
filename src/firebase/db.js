@@ -165,11 +165,41 @@ export const deleteRoomType = async (id, name, adminUser) => {
 
 export const getRooms = async () => {
   const roomsSnapshot = await getDocs(collection(db, "rooms"));
-  const rooms = roomsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  let rooms = roomsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   
   try {
     const typesSnapshot = await getDocs(collection(db, "roomTypes"));
     const roomTypes = typesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Database check & clean: Make sure there's strictly only 1 room per roomType
+    const grouped = {};
+    rooms.forEach(r => {
+      if (!grouped[r.roomType]) grouped[r.roomType] = [];
+      grouped[r.roomType].push(r);
+    });
+
+    const toDelete = [];
+    Object.keys(grouped).forEach(type => {
+      const list = grouped[type];
+      if (list.length > 1) {
+        list.sort((a, b) => a.roomNumber.localeCompare(b.roomNumber, undefined, { numeric: true }));
+        // Keep the first room, prepare others for deletion
+        for (let i = 1; i < list.length; i++) {
+          toDelete.push(list[i].roomNumber);
+        }
+      }
+    });
+
+    if (toDelete.length > 0) {
+      const batch = writeBatch(db);
+      toDelete.forEach(roomNo => {
+        batch.delete(doc(db, "rooms", roomNo));
+      });
+      await batch.commit();
+      
+      const refSnapshot = await getDocs(collection(db, "rooms"));
+      rooms = refSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
     
     const missingTypes = roomTypes.filter(rt => !rooms.some(r => r.roomType === rt.id));
     
@@ -177,14 +207,12 @@ export const getRooms = async () => {
       const batch = writeBatch(db);
       for (const rt of missingTypes) {
         const prefix = rt.id.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 4);
-        for (let i = 1; i <= 5; i++) {
-          const roomNo = `${prefix}-${100 + i}`;
-          batch.set(doc(db, "rooms", roomNo), {
-            roomNumber: roomNo,
-            roomType: rt.id,
-            status: "available"
-          });
-        }
+        const roomNo = `${prefix}-101`;
+        batch.set(doc(db, "rooms", roomNo), {
+          roomNumber: roomNo,
+          roomType: rt.id,
+          status: "available"
+        });
       }
       await batch.commit();
       
@@ -192,7 +220,7 @@ export const getRooms = async () => {
       return finalSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
   } catch (err) {
-    console.error("Error in getRooms self-healing:", err);
+    console.error("Error in getRooms cleanup and seeding:", err);
   }
   
   return rooms;
@@ -240,6 +268,9 @@ export const addBooking = async (bookingData, user) => {
     totalAmount: Number(bookingData.totalAmount),
     paymentStatus: bookingData.paymentStatus,
     bookingStatus: bookingData.bookingStatus || "confirmed",
+    paymentMethod: bookingData.paymentMethod || "none",
+    advanceAmount: Number(bookingData.advanceAmount || 0),
+    paymentProof: bookingData.paymentProof || "",
     remarks: bookingData.remarks || "",
     createdByUid: user.uid,
     createdByName: user.fullName || user.email,
@@ -253,12 +284,17 @@ export const addBooking = async (bookingData, user) => {
   // Update room status to occupied if check-in is today
   const todayStr = new Date().toISOString().split("T")[0];
   if (bookingData.checkInDate <= todayStr && bookingData.checkOutDate >= todayStr && bookingData.bookingStatus === "checked-in") {
-    await updateRoomStatus(bookingData.roomNumber, "occupied", user);
+    const roomsToOccupy = bookingData.roomNumber.split(",").map(r => r.trim());
+    for (const rm of roomsToOccupy) {
+      if (rm) {
+        await updateRoomStatus(rm, "occupied", user);
+      }
+    }
   }
 
   await logActivity(
     "CREATE_BOOKING", 
-    `Created booking ${bookingId} for Room ${bookingData.roomNumber} (${bookingData.customerName})`, 
+    `Created booking ${bookingId} for Room(s) ${bookingData.roomNumber} (${bookingData.customerName})`, 
     user
   );
 
@@ -266,6 +302,16 @@ export const addBooking = async (bookingData, user) => {
 };
 
 export const updateBooking = async (bookingId, bookingData, user) => {
+  // Fetch previous rooms to release them if they changed or checked out
+  const oldBookingDoc = await getDoc(doc(db, "bookings", bookingId));
+  let oldRooms = [];
+  if (oldBookingDoc.exists()) {
+    const oldData = oldBookingDoc.data();
+    if (oldData.roomNumber) {
+      oldRooms = oldData.roomNumber.split(",").map(r => r.trim());
+    }
+  }
+
   const updateData = {
     customerName: bookingData.customerName,
     customerPhone: bookingData.customerPhone,
@@ -279,6 +325,9 @@ export const updateBooking = async (bookingId, bookingData, user) => {
     totalAmount: Number(bookingData.totalAmount),
     paymentStatus: bookingData.paymentStatus,
     bookingStatus: bookingData.bookingStatus,
+    paymentMethod: bookingData.paymentMethod || "none",
+    advanceAmount: Number(bookingData.advanceAmount || 0),
+    paymentProof: bookingData.paymentProof || "",
     remarks: bookingData.remarks || "",
     updatedAt: serverTimestamp()
   };
@@ -286,27 +335,53 @@ export const updateBooking = async (bookingId, bookingData, user) => {
   await updateDoc(doc(db, "bookings", bookingId), updateData);
 
   // Update room status accordingly
-  const todayStr = new Date().toISOString().split("T")[0];
   if (bookingData.bookingStatus === "checked-in") {
-    await updateRoomStatus(bookingData.roomNumber, "occupied", user);
+    // Release old rooms
+    for (const rm of oldRooms) {
+      if (rm) await updateRoomStatus(rm, "available", user);
+    }
+    // Occupy new rooms
+    const newRooms = bookingData.roomNumber.split(",").map(r => r.trim());
+    for (const rm of newRooms) {
+      if (rm) await updateRoomStatus(rm, "occupied", user);
+    }
   } else if (bookingData.bookingStatus === "checked-out" || bookingData.bookingStatus === "cancelled") {
-    await updateRoomStatus(bookingData.roomNumber, "available", user);
+    // Release old rooms
+    for (const rm of oldRooms) {
+      if (rm) await updateRoomStatus(rm, "available", user);
+    }
+    // Release current rooms just in case
+    const newRooms = bookingData.roomNumber.split(",").map(r => r.trim());
+    for (const rm of newRooms) {
+      if (rm) await updateRoomStatus(rm, "available", user);
+    }
   }
 
   await logActivity(
     "UPDATE_BOOKING", 
-    `Updated booking ${bookingId} (Room ${bookingData.roomNumber})`, 
+    `Updated booking ${bookingId} (Room(s) ${bookingData.roomNumber})`, 
     user
   );
 };
 
 export const deleteBooking = async (bookingId, roomNumber, user) => {
   await deleteDoc(doc(db, "bookings", bookingId));
-  // Set room back to available if occupied
+  // Set rooms back to available if occupied
   if (roomNumber) {
-    await updateRoomStatus(roomNumber, "available", user);
+    const roomsToRelease = roomNumber.split(",").map(r => r.trim());
+    for (const rm of roomsToRelease) {
+      if (rm) {
+        await updateRoomStatus(rm, "available", user);
+      }
+    }
   }
   await logActivity("DELETE_BOOKING", `Deleted booking ${bookingId}`, user);
+};
+
+export const deleteEmployee = async (employeeId, uid, adminUser) => {
+  await deleteDoc(doc(db, "employees", employeeId));
+  await deleteDoc(doc(db, "users", uid));
+  await logActivity("DELETE_EMPLOYEE", `Deleted employee account ${employeeId}`, adminUser);
 };
 
 // --- SYSTEM INITIALIZATION / SEEDING ---
@@ -396,4 +471,54 @@ export const getActivityLogs = async (limitCount = 10) => {
     query(collection(db, "activityLogs"), orderBy("createdAt", "desc"), limit(limitCount))
   );
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+export const clearAllBookings = async (adminUser) => {
+  const bookingsRef = collection(db, "bookings");
+  const snapshot = await getDocs(bookingsRef);
+  const batch = writeBatch(db);
+  snapshot.docs.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+  
+  // Reset all room statuses back to available
+  const roomsRef = collection(db, "rooms");
+  const roomsSnapshot = await getDocs(roomsRef);
+  roomsSnapshot.docs.forEach(d => {
+    batch.update(d.ref, { status: "available" });
+  });
+  
+  await batch.commit();
+  await logActivity("CLEAR_ALL_BOOKINGS", "Cleared all bookings records and reset room availability status", adminUser);
+};
+
+export const clearAllEmployees = async (adminUser) => {
+  const employeesRef = collection(db, "employees");
+  const snapshot = await getDocs(employeesRef);
+  const batch = writeBatch(db);
+  snapshot.docs.forEach(employeeDoc => {
+    // Exclude the current admin to prevent lockout
+    if (employeeDoc.id !== adminUser.uid) {
+      batch.delete(employeeDoc.ref);
+      batch.delete(doc(db, "users", employeeDoc.id));
+    }
+  });
+  await batch.commit();
+  await logActivity("CLEAR_ALL_EMPLOYEES", "Cleared all employee records (excluding self)", adminUser);
+};
+
+export const clearAllRoomTypes = async (adminUser) => {
+  const batch = writeBatch(db);
+  const typesSnapshot = await getDocs(collection(db, "roomTypes"));
+  typesSnapshot.docs.forEach(d => {
+    batch.delete(d.ref);
+  });
+  
+  const roomsSnapshot = await getDocs(collection(db, "rooms"));
+  roomsSnapshot.docs.forEach(d => {
+    batch.delete(d.ref);
+  });
+  
+  await batch.commit();
+  await logActivity("CLEAR_ALL_ROOM_TYPES", "Cleared all room types and rooms configurations", adminUser);
 };

@@ -5,7 +5,8 @@ import {
   addEmployee, 
   updateEmployeeDetails, 
   updateEmployeeStatus,
-  getBookings 
+  getBookings,
+  deleteEmployee
 } from "../firebase/db";
 import { 
   Plus, 
@@ -13,6 +14,7 @@ import {
   UserCheck, 
   UserX, 
   Edit2, 
+  Trash2,
   X, 
   Activity, 
   BookOpen, 
@@ -120,9 +122,35 @@ const Employees = () => {
     }
   };
 
+  const handleDeleteEmployee = async (emp) => {
+    if (emp.role === "admin") {
+      alert("Administrator accounts cannot be deleted directly.");
+      return;
+    }
+    const confirmMsg = `Are you sure you want to permanently delete employee "${emp.fullName}"? This action is irreversible.`;
+    if (window.confirm(confirmMsg)) {
+      try {
+        setLoading(true);
+        await deleteEmployee(emp.id, emp.uid, user);
+        refreshData();
+      } catch (err) {
+        alert("Failed to delete employee: " + err.message);
+        setLoading(false);
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError("");
+
+    // Phone number validation: must be exactly 10 digits
+    const cleanPhone = phone.replace(/[^0-9]/g, "");
+    if (cleanPhone.length !== 10) {
+      setFormError("Phone number must be exactly 10 digits.");
+      return;
+    }
+
     setFormLoading(true);
 
     try {
@@ -273,6 +301,16 @@ const Employees = () => {
                   >
                     {emp.status === "active" ? <UserX size={14} /> : <UserCheck size={14} />}
                   </button>
+                  {emp.role !== "admin" && (
+                    <button 
+                      className="btn btn-danger" 
+                      style={{ padding: "0.5rem", width: "36px", height: "36px", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", justifyContent: "center" }}
+                      onClick={() => handleDeleteEmployee(emp)}
+                      title="Delete Employee"
+                    >
+                      <Trash2 size={14} style={{ color: "white" }} />
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -338,12 +376,13 @@ const Employees = () => {
                 </div>
 
                 <div className="form-group" style={{ gridColumn: selectedEmployee ? "span 2" : "span 1" }}>
-                  <label>Phone Number *</label>
+                  <label>Phone Number * (10 Digits)</label>
                   <input 
                     type="tel" 
                     className="input-control" 
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, "").substring(0, 10))}
+                    placeholder="e.g. 9876543210"
                     required
                   />
                 </div>

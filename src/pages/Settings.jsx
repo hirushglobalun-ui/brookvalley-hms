@@ -5,7 +5,10 @@ import {
   getRoomTypes,
   addRoomType,
   updateRoomType,
-  deleteRoomType
+  deleteRoomType,
+  clearAllBookings,
+  clearAllEmployees,
+  clearAllRoomTypes
 } from "../firebase/db";
 import {
   Plus,
@@ -79,6 +82,7 @@ const Settings = () => {
   const [passwordLoading, setPasswordLoading]               = useState(false);
   const [showNewPassword, setShowNewPassword]               = useState(false);
   const [showConfirmPassword, setShowConfirmPassword]       = useState(false);
+  const [actionLoading, setActionLoading]                   = useState(null);
 
   const initialLoad = async () => {
     try {
@@ -104,10 +108,14 @@ const Settings = () => {
     e.preventDefault();
     setRtError(""); setRtSuccess("");
     if (!rtId || !rtName || !rtPrice) { setRtError("Please fill in all required fields."); return; }
+
     const cleanId = rtId.toLowerCase().trim().replace(/\s+/g, "-");
     setRtAdding(true);
     try {
-      await addRoomType({ id: cleanId, name: rtName, price: Number(rtPrice), capacity: Number(rtCapacity), description: rtDescription }, user);
+      await addRoomType(
+        { id: cleanId, name: rtName, price: Number(rtPrice), capacity: Number(rtCapacity), description: rtDescription },
+        user
+      );
       setRtId(""); setRtName(""); setRtPrice(""); setRtCapacity(2); setRtDescription("");
       setRtSuccess("Room type added successfully!");
       setTimeout(() => setRtSuccess(""), 3000);
@@ -201,6 +209,54 @@ const Settings = () => {
       } else { setSecurityError(err.message || "Failed to update password."); }
     } finally { setPasswordLoading(false); }
   };
+  
+  // ── CLEAR BOOKINGS ──
+  const handleClearBookings = async () => {
+    if (!window.confirm("WARNING: Are you sure you want to clear ALL booking records? This action cannot be undone.")) return;
+    if (!window.confirm("DOUBLE CONFIRMATION: Are you absolutely certain you want to wipe the bookings collection?")) return;
+    setActionLoading("bookings");
+    try {
+      await clearAllBookings(user);
+      alert("All bookings cleared successfully!");
+      refreshData();
+    } catch (err) {
+      alert("Failed to clear bookings: " + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // ── CLEAR EMPLOYEES ──
+  const handleClearEmployees = async () => {
+    if (!window.confirm("WARNING: Are you sure you want to delete ALL employee records? This action cannot be undone.")) return;
+    if (!window.confirm("DOUBLE CONFIRMATION: Are you absolutely certain you want to wipe the employees list (excluding yourself)?")) return;
+    setActionLoading("employees");
+    try {
+      await clearAllEmployees(user);
+      alert("All employees cleared successfully!");
+      refreshData();
+    } catch (err) {
+      alert("Failed to clear employees: " + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // ── CLEAR ROOM TYPES ──
+  const handleClearRoomTypes = async () => {
+    if (!window.confirm("WARNING: Are you sure you want to delete ALL room types and rooms? This action cannot be undone.")) return;
+    if (!window.confirm("DOUBLE CONFIRMATION: Are you absolutely certain? This will wipe the rooms configurations and you will need to re-add them.")) return;
+    setActionLoading("types");
+    try {
+      await clearAllRoomTypes(user);
+      alert("All room types and rooms cleared successfully!");
+      refreshData();
+    } catch (err) {
+      alert("Failed to clear room types: " + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const tabs = [
     { id: "types",    label: "Room Types", icon: <BedDouble size={16} /> },
@@ -287,6 +343,7 @@ const Settings = () => {
                         <input type="number" className="input-control" min="1" value={rtCapacity} onChange={e => setRtCapacity(e.target.value)} required disabled={rtAdding} />
                       </div>
                     </div>
+
                     <div style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
                       <div className="form-group" style={{ margin: 0, flex: 1, minWidth: "220px" }}>
                         <label style={{ display: "flex", alignItems: "center", gap: "5px" }}><FileText size={12} /> Description</label>
@@ -471,87 +528,137 @@ const Settings = () => {
             </div>
           )}
 
+
+
           {activeTab === "security" && (
-            <div className="grid-form-2col" style={{ gap: "1.25rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              <div className="grid-form-2col" style={{ gap: "1.25rem" }}>
 
-              {/* Email Card */}
-              <div className="card" style={{ padding: "1.75rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.5rem" }}>
-                  <div style={{ background: "rgba(59,130,246,0.12)", color: "var(--primary)", borderRadius: "8px", padding: "8px", display: "flex" }}>
-                    <Mail size={18} />
+                {/* Email Card */}
+                <div className="card" style={{ padding: "1.75rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.5rem" }}>
+                    <div style={{ background: "rgba(59,130,246,0.12)", color: "var(--primary)", borderRadius: "8px", padding: "8px", display: "flex" }}>
+                      <Mail size={18} />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: "1rem", fontWeight: 700 }}>Email Address</h2>
+                      <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginTop: "1px" }}>Update your login email</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 style={{ fontSize: "1rem", fontWeight: 700 }}>Email Address</h2>
-                    <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginTop: "1px" }}>Update your login email</p>
+
+                  {securityError && (
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", background: "var(--danger-glow)", color: "var(--danger)", padding: "0.75rem 1rem", borderRadius: "var(--radius-sm)", fontSize: "0.82rem", marginBottom: "1.25rem" }}>
+                      <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} /> {securityError}
+                    </div>
+                  )}
+                  {securitySuccess && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "var(--success-glow)", color: "var(--success)", padding: "0.75rem 1rem", borderRadius: "var(--radius-sm)", fontSize: "0.82rem", marginBottom: "1.25rem" }}>
+                      <CheckCircle2 size={15} style={{ flexShrink: 0 }} /> {securitySuccess}
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label>Email Address</label>
+                    <input type="email" className="input-control" value={securityEmail} onChange={e => setSecurityEmail(e.target.value)} placeholder="admin@hotel.com" disabled={emailLoading} />
                   </div>
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: "100%", marginTop: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}
+                    onClick={handleUpdateEmail}
+                    disabled={emailLoading || securityEmail === auth.currentUser?.email}
+                  >
+                    {emailLoading ? <><Spinner size={15} /> Updating...</> : "Update Email"}
+                  </button>
                 </div>
 
-                {securityError && (
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", background: "var(--danger-glow)", color: "var(--danger)", padding: "0.75rem 1rem", borderRadius: "var(--radius-sm)", fontSize: "0.82rem", marginBottom: "1.25rem" }}>
-                    <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} /> {securityError}
+                {/* Password Card */}
+                <div className="card" style={{ padding: "1.75rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.5rem" }}>
+                    <div style={{ background: "rgba(168,85,247,0.12)", color: "#a855f7", borderRadius: "8px", padding: "8px", display: "flex" }}>
+                      <KeyRound size={18} />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: "1rem", fontWeight: 700 }}>Change Password</h2>
+                      <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginTop: "1px" }}>Minimum 6 characters required</p>
+                    </div>
                   </div>
-                )}
-                {securitySuccess && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "var(--success-glow)", color: "var(--success)", padding: "0.75rem 1rem", borderRadius: "var(--radius-sm)", fontSize: "0.82rem", marginBottom: "1.25rem" }}>
-                    <CheckCircle2 size={15} style={{ flexShrink: 0 }} /> {securitySuccess}
-                  </div>
-                )}
 
-                <div className="form-group">
-                  <label>Email Address</label>
-                  <input type="email" className="input-control" value={securityEmail} onChange={e => setSecurityEmail(e.target.value)} placeholder="admin@hotel.com" disabled={emailLoading} />
+                  <div className="form-group">
+                    <label>New Password</label>
+                    <div style={{ position: "relative" }}>
+                      <input type={showNewPassword ? "text" : "password"} className="input-control" placeholder="Enter new password" value={securityPassword} onChange={e => setSecurityPassword(e.target.value)} style={{ paddingRight: "2.5rem" }} disabled={passwordLoading} />
+                      <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", display: "flex", alignItems: "center", padding: "4px" }}>
+                        {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Confirm New Password</label>
+                    <div style={{ position: "relative" }}>
+                      <input type={showConfirmPassword ? "text" : "password"} className="input-control" placeholder="Confirm new password" value={securityConfirmPassword} onChange={e => setSecurityConfirmPassword(e.target.value)} style={{ paddingRight: "2.5rem" }} disabled={passwordLoading} />
+                      <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", display: "flex", alignItems: "center", padding: "4px" }}>
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: "100%", background: "#a855f7", borderColor: "#a855f7", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}
+                    onClick={handleUpdatePassword}
+                    disabled={passwordLoading || !securityPassword}
+                  >
+                    {passwordLoading ? <><Spinner size={15} /> Updating...</> : "Change Password"}
+                  </button>
                 </div>
-                <button
-                  className="btn btn-primary"
-                  style={{ width: "100%", marginTop: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}
-                  onClick={handleUpdateEmail}
-                  disabled={emailLoading || securityEmail === auth.currentUser?.email}
-                >
-                  {emailLoading ? <><Spinner size={15} /> Updating...</> : "Update Email"}
-                </button>
               </div>
 
-              {/* Password Card */}
+              {/* Super Admin Data Actions */}
               <div className="card" style={{ padding: "1.75rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.5rem" }}>
-                  <div style={{ background: "rgba(168,85,247,0.12)", color: "#a855f7", borderRadius: "8px", padding: "8px", display: "flex" }}>
-                    <KeyRound size={18} />
+                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.25rem" }}>
+                  <div style={{ background: "rgba(239,68,68,0.12)", color: "var(--danger)", borderRadius: "8px", padding: "8px", display: "flex" }}>
+                    <AlertCircle size={18} />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: "1rem", fontWeight: 700 }}>Change Password</h2>
-                    <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginTop: "1px" }}>Minimum 6 characters required</p>
+                    <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--danger)" }}>Super Admin Options (Danger Zone)</h2>
+                    <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginTop: "1px" }}>Wipe database records. Double confirmation required.</p>
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>New Password</label>
-                  <div style={{ position: "relative" }}>
-                    <input type={showNewPassword ? "text" : "password"} className="input-control" placeholder="Enter new password" value={securityPassword} onChange={e => setSecurityPassword(e.target.value)} style={{ paddingRight: "2.5rem" }} disabled={passwordLoading} />
-                    <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", display: "flex", alignItems: "center", padding: "4px" }}>
-                      {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "1rem" }}>
+                  <button 
+                    className="btn btn-danger"
+                    style={{ flex: 1, minWidth: "180px", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem" }}
+                    onClick={handleClearBookings}
+                    disabled={actionLoading !== null}
+                  >
+                    {actionLoading === "bookings" ? <Spinner size={14} color="white" /> : <Trash2 size={14} style={{ color: "white" }} />}
+                    <span>Clear All Bookings</span>
+                  </button>
+                  
+                  <button 
+                    className="btn btn-danger"
+                    style={{ flex: 1, minWidth: "180px", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem" }}
+                    onClick={handleClearEmployees}
+                    disabled={actionLoading !== null}
+                  >
+                    {actionLoading === "employees" ? <Spinner size={14} color="white" /> : <Trash2 size={14} style={{ color: "white" }} />}
+                    <span>Clear All Employees</span>
+                  </button>
 
-                <div className="form-group">
-                  <label>Confirm New Password</label>
-                  <div style={{ position: "relative" }}>
-                    <input type={showConfirmPassword ? "text" : "password"} className="input-control" placeholder="Confirm new password" value={securityConfirmPassword} onChange={e => setSecurityConfirmPassword(e.target.value)} style={{ paddingRight: "2.5rem" }} disabled={passwordLoading} />
-                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", display: "flex", alignItems: "center", padding: "4px" }}>
-                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
+                  <button 
+                    className="btn btn-danger"
+                    style={{ flex: 1, minWidth: "180px", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem" }}
+                    onClick={handleClearRoomTypes}
+                    disabled={actionLoading !== null}
+                  >
+                    {actionLoading === "types" ? <Spinner size={14} color="white" /> : <Trash2 size={14} style={{ color: "white" }} />}
+                    <span>Clear Room Types & Rooms</span>
+                  </button>
                 </div>
-
-                <button
-                  className="btn btn-primary"
-                  style={{ width: "100%", background: "#a855f7", borderColor: "#a855f7", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}
-                  onClick={handleUpdatePassword}
-                  disabled={passwordLoading || !securityPassword}
-                >
-                  {passwordLoading ? <><Spinner size={15} /> Updating...</> : "Change Password"}
-                </button>
               </div>
+
             </div>
           )}
         </>
