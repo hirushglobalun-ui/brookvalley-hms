@@ -95,45 +95,64 @@ const CalendarView = () => {
   // Auto assign room number based on room type selection and check-in / check-out dates
   const autoAssignRoom = (roomTypeId, checkIn, checkOut, currentBookingId = null) => {
     const candidateRooms = rooms.filter(r => r.roomType === roomTypeId);
-    if (candidateRooms.length === 0) return null;
+    if (candidateRooms.length === 0) {
+      return { success: false, error: "No rooms configured for this room type." };
+    }
 
     const start = new Date(checkIn);
     const end = new Date(checkOut);
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) return null;
-
-    for (const room of candidateRooms) {
-      const isBooked = bookings.some(b => {
-        const activeStatuses = ["confirmed", "pending", "checked-in"];
-        if (!activeStatuses.includes(b.bookingStatus)) return false;
-        if (currentBookingId && b.bookingId === currentBookingId) return false;
-        
-        const bookedRoomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
-        if (!bookedRoomNumbers.includes(room.roomNumber)) return false;
-
-        const bStart = new Date(b.checkInDate);
-        const bEnd = new Date(b.checkOutDate);
-        return (start < bEnd && end > bStart);
-      });
-
-      if (!isBooked) {
-        return room.roomNumber;
-      }
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) {
+      return { success: false, error: "Invalid check-in or check-out date." };
     }
 
-    return null;
+    // Since each roomType has strictly 1 room, check the first candidate
+    const room = candidateRooms[0];
+    const conflict = bookings.find(b => {
+      const activeStatuses = ["confirmed", "pending", "checked-in"];
+      if (!activeStatuses.includes(b.bookingStatus)) return false;
+      if (currentBookingId && b.bookingId === currentBookingId) return false;
+      
+      const bookedRoomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
+      if (!bookedRoomNumbers.includes(room.roomNumber)) return false;
+
+      const bStart = new Date(b.checkInDate);
+      const bEnd = new Date(b.checkOutDate);
+      return (start < bEnd && end > bStart);
+    });
+
+    if (conflict) {
+      const creator = conflict.createdByName || "System";
+      const statusLabel = conflict.bookingStatus.charAt(0).toUpperCase() + conflict.bookingStatus.slice(1);
+      return {
+        success: false,
+        error: `Already booked for ${conflict.customerName} (${statusLabel}) by ${creator}.`
+      };
+    }
+
+    return { success: true, roomNumber: room.roomNumber };
   };
 
   // Reactive room availability check
   useEffect(() => {
     if (selectedRoomType && checkInDate && checkOutDate) {
-      const roomNo = autoAssignRoom(selectedRoomType, checkInDate, checkOutDate, selectedBooking?.bookingId);
-      if (!roomNo) {
-        setFormError("No available rooms of this type for the selected dates.");
+      const result = autoAssignRoom(selectedRoomType, checkInDate, checkOutDate, selectedBooking?.bookingId);
+      if (!result.success) {
+        setFormError(result.error);
       } else {
-        setFormError(prev => prev === "No available rooms of this type for the selected dates." ? "" : prev);
+        setFormError(prev => {
+          const isAutoAssignError = prev.startsWith("Already booked for") || 
+                                    prev === "No rooms configured for this room type." ||
+                                    prev === "Invalid check-in or check-out date.";
+          return isAutoAssignError ? "" : prev;
+        });
       }
     } else {
-      setFormError(prev => prev === "No available rooms of this type for the selected dates." ? "" : prev);
+      setFormError(prev => {
+        const isAutoAssignError = prev.startsWith("Already booked for") || 
+                                  prev === "No rooms configured for this room type." ||
+                                  prev === "Invalid check-in or check-out date.";
+        return isAutoAssignError ? "" : prev;
+      });
     }
   }, [selectedRoomType, checkInDate, checkOutDate, rooms, bookings, selectedBooking]);
   // Recalculate price dynamically based on room type selection, dates, and selected rooms
@@ -268,9 +287,9 @@ const CalendarView = () => {
       return;
     }
 
-    const roomNo = autoAssignRoom(selectedRoomType, checkInDate, checkOutDate);
-    if (!roomNo) {
-      setFormError("No available rooms of this type for the selected dates.");
+    const result = autoAssignRoom(selectedRoomType, checkInDate, checkOutDate, selectedBooking?.bookingId);
+    if (!result.success) {
+      setFormError(result.error);
       return;
     }
 
@@ -282,7 +301,7 @@ const CalendarView = () => {
         customerEmail: customerEmail || "",
         customerAddress: customerAddress || "",
         roomType: selectedRoomType,
-        roomNumber: roomNo,
+        roomNumber: result.roomNumber,
         checkInDate,
         checkOutDate,
         guestCount: Number(guestCount),
@@ -649,7 +668,7 @@ const CalendarView = () => {
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <h4 style={{ fontWeight: 600, fontSize: "0.95rem" }}>
-                          {owner ? b.customerName : "🔒 Restricted Reservation"}
+                          {b.customerName} {!owner && <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: "normal" }}>(Restricted)</span>}
                         </h4>
                         <span className={`badge badge-${
                           b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : "warning"
@@ -671,15 +690,13 @@ const CalendarView = () => {
                         <div>
                           <strong style={{ color: "var(--text-secondary)" }}>Check-out:</strong> {b.checkOutDate}
                         </div>
+                        <div>
+                          <strong style={{ color: "var(--text-secondary)" }}>Created By:</strong> {b.createdByName || "System"} ({b.createdByRole || "admin"})
+                        </div>
                         {owner && (
-                          <>
-                            <div>
-                              <strong style={{ color: "var(--text-secondary)" }}>Phone:</strong> {b.customerPhone}
-                            </div>
-                            <div>
-                              <strong style={{ color: "var(--text-secondary)" }}>Created By:</strong> {b.createdByName} ({b.createdByRole})
-                            </div>
-                          </>
+                          <div>
+                            <strong style={{ color: "var(--text-secondary)" }}>Phone:</strong> {b.customerPhone}
+                          </div>
                         )}
                       </div>
 

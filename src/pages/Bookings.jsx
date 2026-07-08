@@ -69,45 +69,64 @@ const Bookings = () => {
   // Auto assign room number based on room type selection and check-in / check-out dates
   const autoAssignRoom = (roomTypeId, checkIn, checkOut, currentBookingId = null) => {
     const candidateRooms = rooms.filter(r => r.roomType === roomTypeId);
-    if (candidateRooms.length === 0) return null;
+    if (candidateRooms.length === 0) {
+      return { success: false, error: "No rooms configured for this room type." };
+    }
 
     const start = new Date(checkIn);
     const end = new Date(checkOut);
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) return null;
-
-    for (const room of candidateRooms) {
-      const isBooked = bookings.some(b => {
-        const activeStatuses = ["confirmed", "pending", "checked-in"];
-        if (!activeStatuses.includes(b.bookingStatus)) return false;
-        if (currentBookingId && b.bookingId === currentBookingId) return false;
-        
-        const bookedRoomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
-        if (!bookedRoomNumbers.includes(room.roomNumber)) return false;
-
-        const bStart = new Date(b.checkInDate);
-        const bEnd = new Date(b.checkOutDate);
-        return (start < bEnd && end > bStart);
-      });
-
-      if (!isBooked) {
-        return room.roomNumber;
-      }
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) {
+      return { success: false, error: "Invalid check-in or check-out date." };
     }
 
-    return null;
+    // Since each roomType has strictly 1 room, check the first candidate
+    const room = candidateRooms[0];
+    const conflict = bookings.find(b => {
+      const activeStatuses = ["confirmed", "pending", "checked-in"];
+      if (!activeStatuses.includes(b.bookingStatus)) return false;
+      if (currentBookingId && b.bookingId === currentBookingId) return false;
+      
+      const bookedRoomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
+      if (!bookedRoomNumbers.includes(room.roomNumber)) return false;
+
+      const bStart = new Date(b.checkInDate);
+      const bEnd = new Date(b.checkOutDate);
+      return (start < bEnd && end > bStart);
+    });
+
+    if (conflict) {
+      const creator = conflict.createdByName || "System";
+      const statusLabel = conflict.bookingStatus.charAt(0).toUpperCase() + conflict.bookingStatus.slice(1);
+      return {
+        success: false,
+        error: `Already booked for ${conflict.customerName} (${statusLabel}) by ${creator}.`
+      };
+    }
+
+    return { success: true, roomNumber: room.roomNumber };
   };
 
   // Reactive room availability check
   useEffect(() => {
     if (selectedRoomType && checkInDate && checkOutDate) {
-      const roomNo = autoAssignRoom(selectedRoomType, checkInDate, checkOutDate, selectedBooking?.bookingId);
-      if (!roomNo) {
-        setFormError("No available rooms of this type for the selected dates.");
+      const result = autoAssignRoom(selectedRoomType, checkInDate, checkOutDate, selectedBooking?.bookingId);
+      if (!result.success) {
+        setFormError(result.error);
       } else {
-        setFormError(prev => prev === "No available rooms of this type for the selected dates." ? "" : prev);
+        setFormError(prev => {
+          const isAutoAssignError = prev.startsWith("Already booked for") || 
+                                    prev === "No rooms configured for this room type." ||
+                                    prev === "Invalid check-in or check-out date.";
+          return isAutoAssignError ? "" : prev;
+        });
       }
     } else {
-      setFormError(prev => prev === "No available rooms of this type for the selected dates." ? "" : prev);
+      setFormError(prev => {
+        const isAutoAssignError = prev.startsWith("Already booked for") || 
+                                  prev === "No rooms configured for this room type." ||
+                                  prev === "Invalid check-in or check-out date.";
+        return isAutoAssignError ? "" : prev;
+      });
     }
   }, [selectedRoomType, checkInDate, checkOutDate, rooms, bookings, selectedBooking]);
 
@@ -300,9 +319,9 @@ const Bookings = () => {
       return;
     }
 
-    const roomNo = autoAssignRoom(selectedRoomType, checkInDate, checkOutDate, selectedBooking?.bookingId);
-    if (!roomNo) {
-      setFormError("No available rooms of this type for the selected dates.");
+    const result = autoAssignRoom(selectedRoomType, checkInDate, checkOutDate, selectedBooking?.bookingId);
+    if (!result.success) {
+      setFormError(result.error);
       return;
     }
 
@@ -314,7 +333,7 @@ const Bookings = () => {
         customerEmail: customerEmail || "",
         customerAddress: customerAddress || "",
         roomType: selectedRoomType,
-        roomNumber: roomNo,
+        roomNumber: result.roomNumber,
         checkInDate,
         checkOutDate,
         guestCount: Number(guestCount),
