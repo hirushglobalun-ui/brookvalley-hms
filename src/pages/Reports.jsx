@@ -241,11 +241,11 @@ const Reports = () => {
         {sections.map(s => (
           <button key={s.id} onClick={() => setActiveSection(s.id)} style={{
             display: "flex", alignItems: "center", gap: "0.5rem",
-            border: "none", cursor: "pointer",
-            fontWeight: 600, transition: "all 0.2s ease",
+            padding: "0.5rem 1.25rem", borderRadius: "99px", border: "none", cursor: "pointer",
+            fontSize: "0.875rem", fontWeight: 600, transition: "all 0.2s ease",
             background: activeSection === s.id ? "var(--primary)" : "transparent",
             color: activeSection === s.id ? "#fff" : "var(--text-secondary)",
-            boxShadow: activeSection === s.id ? "0 2px 8px rgba(59,130,246,0.3)" : "none"
+            boxShadow: activeSection === s.id ? "0 2px 8px rgba(16, 185, 129, 0.2)" : "none"
           }}>
             {s.icon} {s.label}
           </button>
