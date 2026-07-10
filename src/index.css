@@ -1715,3 +1715,49 @@ button, input, select, textarea {
   }
 }
 
+/* Sidebar Collapsed State for Desktop */
+@media (min-width: 1025px) {
+  .app-container.sidebar-collapsed .sidebar {
+    width: 80px;
+  }
+  .app-container.sidebar-collapsed .sidebar .logo-text {
+    display: none;
+  }
+  .app-container.sidebar-collapsed .sidebar .user-info {
+    display: none;
+  }
+  .app-container.sidebar-collapsed .sidebar-logo {
+    justify-content: center;
+    padding: 0 0.5rem;
+  }
+  .app-container.sidebar-collapsed .sidebar-item a span {
+    display: none;
+  }
+  .app-container.sidebar-collapsed .sidebar-item a {
+    justify-content: center;
+    padding: 0.75rem;
+  }
+  .app-container.sidebar-collapsed .sidebar-footer {
+    padding: 0.75rem;
+    align-items: center;
+  }
+  .app-container.sidebar-collapsed .sidebar-footer .btn span {
+    display: none;
+  }
+  .app-container.sidebar-collapsed .sidebar-footer .btn {
+    padding: 0.5rem !important;
+  }
+  .app-container.sidebar-collapsed .main-layout-container {
+    margin-left: 80px;
+  }
+  .sidebar-collapse-toggle-btn {
+    display: flex;
+  }
+}
+
+@media (max-width: 1024px) {
+  .sidebar-collapse-toggle-btn {
+    display: none !important;
+  }
+}
+

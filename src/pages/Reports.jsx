@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../firebase/auth";
-import { getBookings, getRooms, getRoomTypes, getEmployees } from "../firebase/db";
+import { useAuth } from "../lib/auth";
+import { getBookings, getRooms, getRoomTypes, getEmployees, formatDate } from "../lib/db";
 import {
   Download,
   BarChart3,
@@ -314,7 +314,7 @@ const Reports = () => {
                           <td style={{ color: "var(--text-secondary)" }}>{b.customerPhone}</td>
                           <td>
                             <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                              {b.checkInDate} to {b.checkOutDate}
+                              {formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}
                             </span>
                           </td>
                           <td>
@@ -419,8 +419,8 @@ const Reports = () => {
                             <td style={{ fontWeight: 600 }}>{b.customerName}</td>
                             <td style={{ color: "var(--text-secondary)" }}>{b.customerPhone}</td>
                             <td>#{b.roomNumber} <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", textTransform: "capitalize" }}>({b.roomType})</span></td>
-                            <td>{b.checkInDate}</td>
-                            <td>{b.checkOutDate}</td>
+                            <td>{formatDate(b.checkInDate)}</td>
+                            <td>{formatDate(b.checkOutDate)}</td>
                             <td style={{ fontWeight: 700, color: "var(--success)" }}>₹{b.totalAmount?.toLocaleString()}</td>
                             <td><span style={{ ...pc, padding: "2px 8px", borderRadius: "99px", fontSize: "0.72rem", fontWeight: 700, textTransform: "capitalize" }}>{b.paymentStatus}</span></td>
                             <td><span style={{ ...sc, padding: "2px 8px", borderRadius: "99px", fontSize: "0.72rem", fontWeight: 700, textTransform: "capitalize" }}>{b.bookingStatus}</span></td>

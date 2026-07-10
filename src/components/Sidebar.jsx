@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../firebase/auth";
+import { useAuth } from "../lib/auth";
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -10,10 +10,12 @@ import {
   BarChart3, 
   LogOut,
   Menu,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
-const Sidebar = () => {
+const Sidebar = ({ isCollapsed, onToggle }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -87,13 +89,36 @@ const Sidebar = () => {
       )}
 
       <aside className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
-        <div className="sidebar-logo" style={{ gap: "0.5rem" }}>
+        <div className="sidebar-logo" style={{ gap: "0.5rem", position: "relative" }}>
           <img 
             src="/image-Photoroom (27).png" 
             alt="Brookvalley Logo" 
-            style={{ width: "32px", height: "32px", objectFit: "contain" }} 
+            style={{ width: "32px", height: "32px", objectFit: "contain", flexShrink: 0 }} 
           />
           <span className="logo-text">Brookvalley HMS</span>
+          
+          {/* Desktop collapse button */}
+          <button
+            onClick={onToggle}
+            className="sidebar-collapse-toggle-btn"
+            aria-label="Toggle sidebar"
+            style={{
+              marginLeft: "auto",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--text-secondary)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "4px",
+              borderRadius: "4px",
+              transition: "all 0.2s"
+            }}
+          >
+            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+
           {/* Mobile close button */}
           <button
             className="mobile-close-btn"
@@ -132,7 +157,7 @@ const Sidebar = () => {
             </div>
           </div>
           
-          {deferredPrompt && (
+          {deferredPrompt && !isCollapsed && (
             <button 
               onClick={handleInstallClick} 
               className="btn" 

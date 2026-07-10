@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../firebase/auth";
+import { useAuth } from "../lib/auth";
 import { 
   getEmployees, 
   addEmployee, 
   updateEmployeeDetails, 
   updateEmployeeStatus,
   getBookings,
-  deleteEmployee
-} from "../firebase/db";
+  deleteEmployee,
+  formatDate
+} from "../lib/db";
 import { 
   Plus, 
   UserPlus, 
@@ -171,10 +172,7 @@ const Employees = () => {
           throw new Error("Password must be at least 6 characters.");
         }
 
-        // 1. Create credentials in Firebase Auth using background App instance workaround
-        const uid = await registerEmployeeCredentials(email, password);
-        
-        // 2. Create records in Firestore database
+        // Create records and auth user in Supabase via database RPC
         const data = {
           fullName,
           email,
@@ -184,7 +182,7 @@ const Employees = () => {
           joinedDate,
           notes
         };
-        await addEmployee(uid, data, user);
+        await addEmployee(data, password, user);
         
         setIsModalOpen(false);
         refreshData();
@@ -255,7 +253,7 @@ const Employees = () => {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     <Calendar size={14} className="text-primary" />
-                    <span>Joined: {emp.joinedDate}</span>
+                    <span>Joined: {formatDate(emp.joinedDate)}</span>
                   </div>
                 </div>
 
@@ -501,7 +499,7 @@ const Employees = () => {
               <div style={{ display: "flex", gap: "1.5rem", padding: "0.75rem 1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-sm)", fontSize: "0.85rem" }}>
                 <div>
                   <span style={{ color: "var(--text-secondary)" }}>Joined Date: </span>
-                  <strong>{selectedEmployee.joinedDate}</strong>
+                  <strong>{formatDate(selectedEmployee.joinedDate)}</strong>
                 </div>
                 <div>
                   <span style={{ color: "var(--text-secondary)" }}>Role: </span>
@@ -534,7 +532,7 @@ const Employees = () => {
                           <td style={{ fontFamily: "monospace" }}>{b.bookingId}</td>
                           <td>Room {b.roomNumber}</td>
                           <td>{b.customerName}</td>
-                          <td style={{ fontSize: "0.75rem" }}>{b.checkInDate} to {b.checkOutDate}</td>
+                          <td style={{ fontSize: "0.75rem" }}>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</td>
                           <td style={{ fontWeight: 600 }}>₹{b.totalAmount}</td>
                           <td>
                             <span className={`badge badge-${

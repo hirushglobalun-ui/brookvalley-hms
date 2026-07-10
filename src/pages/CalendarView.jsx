@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../firebase/auth";
-import { getBookings, getRooms, getRoomTypes, addBooking } from "../firebase/db";
+import { useAuth } from "../lib/auth";
+import { getBookings, getRooms, getRoomTypes, addBooking, formatDate } from "../lib/db";
+import { uploadPaymentProof } from "../lib/storage";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -125,7 +126,7 @@ const CalendarView = () => {
       const statusLabel = conflict.bookingStatus.charAt(0).toUpperCase() + conflict.bookingStatus.slice(1);
       return {
         success: false,
-        error: `Already booked for ${conflict.customerName} (${statusLabel}) by ${creator}.`
+        error: `Already booked for ${conflict.customerName} (${statusLabel}) by ${creator} from ${formatDate(conflict.checkInDate)} to ${formatDate(conflict.checkOutDate)}.`
       };
     }
 
@@ -295,6 +296,11 @@ const CalendarView = () => {
 
     setFormLoading(true);
     try {
+      let finalPaymentProof = paymentProof;
+      if (paymentProof && paymentProof.startsWith("data:")) {
+        finalPaymentProof = await uploadPaymentProof(paymentProof);
+      }
+
       const data = {
         customerName,
         customerPhone,
@@ -310,7 +316,7 @@ const CalendarView = () => {
         bookingStatus,
         paymentMethod,
         advanceAmount: Number(advanceAmount),
-        paymentProof,
+        paymentProof: finalPaymentProof,
         remarks
       };
 
@@ -685,10 +691,10 @@ const CalendarView = () => {
                           <strong style={{ color: "var(--text-secondary)" }}>Stay Duration:</strong> {diffDays} {diffDays === 1 ? "Night" : "Nights"}
                         </div>
                         <div>
-                          <strong style={{ color: "var(--text-secondary)" }}>Check-in:</strong> {b.checkInDate}
+                          <strong style={{ color: "var(--text-secondary)" }}>Check-in:</strong> {formatDate(b.checkInDate)}
                         </div>
                         <div>
-                          <strong style={{ color: "var(--text-secondary)" }}>Check-out:</strong> {b.checkOutDate}
+                          <strong style={{ color: "var(--text-secondary)" }}>Check-out:</strong> {formatDate(b.checkOutDate)}
                         </div>
                         <div>
                           <strong style={{ color: "var(--text-secondary)" }}>Created By:</strong> {b.createdByName || "System"} ({b.createdByRole || "admin"})
@@ -837,6 +843,10 @@ const CalendarView = () => {
                     onChange={(e) => {
                       setSelectedRoomType(e.target.value);
                       setSelectedRoomNumbers([]);
+                      const selectedType = roomTypes.find(rt => rt.id === e.target.value);
+                      if (selectedType) {
+                        setGuestCount(selectedType.capacity);
+                      }
                     }}
                     required
                   >
@@ -1069,12 +1079,12 @@ const CalendarView = () => {
 
                   <div className="info-detail-item">
                     <span className="info-detail-label">Check-in</span>
-                    <span className="info-detail-value">{selectedBooking.checkInDate}</span>
+                    <span className="info-detail-value">{formatDate(selectedBooking.checkInDate)}</span>
                   </div>
 
                   <div className="info-detail-item">
                     <span className="info-detail-label">Check-out</span>
-                    <span className="info-detail-value">{selectedBooking.checkOutDate}</span>
+                    <span className="info-detail-value">{formatDate(selectedBooking.checkOutDate)}</span>
                   </div>
 
                   <div className="info-detail-item">
@@ -1216,7 +1226,7 @@ const CalendarView = () => {
                   <div className="info-detail-item">
                     <span className="info-detail-label">Stay Dates</span>
                     <span className="info-detail-value">
-                      {selectedBooking.checkInDate} to {selectedBooking.checkOutDate}
+                      {formatDate(selectedBooking.checkInDate)} to {formatDate(selectedBooking.checkOutDate)}
                     </span>
                   </div>
 

@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../firebase/auth";
-import { seedInitialData, createFirstAdminUser } from "../firebase/db";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase/config";
+import { useAuth } from "../lib/auth";
+import { seedInitialData, createFirstAdminUser } from "../lib/db";
+import { supabase } from "../lib/supabase";
 import { Hotel, KeyRound, Mail, ShieldAlert, Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
@@ -35,14 +34,32 @@ const Login = () => {
         try {
           let uid;
           try {
-            const creds = await createUserWithEmailAndPassword(auth, "admin@brookvalley.com", "admin123");
-            uid = creds.user.uid;
-          } catch (authErr) {
-            if (authErr.code === "auth/email-already-in-use") {
-              // Ignore, user exists
-            } else {
-              throw authErr;
+            const { data, error: signUpErr } = await supabase.auth.signUp({
+              email: "admin@brookvalley.com",
+              password: "admin123",
+              options: {
+                data: {
+                  full_name: "System Admin"
+                }
+              }
+            });
+            if (signUpErr) {
+              if (signUpErr.message.includes("already registered") || signUpErr.message.includes("User already exists") || signUpErr.message.includes("already exists")) {
+                // Ignore, user exists
+              } else {
+                throw signUpErr;
+              }
             }
+            uid = data?.user?.id;
+            if (!uid) {
+              const { data: signInData } = await supabase.auth.signInWithPassword({
+                email: "admin@brookvalley.com",
+                password: "admin123"
+              });
+              uid = signInData?.user?.id;
+            }
+          } catch (authErr) {
+            console.error("Auth sign up error:", authErr);
           }
           if (uid) {
             await createFirstAdminUser(uid, "admin@brookvalley.com", "System Admin");
@@ -56,6 +73,7 @@ const Login = () => {
           console.error("Auto-initialization fallback failed:", initErr);
         }
       }
+      console.error("Login failed error:", err);
       setLocalError(err.message || "Failed to sign in.");
     } finally {
       setLoading(false);

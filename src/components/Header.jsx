@@ -1,5 +1,5 @@
 import React from "react";
-import { useAuth } from "../firebase/auth";
+import { useAuth } from "../lib/auth";
 
 const Header = () => {
   const { user } = useAuth();

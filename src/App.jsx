@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { AuthProvider } from "./firebase/auth";
+import { AuthProvider } from "./lib/auth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
 
@@ -17,9 +17,21 @@ import Header from "./components/Header";
 
 // General Layout Wrapper
 const DashboardLayout = () => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem("sidebar_collapsed") === "true";
+  });
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      const newVal = !prev;
+      localStorage.setItem("sidebar_collapsed", String(newVal));
+      return newVal;
+    });
+  };
+
   return (
-    <div className="app-container">
-      <Sidebar />
+    <div className={`app-container ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
+      <Sidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
       <div className="main-layout-container">
         <Header />
         <main className="main-content">

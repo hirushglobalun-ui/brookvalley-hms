@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../firebase/auth";
-import { getBookings, getRooms, getEmployees, getActivityLogs, getRoomTypes } from "../firebase/db";
+import { useAuth } from "../lib/auth";
+import { getBookings, getRooms, getEmployees, getActivityLogs, getRoomTypes, formatDate } from "../lib/db";
 import { 
   BookOpen, 
   DoorOpen, 
@@ -292,7 +292,7 @@ const Dashboard = () => {
                           <td>{maskText(activeBooking.customerPhone, activeBooking)}</td>
                           <td>
                             <span style={{ fontWeight: 500 }}>
-                              {activeBooking.checkInDate} to {activeBooking.checkOutDate}
+                              {formatDate(activeBooking.checkInDate)} to {formatDate(activeBooking.checkOutDate)}
                             </span>
                           </td>
                           <td>{activeBooking.guestCount || 1} Guests</td>
@@ -342,7 +342,7 @@ const Dashboard = () => {
                       <tr key={b.bookingId}>
                         <td>Room {b.roomNumber}</td>
                         <td>{maskText(b.customerName, b)}</td>
-                        <td>{b.checkInDate} to {b.checkOutDate}</td>
+                        <td>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</td>
                         <td>{b.createdByName} ({b.createdByRole})</td>
                         <td style={{ fontWeight: 600 }}>₹{maskText(b.totalAmount, b)}</td>
                       </tr>
@@ -362,7 +362,7 @@ const Dashboard = () => {
                         <span className="booking-card-customer">{maskText(b.customerName, b)}</span>
                       </div>
                       <div className="booking-card-dates">
-                        <span>{b.checkInDate} to {b.checkOutDate}</span>
+                        <span>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</span>
                       </div>
                       <div className="booking-card-footer">
                         <span>By: {b.createdByName} ({b.createdByRole})</span>

@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../firebase/auth";
+import { useAuth } from "../lib/auth";
 import {
   getRooms,
   getRoomTypes,
   addRoomType,
   updateRoomType,
   deleteRoomType,
+  addRoom,
+  deleteRoom,
+  updateRoom,
   clearAllBookings,
   clearAllEmployees,
   clearAllRoomTypes
-} from "../firebase/db";
+} from "../lib/db";
 import {
   Plus,
   Trash2,
@@ -30,9 +33,7 @@ import {
   Check,
   Loader2
 } from "lucide-react";
-import { updateEmail, updatePassword } from "firebase/auth";
-import { updateDoc, doc, collection, query, where, getDocs } from "firebase/firestore";
-import { auth, db } from "../firebase/config";
+import { supabase } from "../lib/supabase";
 
 // Tiny spinner component
 const Spinner = ({ size = 15, color = "currentColor" }) => (
@@ -55,6 +56,17 @@ const Settings = () => {
   const [loading, setLoading]     = useState(true);
   const [activeTab, setActiveTab] = useState("types");
 
+  const [newRoomNumber, setNewRoomNumber] = useState("");
+  const [newRoomType, setNewRoomType]     = useState("");
+  const [roomError, setRoomError]         = useState("");
+  const [roomSuccess, setRoomSuccess]     = useState("");
+  const [roomAdding, setRoomAdding]       = useState(false);
+
+  const [editingRoomNumber, setEditingRoomNumber] = useState(null);
+  const [editRoomFields, setEditRoomFields]       = useState({});
+  const [editRoomSaving, setEditRoomSaving]       = useState(false);
+  const [editRoomError, setEditRoomError]         = useState("");
+
   // Add Form
   const [rtId, setRtId]               = useState("");
   const [rtName, setRtName]           = useState("");
@@ -73,10 +85,16 @@ const Settings = () => {
   const [deletingId, setDeletingId]   = useState(null);
 
   // Security Form
-  const [securityEmail, setSecurityEmail]                   = useState(auth.currentUser?.email || "");
+  const [securityEmail, setSecurityEmail]                   = useState(user?.email || "");
   const [securityPassword, setSecurityPassword]             = useState("");
   const [securityConfirmPassword, setSecurityConfirmPassword] = useState("");
   const [securitySuccess, setSecuritySuccess]               = useState("");
+
+  useEffect(() => {
+    if (user?.email) {
+      setSecurityEmail(user.email);
+    }
+  }, [user]);
   const [securityError, setSecurityError]                   = useState("");
   const [emailLoading, setEmailLoading]                     = useState(false);
   const [passwordLoading, setPasswordLoading]               = useState(false);
@@ -149,10 +167,13 @@ const Settings = () => {
   // ── DELETE ROOM TYPE ──
   const handleDeleteRoomType = async (rt) => {
     try {
-      const q = query(collection(db, "bookings"), where("roomType", "==", rt.id));
-      const snap = await getDocs(q);
-      const activeCount = snap.docs.filter(d => {
-        const s = d.data().bookingStatus;
+      const { data: bookingsData, error: bookingsErr } = await supabase
+        .from("bookings")
+        .select("booking_status")
+        .eq("room_type_id", rt.id);
+      if (bookingsErr) throw bookingsErr;
+      const activeCount = bookingsData.filter(b => {
+        const s = b.booking_status;
         return s === "confirmed" || s === "checked-in" || s === "pending";
       }).length;
 
@@ -168,24 +189,88 @@ const Settings = () => {
     } finally { setDeletingId(null); }
   };
 
+  // ── ADD ROOM ──
+  const handleAddRoom = async (e) => {
+    e.preventDefault();
+    setRoomError(""); setRoomSuccess("");
+    if (!newRoomNumber || !newRoomType) {
+      setRoomError("Please enter a room number and select a room type.");
+      return;
+    }
+    setRoomAdding(true);
+    try {
+      await addRoom({
+        roomNumber: newRoomNumber.trim(),
+        roomType: newRoomType,
+        status: "available"
+      }, user);
+      setNewRoomNumber("");
+      setRoomSuccess("Room added successfully!");
+      setTimeout(() => setRoomSuccess(""), 3000);
+      refreshData();
+    } catch (err) {
+      setRoomError(err.message || "Failed to add room.");
+    } finally {
+      setRoomAdding(false);
+    }
+  };
+
+  // ── DELETE ROOM ──
+  const handleDeleteRoom = async (roomNumber) => {
+    if (!window.confirm(`Are you sure you want to delete Room ${roomNumber}?`)) return;
+    try {
+      await deleteRoom(roomNumber, user);
+      refreshData();
+    } catch (err) {
+      alert("Failed to delete room: " + err.message);
+    }
+  };
+
+  // ── START EDIT ROOM ──
+  const startEditRoom = (r) => {
+    setEditingRoomNumber(r.roomNumber);
+    setEditRoomFields({ roomNumber: r.roomNumber, roomType: r.roomType, status: r.status });
+    setEditRoomError("");
+  };
+
+  // ── SAVE EDIT ROOM ──
+  const handleSaveEditRoom = async (oldRoomNumber) => {
+    setEditRoomError("");
+    if (!editRoomFields.roomNumber || !editRoomFields.roomType || !editRoomFields.status) {
+      setEditRoomError("Room number, type, and status are required.");
+      return;
+    }
+    setEditRoomSaving(true);
+    try {
+      await updateRoom(oldRoomNumber, editRoomFields, user);
+      setEditingRoomNumber(null);
+      refreshData();
+    } catch (err) {
+      setEditRoomError(err.message || "Failed to update room.");
+    } finally {
+      setEditRoomSaving(false);
+    }
+  };
+
   // ── UPDATE EMAIL ──
   const handleUpdateEmail = async () => {
     setSecurityError(""); setSecuritySuccess("");
     if (!securityEmail) { setSecurityError("Email cannot be empty."); return; }
     setEmailLoading(true);
     try {
-      const cu = auth.currentUser;
-      if (!cu) throw new Error("No authenticated user found.");
+      const { data: { user: cu }, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !cu) throw new Error("No authenticated user found.");
       if (securityEmail !== cu.email) {
-        await updateEmail(cu, securityEmail);
-        await updateDoc(doc(db, "users", cu.uid), { email: securityEmail });
+        const { error: updateAuthErr } = await supabase.auth.updateUser({ email: securityEmail });
+        if (updateAuthErr) throw updateAuthErr;
+        
+        await supabase.from("profiles").update({ email: securityEmail }).eq("id", cu.id);
+        await supabase.from("employees").update({ email: securityEmail }).eq("user_id", cu.id);
       }
-      setSecuritySuccess("Email updated successfully!");
-      setTimeout(() => setSecuritySuccess(""), 3000);
+      setSecuritySuccess("Email update request sent! Please check your inbox for confirmation.");
+      setTimeout(() => setSecuritySuccess(""), 5000);
     } catch (err) {
-      if (err.code === "auth/requires-recent-login") {
-        setSecurityError("Requires recent login. Please log out and back in.");
-      } else { setSecurityError(err.message || "Failed to update email."); }
+      setSecurityError(err.message || "Failed to update email.");
     } finally { setEmailLoading(false); }
   };
 
@@ -197,16 +282,13 @@ const Settings = () => {
     if (securityPassword !== securityConfirmPassword) { setSecurityError("Passwords do not match."); return; }
     setPasswordLoading(true);
     try {
-      const cu = auth.currentUser;
-      if (!cu) throw new Error("No authenticated user found.");
-      await updatePassword(cu, securityPassword);
+      const { error: updateAuthErr } = await supabase.auth.updateUser({ password: securityPassword });
+      if (updateAuthErr) throw updateAuthErr;
       setSecuritySuccess("Password updated successfully!");
       setSecurityPassword(""); setSecurityConfirmPassword("");
       setTimeout(() => setSecuritySuccess(""), 3000);
     } catch (err) {
-      if (err.code === "auth/requires-recent-login") {
-        setSecurityError("Requires recent login. Please log out and back in.");
-      } else { setSecurityError(err.message || "Failed to update password."); }
+      setSecurityError(err.message || "Failed to update password.");
     } finally { setPasswordLoading(false); }
   };
   
@@ -260,6 +342,7 @@ const Settings = () => {
 
   const tabs = [
     { id: "types",    label: "Room Types", icon: <BedDouble size={16} /> },
+    { id: "rooms",    label: "Room Numbers", icon: <KeyRound size={16} /> },
     { id: "security", label: "Security",   icon: <Lock size={16} /> },
   ];
 
@@ -530,6 +613,215 @@ const Settings = () => {
 
 
 
+          {/* ── TAB: ROOM NUMBERS ── */}
+          {activeTab === "rooms" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              {/* Add Room Form */}
+              {user.role === "admin" && (
+                <div className="card" style={{ padding: "1.75rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.25rem" }}>
+                    <div style={{ background: "rgba(59,130,246,0.12)", color: "var(--primary)", borderRadius: "8px", padding: "6px", display: "flex" }}>
+                      <Plus size={16} />
+                    </div>
+                    <h2 style={{ fontSize: "1rem", fontWeight: 700 }}>Add New Room Number</h2>
+                  </div>
+
+                  {roomError && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "var(--danger-glow)", color: "var(--danger)", padding: "0.75rem 1rem", borderRadius: "var(--radius-sm)", fontSize: "0.85rem", marginBottom: "1.25rem" }}>
+                      <AlertCircle size={15} style={{ flexShrink: 0 }} /> {roomError}
+                    </div>
+                  )}
+                  {roomSuccess && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "var(--success-glow)", color: "var(--success)", padding: "0.75rem 1rem", borderRadius: "var(--radius-sm)", fontSize: "0.85rem", marginBottom: "1.25rem" }}>
+                      <CheckCircle2 size={15} style={{ flexShrink: 0 }} /> {roomSuccess}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleAddRoom}>
+                    <div style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+                      <div className="form-group" style={{ margin: 0, flex: 1, minWidth: "180px" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "5px" }}><KeyRound size={12} /> Room Number *</label>
+                        <input type="text" className="input-control" placeholder="e.g. 104" value={newRoomNumber} onChange={e => setNewRoomNumber(e.target.value)} required disabled={roomAdding} />
+                      </div>
+                      <div className="form-group" style={{ margin: 0, flex: 1, minWidth: "220px" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "5px" }}><BedDouble size={12} /> Room Type *</label>
+                        <select 
+                          className="input-control" 
+                          value={newRoomType} 
+                          onChange={e => setNewRoomType(e.target.value)}
+                          required
+                          disabled={roomAdding}
+                        >
+                          <option value="">Select Room Type</option>
+                          {roomTypes.map(rt => (
+                            <option key={rt.id} value={rt.id}>{rt.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button type="submit" className="btn btn-primary" style={{ padding: "0.6rem 1.5rem", whiteSpace: "nowrap", minWidth: 130, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }} disabled={roomAdding}>
+                        {roomAdding ? <><Spinner size={15} /> Adding...</> : <><Plus size={14} /> Add Room</>}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* Room Numbers Table */}
+              <div className="card">
+                <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--card-border)", display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                  <div style={{ background: "rgba(59,130,246,0.12)", color: "var(--primary)", borderRadius: "8px", padding: "6px", display: "flex" }}>
+                    <KeyRound size={16} />
+                  </div>
+                  <h2 style={{ fontSize: "1rem", fontWeight: 700 }}>Configured Room Numbers</h2>
+                  <span style={{ marginLeft: "auto", background: "var(--bg-tertiary)", color: "var(--text-secondary)", fontSize: "0.75rem", fontWeight: 600, padding: "2px 10px", borderRadius: "99px" }}>
+                    {rooms.length} rooms
+                  </span>
+                </div>
+
+                {editRoomError && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "var(--danger-glow)", color: "var(--danger)", padding: "0.65rem 1.25rem", fontSize: "0.83rem" }}>
+                    <AlertCircle size={14} style={{ flexShrink: 0 }} /> {editRoomError}
+                  </div>
+                )}
+
+                <div className="table-wrapper">
+                  {rooms.length === 0 ? (
+                    <div className="no-data">No rooms configured yet. Add one above.</div>
+                  ) : (
+                    <table className="table-custom">
+                      <thead>
+                        <tr>
+                          <th>Room Number</th>
+                          <th>Room Type</th>
+                          <th>Status</th>
+                          {user.role === "admin" && <th style={{ textAlign: "right", whiteSpace: "nowrap" }}>Actions</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rooms.map(r => {
+                          const isEditing = editingRoomNumber === r.roomNumber;
+                          const associatedType = roomTypes.find(rt => rt.id === r.roomType);
+
+                          return (
+                            <tr key={r.roomNumber} style={{ background: isEditing ? "rgba(59,130,246,0.04)" : undefined }}>
+                              {/* Room Number */}
+                              <td>
+                                {isEditing ? (
+                                  <input
+                                    className="input-control"
+                                    style={{ margin: 0, padding: "0.35rem 0.6rem", fontSize: "0.95rem", width: 100 }}
+                                    value={editRoomFields.roomNumber}
+                                    onChange={e => setEditRoomFields(f => ({ ...f, roomNumber: e.target.value }))}
+                                    disabled={editRoomSaving}
+                                  />
+                                ) : (
+                                  <strong style={{ color: "var(--text-primary)", fontSize: "1.1rem" }}>{r.roomNumber}</strong>
+                                )}
+                              </td>
+
+                              {/* Room Type */}
+                              <td>
+                                {isEditing ? (
+                                  <select
+                                    className="input-control"
+                                    style={{ margin: 0, padding: "0.35rem 0.6rem", fontSize: "0.85rem" }}
+                                    value={editRoomFields.roomType}
+                                    onChange={e => setEditRoomFields(f => ({ ...f, roomType: e.target.value }))}
+                                    disabled={editRoomSaving}
+                                  >
+                                    {roomTypes.map(rt => (
+                                      <option key={rt.id} value={rt.id}>{rt.name}</option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <span style={{ fontWeight: 600 }}>{associatedType ? associatedType.name : r.roomType}</span>
+                                )}
+                              </td>
+
+                              {/* Status */}
+                              <td>
+                                {isEditing ? (
+                                  <select
+                                    className="input-control"
+                                    style={{ margin: 0, padding: "0.35rem 0.6rem", fontSize: "0.85rem", width: 130 }}
+                                    value={editRoomFields.status}
+                                    onChange={e => setEditRoomFields(f => ({ ...f, status: e.target.value }))}
+                                    disabled={editRoomSaving}
+                                  >
+                                    <option value="available">AVAILABLE</option>
+                                    <option value="occupied">OCCUPIED</option>
+                                    <option value="maintenance">MAINTENANCE</option>
+                                  </select>
+                                ) : (
+                                  <span className={`status-badge status-${r.status}`} style={{ display: "inline-flex" }}>
+                                    {r.status.toUpperCase()}
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Actions */}
+                              {user.role === "admin" && (
+                                <td style={{ textAlign: "right" }}>
+                                  <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                                    {isEditing ? (
+                                      <>
+                                        {/* Save */}
+                                        <button
+                                          className="btn btn-primary"
+                                          style={{ padding: "0.35rem 0.85rem", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "5px", minWidth: 75 }}
+                                          onClick={() => handleSaveEditRoom(r.roomNumber)}
+                                          disabled={editRoomSaving}
+                                        >
+                                          {editRoomSaving ? <><Spinner size={13} /> Saving</> : <><Check size={13} /> Save</>}
+                                        </button>
+                                        {/* Cancel */}
+                                        <button
+                                          className="btn"
+                                          style={{ padding: "0.35rem 0.75rem", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "5px", background: "var(--bg-tertiary)", border: "1px solid var(--card-border)", color: "var(--text-secondary)" }}
+                                          onClick={() => { setEditingRoomNumber(null); setEditRoomError(""); }}
+                                          disabled={editRoomSaving}
+                                        >
+                                          <X size={13} /> Cancel
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        {/* Edit */}
+                                        <button
+                                          className="btn"
+                                          style={{ padding: "0.35rem 0.75rem", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "5px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)", color: "var(--primary)" }}
+                                          onClick={() => startEditRoom(r)}
+                                          disabled={editingRoomNumber !== null}
+                                          title="Edit room"
+                                        >
+                                          <Pencil size={13} /> Edit
+                                        </button>
+                                        {/* Delete */}
+                                        <button
+                                          className="btn btn-danger btn-icon"
+                                          style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 36 }}
+                                          onClick={() => handleDeleteRoom(r.roomNumber)}
+                                          disabled={editingRoomNumber !== null}
+                                          title="Delete room"
+                                        >
+                                          <Trash2 size={14} style={{ color: "white" }} />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              )}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === "security" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
               <div className="grid-form-2col" style={{ gap: "1.25rem" }}>
@@ -565,7 +857,7 @@ const Settings = () => {
                     className="btn btn-primary"
                     style={{ width: "100%", marginTop: "0.5rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}
                     onClick={handleUpdateEmail}
-                    disabled={emailLoading || securityEmail === auth.currentUser?.email}
+                    disabled={emailLoading || securityEmail === user?.email}
                   >
                     {emailLoading ? <><Spinner size={15} /> Updating...</> : "Update Email"}
                   </button>

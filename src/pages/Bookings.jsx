@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { useAuth } from "../firebase/auth";
+import { useAuth } from "../lib/auth";
 import { 
   getBookings, 
   getRooms, 
   getRoomTypes, 
   addBooking, 
   updateBooking, 
-  deleteBooking 
-} from "../firebase/db";
+  deleteBooking,
+  formatDate
+} from "../lib/db";
+import { uploadPaymentProof } from "../lib/storage";
 import { 
   Plus, 
   Search, 
@@ -99,7 +101,7 @@ const Bookings = () => {
       const statusLabel = conflict.bookingStatus.charAt(0).toUpperCase() + conflict.bookingStatus.slice(1);
       return {
         success: false,
-        error: `Already booked for ${conflict.customerName} (${statusLabel}) by ${creator}.`
+        error: `Already booked for ${conflict.customerName} (${statusLabel}) by ${creator} from ${formatDate(conflict.checkInDate)} to ${formatDate(conflict.checkOutDate)}.`
       };
     }
 
@@ -327,6 +329,11 @@ const Bookings = () => {
 
     setFormLoading(true);
     try {
+      let finalPaymentProof = paymentProof;
+      if (paymentProof && paymentProof.startsWith("data:")) {
+        finalPaymentProof = await uploadPaymentProof(paymentProof);
+      }
+
       const data = {
         customerName,
         customerPhone,
@@ -342,7 +349,7 @@ const Bookings = () => {
         bookingStatus,
         paymentMethod,
         advanceAmount: Number(advanceAmount),
-        paymentProof,
+        paymentProof: finalPaymentProof,
         remarks
       };
 
@@ -489,13 +496,13 @@ const Bookings = () => {
                 </thead>
                 <tbody>
                   {filteredBookings.map(b => (
-                    <tr key={b.bookingId}>
+                    <tr key={b.bookingId} onClick={() => handleOpenDetails(b)} style={{ cursor: "pointer" }}>
                       <td style={{ fontFamily: "monospace", fontWeight: 600 }}>{b.bookingId}</td>
                       <td>{mask(b.customerName, b)}</td>
                       <td>{mask(b.customerPhone, b)}</td>
                       <td>
                         <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                          {b.checkInDate} to {b.checkOutDate}
+                          {formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}
                         </span>
                       </td>
                       <td>
@@ -521,7 +528,7 @@ const Bookings = () => {
                         </div>
                       </td>
                       <td style={{ textAlign: "right" }}>
-                        <div style={{ display: "inline-flex", gap: "0.5rem" }}>
+                        <div style={{ display: "inline-flex", gap: "0.5rem" }} onClick={(e) => e.stopPropagation()}>
                           {isOwner(b) && (
                             <>
                               <button 
@@ -587,7 +594,7 @@ const Bookings = () => {
                       </div>
 
                       <div className="booking-card-dates" style={{ margin: "0.25rem 0" }}>
-                        <span>{b.checkInDate} to {b.checkOutDate}</span>
+                        <span>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</span>
                       </div>
 
                       <div className="booking-card-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px dashed var(--card-border)", paddingTop: "0.75rem", marginTop: "0.5rem" }}>
@@ -730,6 +737,10 @@ const Bookings = () => {
                     onChange={(e) => {
                       setSelectedRoomType(e.target.value);
                       setSelectedRoomNumbers([]);
+                      const selectedType = roomTypes.find(rt => rt.id === e.target.value);
+                      if (selectedType) {
+                        setGuestCount(selectedType.capacity);
+                      }
                     }}
                     required
                   >
@@ -960,12 +971,12 @@ const Bookings = () => {
 
               <div className="info-detail-item">
                 <span className="info-detail-label">Check-in</span>
-                <span className="info-detail-value">{selectedBooking.checkInDate}</span>
+                <span className="info-detail-value">{formatDate(selectedBooking.checkInDate)}</span>
               </div>
 
               <div className="info-detail-item">
                 <span className="info-detail-label">Check-out</span>
-                <span className="info-detail-value">{selectedBooking.checkOutDate}</span>
+                <span className="info-detail-value">{formatDate(selectedBooking.checkOutDate)}</span>
               </div>
 
               <div className="info-detail-item">
