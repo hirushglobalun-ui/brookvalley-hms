@@ -42,6 +42,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState("none");
   const [advanceAmount, setAdvanceAmount] = useState<number>(0);
   const [paymentProof, setPaymentProof] = useState("");
+  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const [remarks, setRemarks] = useState("");
   
   const [formError, setFormError] = useState("");
@@ -220,15 +221,17 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     }
   }, [selectedRoomType, checkInDate, checkOutDate, roomTypes, selectedRoomNumbers]);
 
-  // Read upload proof Base64
+  // Handle file selection — store the raw File for upload
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 800 * 1024) {
-        alert("File is too large. Please select an image under 800KB.");
+      if (file.size > 10 * 1024 * 1024) {
+        alert("File is too large. Please select a file under 10MB.");
         e.target.value = "";
         return;
       }
+      setPaymentProofFile(file);
+      // Show preview for the UI
       const reader = new FileReader();
       reader.onloadend = () => {
         setPaymentProof(reader.result as string);
@@ -261,7 +264,9 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     setFormLoading(true);
     try {
       let finalPaymentProof = paymentProof;
-      if (paymentProof && paymentProof.startsWith("data:")) {
+      if (paymentProofFile) {
+        finalPaymentProof = await uploadPaymentProof(paymentProofFile);
+      } else if (paymentProof && paymentProof.startsWith("data:")) {
         finalPaymentProof = await uploadPaymentProof(paymentProof);
       }
 
