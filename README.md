@@ -1,16 +1,24 @@
-# React + Vite
+# Brookvalley Hotel Management System (HMS)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Welcome to the Brookvalley HMS repository. This is an enterprise-grade Next.js application built to handle hotel operations including bookings, employee management, room configuration, and analytics.
 
-Currently, two official plugins are available:
+## 📚 Documentation
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**All project documentation has been centralized in the `docs/` directory.**
 
-## React Compiler
+Please navigate to the [Documentation Hub (docs/README.md)](docs/README.md) for information regarding:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- 🚀 [Getting Started & Local Setup](docs/GETTING_STARTED.md)
+- 🏗️ [Project Architecture](docs/ARCHITECTURE.md)
+- 🗄️ [Database Schema & Security](docs/DATABASE_SCHEMA.md)
+- 🔌 [API & Services](docs/API_AND_SERVICES.md)
+- 🧪 [Testing Strategy](docs/TESTING.md)
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+### Tech Stack Highlights
+- **Framework:** Next.js 16 (App Router) & React 19
+- **Language:** TypeScript (Strict)
+- **Database / BaaS:** Supabase (PostgreSQL, Auth, Storage)
+- **Styling:** CSS Modules / Vanilla CSS
+- **Testing:** Vitest & Playwright
