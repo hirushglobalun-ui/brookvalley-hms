@@ -10,14 +10,20 @@ export class BookingsRepository {
   /**
    * Retrieves paginated reservations from the database.
    */
-  public async getBookings(page: number = 1, limit: number = 50): Promise<{ data: BookingEntity[], count: number }> {
+  public async getBookings(page: number = 1, limit: number = 50, userId?: string): Promise<{ data: BookingEntity[], count: number }> {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const { data, error, count } = await supabase
+    let query = supabase
       .from("bookings")
       .select("*", { count: "exact" })
-      .is("deleted_at", null)
+      .is("deleted_at", null);
+
+    if (userId) {
+      query = query.eq("created_by_uid", userId);
+    }
+
+    const { data, error, count } = await query
       .order("created_at", { ascending: false })
       .range(from, to);
 

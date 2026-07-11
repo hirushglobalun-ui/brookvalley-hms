@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Eye, Edit2 } from "lucide-react";
+import { Eye, Edit2, Trash2 } from "lucide-react";
 import { Booking } from "../../../types";
 
 /**
@@ -16,6 +16,10 @@ interface BookingTableProps {
   onViewClick: (booking: Booking) => void;
   /** Triggered to launch editing modal. */
   onEditClick: (booking: Booking) => void;
+  /** Triggered when the delete action is clicked. */
+  onDeleteClick: (booking: Booking) => void;
+  /** Triggered when status is changed from the dropdown */
+  onUpdateStatus?: (bookingId: string, newStatus: Booking["bookingStatus"]) => void;
   /** Current page number */
   page?: number;
   /** Total number of pages */
@@ -36,6 +40,8 @@ const BookingTable: React.FC<BookingTableProps> = ({
   formatDate,
   onViewClick,
   onEditClick,
+  onDeleteClick,
+  onUpdateStatus,
   page,
   totalPages,
   onPageChange
@@ -63,16 +69,16 @@ const BookingTable: React.FC<BookingTableProps> = ({
             </thead>
             <tbody>
               {bookings.map(b => (
-                <tr key={b.bookingId} onClick={() => onViewClick(b)} style={{ cursor: "pointer" }}>
-                  <td style={{ fontFamily: "monospace", fontWeight: 600 }}>{b.bookingId}</td>
-                  <td>{b.customerName}</td>
-                  <td>{b.customerPhone}</td>
-                  <td>
+                <tr key={b.bookingId} style={{ cursor: "pointer" }}>
+                  <td onClick={() => onViewClick(b)} style={{ fontFamily: "monospace", fontWeight: 600 }}>{b.bookingId}</td>
+                  <td onClick={() => onViewClick(b)}>{b.customerName}</td>
+                  <td onClick={() => onViewClick(b)}>{b.customerPhone}</td>
+                  <td onClick={() => onViewClick(b)}>
                     <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>
                       {formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}
                     </span>
                   </td>
-                  <td>
+                  <td onClick={() => onViewClick(b)}>
                     <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
                       {b.createdByName}
                     </span>
@@ -83,12 +89,26 @@ const BookingTable: React.FC<BookingTableProps> = ({
                   </td>
                   <td>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                      <span className={`badge badge-${
-                        b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
-                        b.bookingStatus === "cancelled" ? "danger" : "warning"
-                      }`} style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 6px" }}>
-                        {b.bookingStatus}
-                      </span>
+                      <select 
+                        className={`badge badge-${
+                          b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                          b.bookingStatus === "cancelled" ? "danger" : "warning"
+                        }`}
+                        style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600 }}
+                        value={b.bookingStatus}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          if (onUpdateStatus) {
+                            onUpdateStatus(b.bookingId, e.target.value as Booking["bookingStatus"]);
+                          }
+                        }}
+                      >
+                        <option value="pending">PENDING</option>
+                        <option value="confirmed">CONFIRMED</option>
+                        <option value="checked-in">CHECKED-IN</option>
+                        <option value="checked-out">CHECKED-OUT</option>
+                        <option value="cancelled">CANCELLED</option>
+                      </select>
                       <span className={`badge badge-${b.paymentStatus === "paid" ? "success" : b.paymentStatus === "partial" || b.paymentStatus === "partially-paid" ? "warning" : "danger"}`} style={{ width: "fit-content", fontSize: "0.65rem", padding: "1px 4px", border: "1px solid currentColor", background: "none" }}>
                         {b.paymentStatus}
                       </span>
@@ -111,6 +131,15 @@ const BookingTable: React.FC<BookingTableProps> = ({
                       >
                         <Edit2 size={14} />
                       </button>
+                      
+                      <button 
+                        className="btn btn-secondary btn-icon" 
+                        title="Delete Booking"
+                        style={{ color: "var(--danger)" }}
+                        onClick={() => onDeleteClick(b)}
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -127,12 +156,26 @@ const BookingTable: React.FC<BookingTableProps> = ({
             <div className="booking-card-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span className="booking-card-room" style={{ fontFamily: "monospace", fontWeight: 700 }}>{b.bookingId}</span>
               <div style={{ display: "flex", gap: "0.25rem" }}>
-                <span className={`badge badge-${
-                  b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
-                  b.bookingStatus === "cancelled" ? "danger" : "warning"
-                }`} style={{ fontSize: "0.65rem", padding: "2px 6px" }}>
-                  {b.bookingStatus}
-                </span>
+                  <select 
+                    className={`badge badge-${
+                      b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                      b.bookingStatus === "cancelled" ? "danger" : "warning"
+                    }`}
+                    style={{ fontSize: "0.75rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600, margin: 0 }}
+                    value={b.bookingStatus}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      if (onUpdateStatus) {
+                        onUpdateStatus(b.bookingId, e.target.value as Booking["bookingStatus"]);
+                      }
+                    }}
+                  >
+                    <option value="pending">PENDING</option>
+                    <option value="confirmed">CONFIRMED</option>
+                    <option value="checked-in">CHECKED-IN</option>
+                    <option value="checked-out">CHECKED-OUT</option>
+                    <option value="cancelled">CANCELLED</option>
+                  </select>
                 <span className={`badge badge-${b.paymentStatus === "paid" ? "success" : b.paymentStatus === "partial" || b.paymentStatus === "partially-paid" ? "warning" : "danger"}`} style={{ fontSize: "0.65rem", padding: "2px 6px", border: "1px solid currentColor", background: "none" }}>
                   {b.paymentStatus}
                 </span>
@@ -175,6 +218,15 @@ const BookingTable: React.FC<BookingTableProps> = ({
                   onClick={() => onEditClick(b)}
                 >
                   <Edit2 size={13} />
+                </button>
+                
+                <button 
+                  className="btn btn-secondary btn-icon" 
+                  title="Delete Booking"
+                  style={{ padding: "0.4rem", color: "var(--danger)" }}
+                  onClick={() => onDeleteClick(b)}
+                >
+                  <Trash2 size={13} />
                 </button>
               </div>
             </div>

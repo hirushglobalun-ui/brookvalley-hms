@@ -125,17 +125,16 @@ const SettingsContent = () => {
   };
 
   const tabs = [
-    { id: "types",    label: "Room Types", icon: <BedDouble size={16} /> },
-    { id: "rooms",    label: "Room Numbers", icon: <KeyRound size={16} /> },
+    ...(user?.role === "admin" ? [
+      { id: "types",    label: "Room Types", icon: <BedDouble size={16} /> },
+      { id: "rooms",    label: "Room Numbers", icon: <KeyRound size={16} /> }
+    ] : []),
     { id: "security", label: "Security",   icon: <Lock size={16} /> }
   ];
 
-  if (user?.role === "admin") {
-    tabs.push({ id: "safety", label: "Operational Safety", icon: <Shield size={16} /> });
-    tabs.push({ id: "reset", label: "Danger Zone", icon: <AlertOctagon size={16} /> });
-  }
-
   if (!user) return null;
+
+  const safeActiveTab = tabs.find(t => t.id === activeTab) ? activeTab : tabs[0].id;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -150,15 +149,15 @@ const SettingsContent = () => {
       </div>
 
       {/* Pill Tab Navigation */}
-      <div style={{ display: "flex", gap: "0.5rem", background: "var(--bg-secondary)", border: "1px solid var(--card-border)", borderRadius: "99px", padding: "0.35rem", width: "fit-content" }}>
+      <div className="pill-tabs-container">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
             display: "flex", alignItems: "center", gap: "0.5rem",
             padding: "0.5rem 1.25rem", borderRadius: "99px", border: "none", cursor: "pointer",
             fontSize: "0.875rem", fontWeight: 600, transition: "all 0.2s ease",
-            background: activeTab === tab.id ? "var(--primary)" : "transparent",
-            color: activeTab === tab.id ? "#fff" : "var(--text-secondary)",
-            boxShadow: activeTab === tab.id ? "0 2px 8px rgba(59,130,246,0.3)" : "none"
+            background: safeActiveTab === tab.id ? "var(--primary)" : "transparent",
+            color: safeActiveTab === tab.id ? "#fff" : "var(--text-secondary)",
+            boxShadow: safeActiveTab === tab.id ? "0 2px 8px rgba(59,130,246,0.3)" : "none"
           }}>
             {tab.icon} {tab.label}
           </button>
@@ -172,7 +171,7 @@ const SettingsContent = () => {
       ) : (
         <>
           {/* Room Types tab */}
-          {activeTab === "types" && (
+          {safeActiveTab === "types" && (
             <RoomTypesTab
               roomTypes={roomTypes}
               user={user}
@@ -183,7 +182,7 @@ const SettingsContent = () => {
           )}
 
           {/* Room Numbers tab */}
-          {activeTab === "rooms" && (
+          {safeActiveTab === "rooms" && (
             <RoomsTab
               rooms={rooms}
               roomTypes={roomTypes}
@@ -195,23 +194,8 @@ const SettingsContent = () => {
           )}
 
           {/* Security Tab */}
-          {activeTab === "security" && (
+          {safeActiveTab === "security" && (
             <SecurityTab user={user} />
-          )}
-
-          {/* Operational Safety Tab */}
-          {activeTab === "safety" && user.role === "admin" && (
-            <SafetyTab user={user} />
-          )}
-
-          {/* Danger Zone tab */}
-          {activeTab === "reset" && user.role === "admin" && (
-            <ResetTab
-              user={user}
-              onClearBookings={handleClearBookings}
-              onClearEmployees={handleClearEmployees}
-              onClearRoomTypes={handleClearRoomTypes}
-            />
           )}
         </>
       )}

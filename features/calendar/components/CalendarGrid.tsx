@@ -76,8 +76,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
               {Array.from({ length: daysInMonth }).map((_, idx) => {
                 const day = idx + 1;
                 const isColToday = isToday(day);
-                const d = new Date(year, month, day);
-                const cellDateStr = d.toISOString().split("T")[0];
+                const cellDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
                 // Find booking that intersects this specific day for this specific room
                 const activeBooking = monthBookings.find(b => {
@@ -87,18 +86,27 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                 });
 
                 if (activeBooking) {
-                  const checkInDateObj = new Date(activeBooking.checkInDate);
-                  const isStart = activeBooking.checkInDate === cellDateStr || (day === 1 && checkInDateObj < monthStartDate);
+                  const inMonthStr = activeBooking.checkInDate.substring(0, 7);
+                  const cellMonthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
+                  const isStart = activeBooking.checkInDate === cellDateStr || (day === 1 && inMonthStr < cellMonthStr);
 
                   if (isStart) {
-                    const checkOutDateObj = new Date(activeBooking.checkOutDate);
+                    const blockStartDay = day;
+                    let blockEndDay;
                     
-                    const blockStartDay = checkInDateObj < monthStartDate ? 1 : checkInDateObj.getDate();
-                    const blockEndDay = checkOutDateObj > monthEndDate ? daysInMonth + 1 : checkOutDateObj.getDate();
+                    const cellMonthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
+                    const outMonthStr = activeBooking.checkOutDate.substring(0, 7);
+                    
+                    if (outMonthStr > cellMonthStr) {
+                      blockEndDay = daysInMonth + 1;
+                    } else {
+                      blockEndDay = parseInt(activeBooking.checkOutDate.split("-")[2], 10);
+                    }
+                    
                     const colSpan = Math.max(1, blockEndDay - blockStartDay);
 
                     const bookingMasked = !isOwner(activeBooking);
-                    const customerLabel = bookingMasked ? "[Restricted]" : activeBooking.customerName;
+                    const customerLabel = activeBooking.customerName;
 
                     let statusClass = "booking-status-confirmed";
                     if (activeBooking.bookingStatus === "pending") statusClass = "booking-status-pending";

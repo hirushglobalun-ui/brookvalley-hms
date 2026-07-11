@@ -52,9 +52,11 @@ export class EmployeeEntity {
     if (!this.email || !this.email.includes("@")) {
       throw new ValidationError("A valid login email address is required.");
     }
-    const cleanPhone = this.phone.replace(/[^0-9]/g, "");
-    if (cleanPhone.length !== 10) {
-      throw new ValidationError("Phone number must be exactly 10 digits.");
+    if (this.phone) {
+      const cleanPhone = this.phone.replace(/[^0-9]/g, "");
+      if (cleanPhone.length < 7) {
+        throw new ValidationError("Phone number must contain at least 7 digits.");
+      }
     }
   }
 }

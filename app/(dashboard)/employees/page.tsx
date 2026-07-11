@@ -8,12 +8,15 @@ import {
   EmployeeActivityModal,
   EmployeeFormModal
 } from "../../../features/employees";
+import { BookingDetailModal } from "../../../features/bookings";
+import { SettingsService } from "../../../features/settings";
 import { getBookings, formatDate } from "../../../lib/db";
 import { UserPlus } from "lucide-react";
 import ProtectedRoute from "../../../components/ProtectedRoute";
 import { Employee, Booking } from "../../../types";
 
 const employeesService = new EmployeesService();
+const settingsService = new SettingsService();
 
 const EmployeesContent = () => {
   const { user } = useAuth();
@@ -21,23 +24,29 @@ const EmployeesContent = () => {
   // Data States
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [roomTypes, setRoomTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal / Selection States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isActivityOpen, setIsActivityOpen] = useState(false);
+  const [isBookingDetailOpen, setIsBookingDetailOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   // Load Initial Dataset
   const initialLoad = async () => {
     try {
       setLoading(true);
-      const [empList, bList] = await Promise.all([
+      const [empList, bList, rtList] = await Promise.all([
         employeesService.getEmployees(),
-        getBookings()
+        getBookings(),
+        settingsService.getRoomTypes()
       ]);
       setEmployees(empList);
       setBookings(bList.data);
+      setRoomTypes(rtList);
+
     } catch (err) {
       console.error("Failed to load employees data:", err);
     } finally {
@@ -63,7 +72,7 @@ const EmployeesContent = () => {
   };
 
   // Add / Edit submission
-  const handleSubmit = async (formData: any) => {
+  const handleSubmit = async (formData: any, password?: string) => {
     if (selectedEmployee) {
       // Edit mode
       await employeesService.updateEmployeeDetails(
@@ -74,7 +83,7 @@ const EmployeesContent = () => {
       );
     } else {
       // Add mode
-      await employeesService.addEmployee(formData, formData.password, user);
+      await employeesService.addEmployee(formData, password || "", user);
     }
     refreshData();
   };
@@ -94,7 +103,7 @@ const EmployeesContent = () => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {/* Header bar */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
         <div>
           <h1 style={{ fontSize: "1.7rem", fontWeight: 700, letterSpacing: "-0.02em" }}>Employees</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
@@ -104,7 +113,7 @@ const EmployeesContent = () => {
 
         {user?.role === "admin" && (
           <button 
-            className="btn btn-primary btn-icon"
+            className="btn btn-primary"
             onClick={() => {
               setSelectedEmployee(null);
               setIsModalOpen(true);
@@ -166,7 +175,23 @@ const EmployeesContent = () => {
           isOpen={isActivityOpen}
           employee={selectedEmployee}
           bookings={bookings}
+          formatDate={formatDate}
           onClose={() => setIsActivityOpen(false)}
+          onBookingClick={(booking) => {
+            setSelectedBooking(booking);
+            setIsBookingDetailOpen(true);
+          }}
+        />
+      )}
+
+      {/* Booking Detail Modal Overlay */}
+      {isBookingDetailOpen && (
+        <BookingDetailModal 
+          isOpen={isBookingDetailOpen}
+          booking={selectedBooking}
+          roomTypes={roomTypes}
+          user={user}
+          onClose={() => setIsBookingDetailOpen(false)}
           formatDate={formatDate}
         />
       )}

@@ -42,6 +42,12 @@
   --shadow-glow: 0 0 20px 0 rgba(16, 185, 129, 0.15);
 }
 
+/* Hide native Edge/Windows password reveal icon */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
 /* Global Reset & Base */
 * {
   margin: 0;
@@ -586,8 +592,8 @@ button, input, select, textarea {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: var(--radius-sm);
+  padding: 0.65rem 1.5rem;
+  border-radius: 9999px;
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
@@ -859,7 +865,7 @@ button, input, select, textarea {
   left: 0;
   background-color: var(--bg-secondary);
   border-right: 1px solid var(--card-border);
-  z-index: 10;
+  z-index: 20;
   padding: 0.5rem 0.75rem;
   display: flex;
   flex-direction: column;
@@ -896,11 +902,9 @@ button, input, select, textarea {
 
 /* Booking Span Blocks */
 .booking-block {
-  position: absolute;
-  top: 6px;
-  bottom: 6px;
-  left: 2px;
-  right: 2px;
+  position: relative;
+  margin: 6px 2px;
+  align-self: stretch;
   z-index: 5;
   border-radius: 6px;
   padding: 0.25rem 0.5rem;
@@ -1758,6 +1762,56 @@ button, input, select, textarea {
 @media (max-width: 1024px) {
   .sidebar-collapse-toggle-btn {
     display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-stacked-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
+  }
+  .mobile-stacked-grid > * {
+    grid-column: span 1 !important;
+    width: 100% !important;
+  }
+}
+
+.pill-tabs-container {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 99px;
+  padding: 0.35rem;
+  width: fit-content;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .pill-tabs-container {
+    flex-wrap: wrap;
+    border-radius: 16px;
+    width: 100%;
+  }
+  .pill-tabs-container button {
+    flex: 1 1 auto;
+    text-align: center;
+    justify-content: center;
+  }
+  .header-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .header-actions > * {
+    flex: 1 1 auto;
+    min-width: fit-content;
   }
 }
 

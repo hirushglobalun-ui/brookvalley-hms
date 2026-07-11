@@ -19,6 +19,7 @@ export class EmployeesRepository {
     if (error) {
       throw new DatabaseError("Failed to fetch employees", error.code);
     }
+    
     return (data || []).map(EmployeeMapper.toEntity);
   }
 
@@ -35,6 +36,7 @@ export class EmployeesRepository {
     if (error) {
       throw new DatabaseError(`Failed to fetch employee by UID: ${uid}`, error.code);
     }
+    
     return data ? EmployeeMapper.toEntity(data) : null;
   }
 
@@ -55,7 +57,8 @@ export class EmployeesRepository {
     });
 
     if (error) {
-      throw new DatabaseError("Failed to create employee user through RPC", error.code);
+      console.error("RPC Error Details:", error);
+      throw new DatabaseError(error.message || "Failed to create employee user through RPC", error.code);
     }
     return data as string;
   }

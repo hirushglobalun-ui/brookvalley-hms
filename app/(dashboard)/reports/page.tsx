@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../../lib/auth";
-import { BookingsService } from "../../../features/bookings";
+import { BookingsService, BookingDetailModal } from "../../../features/bookings";
 import { SettingsService } from "../../../features/settings";
 import { EmployeesService } from "../../../features/employees";
 import {
@@ -57,6 +57,10 @@ const ReportsContent = () => {
 
   // Tab State
   const [activeTab, setActiveTab] = useState("bookings");
+  
+  // Booking Detail Modal State
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [isBookingDetailOpen, setIsBookingDetailOpen] = useState(false);
 
   // Search/Filter states inside Bookings Details Tab
   const [searchQuery, setSearchQuery] = useState("");
@@ -85,22 +89,49 @@ const ReportsContent = () => {
     initialLoad();
   }, []);
 
+  // Date Filter States
+  const currentYear = new Date().getFullYear().toString();
+  const [filterMonth, setFilterMonth] = useState("all");
+  const [filterYear, setFilterYear] = useState(currentYear);
+
+  // Dynamic available years based on bookings
+  const availableYears = Array.from(new Set(bookings.map(b => new Date(b.checkInDate).getFullYear().toString()))).sort((a,b)=>b.localeCompare(a));
+  if (availableYears.length === 0) availableYears.push(currentYear);
+  else if (!availableYears.includes(currentYear)) availableYears.push(currentYear);
+
+  // Apply Global Date Filter
+  const dateFilteredBookings = bookings.filter(b => {
+    if (filterMonth === "all" && filterYear === "all") return true;
+    const checkIn = new Date(b.checkInDate);
+    const m = (checkIn.getMonth() + 1).toString().padStart(2, "0");
+    const y = checkIn.getFullYear().toString();
+    if (filterMonth !== "all" && m !== filterMonth) return false;
+    if (filterYear !== "all" && y !== filterYear) return false;
+    return true;
+  });
+
   // Summary Metrics calculations
-  const totalBookings = bookings.length;
-  const confirmedCount = bookings.filter(b => b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in").length;
-  const cancelledCount = bookings.filter(b => b.bookingStatus === "cancelled").length;
+  const totalBookings = dateFilteredBookings.length;
+  const confirmedCount = dateFilteredBookings.filter(b => b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in").length;
+  const cancelledCount = dateFilteredBookings.filter(b => b.bookingStatus === "cancelled").length;
   
   // Calculate total revenue from active (paid/partial) transactions
-  const totalRevenue = bookings
+  const totalRevenue = dateFilteredBookings
     .filter(b => b.bookingStatus !== "cancelled")
-    .reduce((acc, b) => acc + (b.advanceAmount || 0), 0);
+    .reduce((acc, b) => {
+      const amount = b.paymentStatus === "paid" ? b.totalAmount : (b.advanceAmount || 0);
+      return acc + Number(amount);
+    }, 0);
 
   // CSV Exporter Action helper
   const handleExportCSV = () => {
-    if (bookings.length === 0) return;
+    if (dateFilteredBookings.length === 0) {
+      alert("No data available to export for this selected timeframe.");
+      return;
+    }
     
     const headers = ["Booking ID", "Customer Name", "Phone", "Email", "Room Type", "Room Number", "Check In", "Check Out", "Total Price", "Advance Paid", "Status", "Payment", "Created By"];
-    const rows = bookings.map(b => [
+    const rows = dateFilteredBookings.map(b => [
       b.bookingId,
       b.customerName,
       b.customerPhone,
@@ -122,14 +153,15 @@ const ReportsContent = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `brookvalley_hms_report_${new Date().toISOString().split("T")[0]}.csv`);
+    const timeFrame = `${filterMonth !== "all" ? filterMonth + "-" : ""}${filterYear !== "all" ? filterYear : "all-time"}`;
+    link.setAttribute("download", `brookvalley_hms_report_${timeFrame}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   // Filter list data for BookingDetails Tab
-  const filteredBookings = bookings.filter(b => {
+  const filteredBookings = dateFilteredBookings.filter(b => {
     const matchStatus = filterStatus === "all" || b.bookingStatus === filterStatus;
     const matchEmp = filterEmployee === "all" || b.createdByUid === filterEmployee;
     
@@ -147,7 +179,7 @@ const ReportsContent = () => {
 
   // Calculate Revenue contribution by room type
   const roomTypeRevenue = roomTypes.map(rt => {
-    const typeRevenue = bookings
+    const typeRevenue = dateFilteredBookings
       .filter(b => b.roomType === rt.id && b.bookingStatus !== "cancelled")
       .reduce((acc, b) => acc + (b.advanceAmount || 0), 0);
     return {
@@ -161,7 +193,7 @@ const ReportsContent = () => {
 
   // Calculate Employee performance metrics
   const employeePerformance = employees.map(emp => {
-    const empBookings = bookings.filter(b => b.createdByUid === emp.uid);
+    const empBookings = dateFilteredBookings.filter(b => b.createdByUid === emp.uid);
     const empRevenue = empBookings
       .filter(b => b.bookingStatus !== "cancelled")
       .reduce((acc, b) => acc + (b.advanceAmount || 0), 0);
@@ -195,9 +227,44 @@ const ReportsContent = () => {
           </p>
         </div>
 
-        <button className="btn btn-secondary btn-icon" onClick={handleExportCSV}>
-          <Download size={16} /> Export CSV
-        </button>
+        <div className="header-actions">
+          <select 
+            className="input-control" 
+            style={{ width: "auto", margin: 0, padding: "0.5rem 1rem", minHeight: "auto", borderRadius: "999px" }} 
+            value={filterMonth} 
+            onChange={e => setFilterMonth(e.target.value)}
+          >
+            <option value="all">All Months</option>
+            <option value="01">January</option>
+            <option value="02">February</option>
+            <option value="03">March</option>
+            <option value="04">April</option>
+            <option value="05">May</option>
+            <option value="06">June</option>
+            <option value="07">July</option>
+            <option value="08">August</option>
+            <option value="09">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+
+          <select 
+            className="input-control" 
+            style={{ width: "auto", margin: 0, padding: "0.5rem 1rem", minHeight: "auto", borderRadius: "999px" }} 
+            value={filterYear} 
+            onChange={e => setFilterYear(e.target.value)}
+          >
+            <option value="all">All Years</option>
+            {availableYears.map(yr => (
+              <option key={yr} value={yr}>{yr}</option>
+            ))}
+          </select>
+
+          <button className="btn btn-primary" onClick={handleExportCSV} style={{ display: "flex", alignItems: "center", gap: "0.5rem", boxShadow: "var(--shadow-sm)" }}>
+            <Download size={16} /> Export CSV
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -215,7 +282,7 @@ const ReportsContent = () => {
           />
 
           {/* Sub Navigation Tabs */}
-          <div style={{ display: "flex", gap: "0.5rem", background: "var(--bg-secondary)", border: "1px solid var(--card-border)", borderRadius: "99px", padding: "0.35rem", width: "fit-content" }}>
+          <div className="pill-tabs-container">
             {tabs.map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
                 display: "flex", alignItems: "center", gap: "0.5rem",
@@ -245,6 +312,10 @@ const ReportsContent = () => {
               formatDate={formatDate}
               statusColor={statusColor}
               payColor={payColor}
+              onBookingClick={(booking) => {
+                setSelectedBooking(booking);
+                setIsBookingDetailOpen(true);
+              }}
             />
           )}
 
@@ -262,6 +333,16 @@ const ReportsContent = () => {
           )}
         </>
       )}
+
+      {/* Booking Detail Modal Overlay */}
+      <BookingDetailModal 
+        isOpen={isBookingDetailOpen}
+        booking={selectedBooking}
+        roomTypes={roomTypes}
+        user={user}
+        onClose={() => setIsBookingDetailOpen(false)}
+        formatDate={formatDate}
+      />
     </div>
   );
 };

@@ -91,8 +91,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
     { name: "Bookings", path: "/bookings", icon: BookOpen, roles: ["admin", "employee"] },
     { name: "Calendar", path: "/calendar", icon: Calendar, roles: ["admin", "employee"] },
     { name: "Employees", path: "/employees", icon: Users, roles: ["admin"] },
-    { name: "Settings", path: "/settings", icon: Settings, roles: ["admin", "employee"] },
     { name: "Reports", path: "/reports", icon: BarChart3, roles: ["admin"] },
+    { name: "Settings", path: "/settings", icon: Settings, roles: ["admin", "employee"] },
   ];
 
   const filteredMenu = menuItems.filter(item => item.roles.includes(user.role));

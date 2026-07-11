@@ -49,6 +49,8 @@ export class BookingsMapper {
       row.payment_proof || "",
       row.remarks || "",
       row.created_by_uid,
+      row.created_by_name,
+      row.created_by_role,
       row.deleted_at,
       row.deleted_by,
       row.delete_reason

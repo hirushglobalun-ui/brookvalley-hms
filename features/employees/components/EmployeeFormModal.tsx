@@ -75,7 +75,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
       if (employee) {
         const payload = {
           fullName,
-          phone,
+          phone: cleanPhone,
           role,
           notes
         };
@@ -87,7 +87,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
         const payload = {
           fullName,
           email,
-          phone,
+          phone: cleanPhone,
           role,
           status,
           joinedDate,
@@ -135,7 +135,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }} className="mobile-stacked-grid">
             <div className="form-group">
               <label>Full Name *</label>
               <input 

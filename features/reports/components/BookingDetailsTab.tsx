@@ -17,6 +17,7 @@ interface BookingDetailsTabProps {
   formatDate: (dateStr: string) => string;
   statusColor: (status: string) => { backgroundColor: string; color: string };
   payColor: (status: string) => { backgroundColor: string; color: string };
+  onBookingClick?: (booking: Booking) => void;
 }
 
 const BookingDetailsTab: React.FC<BookingDetailsTabProps> = ({
@@ -31,7 +32,8 @@ const BookingDetailsTab: React.FC<BookingDetailsTabProps> = ({
   isAdmin,
   formatDate,
   statusColor,
-  payColor
+  payColor,
+  onBookingClick
 }) => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }} role="tabpanel" aria-label="Booking Details List Tab">
@@ -87,7 +89,11 @@ const BookingDetailsTab: React.FC<BookingDetailsTabProps> = ({
                   const sc = statusColor(b.bookingStatus);
                   const pc = payColor(b.paymentStatus);
                   return (
-                    <tr key={b.bookingId}>
+                    <tr 
+                      key={b.bookingId} 
+                      onClick={() => onBookingClick?.(b)}
+                      style={{ cursor: onBookingClick ? "pointer" : "default" }}
+                    >
                       <td style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--primary)" }}>{b.bookingId}</td>
                       <td style={{ fontWeight: 600 }}>{b.customerName}</td>
                       <td style={{ color: "var(--text-secondary)" }}>{b.customerPhone}</td>

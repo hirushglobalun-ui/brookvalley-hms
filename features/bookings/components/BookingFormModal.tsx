@@ -128,30 +128,44 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       return { success: false, error: "Invalid check-in or check-out date." };
     }
 
-    const room = candidateRooms[0];
-    const conflict = bookings.find(b => {
-      const activeStatuses = ["confirmed", "pending", "checked-in"];
-      if (!activeStatuses.includes(b.bookingStatus)) return false;
-      if (currentBookingId && b.bookingId === currentBookingId) return false;
-      
-      const bookedRoomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
-      if (!bookedRoomNumbers.includes(room.roomNumber)) return false;
+    let availableRoom = null;
+    let conflictMsg = "All rooms of this type are fully booked or unavailable.";
 
-      const bStart = new Date(b.checkInDate);
-      const bEnd = new Date(b.checkOutDate);
-      return (start < bEnd && end > bStart);
-    });
+    for (const room of candidateRooms) {
+      // Respect the manual room status from Settings (maintenance, dirty, etc.)
+      if (room.status && room.status !== "available") {
+        conflictMsg = `Room ${room.roomNumber} is currently marked as ${room.status}.`;
+        continue; // Skip this room
+      }
 
-    if (conflict) {
-      const creator = conflict.createdByName || "System";
-      const statusLabel = conflict.bookingStatus.charAt(0).toUpperCase() + conflict.bookingStatus.slice(1);
-      return {
-        success: false,
-        error: `Already booked for ${conflict.customerName} (${statusLabel}) by ${creator} from ${formatMsgDate(conflict.checkInDate)} to ${formatMsgDate(conflict.checkOutDate)}.`
-      };
+      const conflict = bookings.find(b => {
+        const activeStatuses = ["confirmed", "pending", "checked-in"];
+        if (!activeStatuses.includes(b.bookingStatus)) return false;
+        if (currentBookingId && b.bookingId === currentBookingId) return false;
+        
+        const bookedRoomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
+        if (!bookedRoomNumbers.includes(room.roomNumber)) return false;
+
+        const bStart = new Date(b.checkInDate);
+        const bEnd = new Date(b.checkOutDate);
+        return (start < bEnd && end > bStart);
+      });
+
+      if (!conflict) {
+        availableRoom = room;
+        break; // Found an available room!
+      } else {
+        const creator = conflict.createdByName || "System";
+        const statusLabel = conflict.bookingStatus.charAt(0).toUpperCase() + conflict.bookingStatus.slice(1);
+        conflictMsg = `Already booked for ${conflict.customerName} (${statusLabel}) by ${creator} from ${formatMsgDate(conflict.checkInDate)} to ${formatMsgDate(conflict.checkOutDate)}.`;
+      }
     }
 
-    return { success: true, roomNumber: room.roomNumber };
+    if (!availableRoom) {
+      return { success: false, error: conflictMsg };
+    }
+
+    return { success: true, roomNumber: availableRoom.roomNumber };
   }, [rooms, bookings]);
 
   // Reactive room availability check
@@ -315,7 +329,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
             1. Customer Details
           </h3>
           
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }} className="mobile-stacked-grid">
             <div className="form-group">
               <label>Customer Full Name *</label>
               <input 
@@ -363,7 +377,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
             2. Stay & Room Details
           </h3>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }} className="mobile-stacked-grid">
             <div className="form-group" style={{ gridColumn: "span 3" }}>
               <label>Room Type *</label>
               <select 
@@ -420,7 +434,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }} className="mobile-stacked-grid">
             <div className="form-group" style={{ margin: 0 }}>
               <label>Total Price (₹)</label>
               <input 
@@ -446,7 +460,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
             3. Reservation Status
           </h3>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }} className="mobile-stacked-grid">
             <div className="form-group">
               <label>Payment Status</label>
               <select 

@@ -113,7 +113,7 @@ const Dashboard = () => {
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {/* Welcome Banner */}
       <div className="card welcome-card">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "1rem", flexWrap: "wrap" }}>
           <div>
             <h1 style={{ fontSize: "1.7rem", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.02em", margin: 0 }}>
               Welcome, {user.fullName}!

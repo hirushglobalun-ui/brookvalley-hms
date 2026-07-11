@@ -10,6 +10,7 @@ interface EmployeeActivityModalProps {
   bookings: Booking[];
   formatDate: (dateStr: string) => string;
   onClose: () => void;
+  onBookingClick?: (booking: Booking) => void;
 }
 
 const EmployeeActivityModal: React.FC<EmployeeActivityModalProps> = ({
@@ -17,7 +18,8 @@ const EmployeeActivityModal: React.FC<EmployeeActivityModalProps> = ({
   employee,
   bookings,
   formatDate,
-  onClose
+  onClose,
+  onBookingClick
 }) => {
   if (!isOpen || !employee) return null;
 
@@ -42,7 +44,7 @@ const EmployeeActivityModal: React.FC<EmployeeActivityModalProps> = ({
         <div className="modal-body" style={{ maxHeight: "70vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
           <div>
             <h3 style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: "0.5rem", color: "var(--primary)" }}>Profile Specifications</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", fontSize: "0.85rem", backgroundColor: "var(--bg-secondary)", padding: "0.75rem", borderRadius: "var(--radius-sm)", border: "1px solid var(--card-border)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", fontSize: "0.85rem", backgroundColor: "var(--bg-secondary)", padding: "0.75rem", borderRadius: "var(--radius-sm)", border: "1px solid var(--card-border)" }} className="mobile-stacked-grid">
               <div><span style={{ color: "var(--text-muted)" }}>Email:</span> {employee.email}</div>
               <div><span style={{ color: "var(--text-muted)" }}>Phone:</span> {employee.phone}</div>
               <div><span style={{ color: "var(--text-muted)" }}>Status:</span> {employee.status.toUpperCase()}</div>
@@ -62,7 +64,17 @@ const EmployeeActivityModal: React.FC<EmployeeActivityModalProps> = ({
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 {employeeBookings.map(b => (
-                  <div key={b.bookingId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-sm)", border: "1px solid var(--card-border)", fontSize: "0.85rem" }}>
+                  <div 
+                    key={b.bookingId} 
+                    onClick={() => onBookingClick?.(b)}
+                    style={{ 
+                      display: "flex", justifyContent: "space-between", alignItems: "center", 
+                      padding: "0.75rem", backgroundColor: "var(--bg-secondary)", 
+                      borderRadius: "var(--radius-sm)", border: "1px solid var(--card-border)", 
+                      fontSize: "0.85rem",
+                      cursor: onBookingClick ? "pointer" : "default"
+                    }}
+                  >
                     <div>
                       <span style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--primary)", marginRight: "0.5rem" }}>{b.bookingId}</span>
                       <span style={{ fontWeight: 600 }}>{b.customerName}</span>

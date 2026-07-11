@@ -22,6 +22,8 @@ export class BookingEntity {
   public readonly paymentProof: string;
   public readonly remarks: string;
   public readonly createdByUid?: string | null;
+  public readonly createdByName?: string | null;
+  public readonly createdByRole?: string | null;
   public readonly deletedAt?: string | null;
   public readonly deletedBy?: string | null;
   public readonly deleteReason?: string | null;
@@ -45,6 +47,8 @@ export class BookingEntity {
     paymentProof: string,
     remarks: string,
     createdByUid?: string | null,
+    createdByName?: string | null,
+    createdByRole?: string | null,
     deletedAt?: string | null,
     deletedBy?: string | null,
     deleteReason?: string | null
@@ -67,6 +71,8 @@ export class BookingEntity {
     this.paymentProof = paymentProof;
     this.remarks = remarks;
     this.createdByUid = createdByUid;
+    this.createdByName = createdByName;
+    this.createdByRole = createdByRole;
     this.deletedAt = deletedAt;
     this.deletedBy = deletedBy;
     this.deleteReason = deleteReason;

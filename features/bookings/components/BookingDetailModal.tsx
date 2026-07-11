@@ -10,8 +10,8 @@ interface BookingDetailModalProps {
   roomTypes: RoomType[];
   user: any;
   onClose: () => void;
-  onDelete: (bookingId: string, roomNumber: string) => Promise<void>;
-  onEditClick: (booking: Booking) => void;
+  onDelete?: (bookingId: string, roomNumber: string) => Promise<void>;
+  onEditClick?: (booking: Booking) => void;
   formatDate: (dateStr: string) => string;
 }
 
@@ -32,20 +32,52 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
     return b.createdByUid === user?.uid;
   };
 
-  const mask = (val: string | number | undefined | null, b: Booking, fallback = "••••••••") => {
-    if (!val) return "";
-    if (isOwner(b)) return String(val);
-    return fallback;
-  };
-
-  const roomTypeLabel = roomTypes.find(rt => rt.id === booking.roomType)?.name || booking.roomType;
-
   const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete booking ${booking.bookingId}?`)) {
+    if (onDelete && window.confirm(`Are you sure you want to delete booking ${booking.bookingId}?`)) {
       await onDelete(booking.bookingId, booking.roomNumber);
       onClose();
     }
   };
+
+  if (!isOwner(booking)) {
+    return (
+      <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Restricted View: Booking ${booking.bookingId}`}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2 style={{ fontSize: "1.2rem", fontWeight: 600, display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <span>Booking Record (Restricted)</span>
+            </h2>
+            <button className="btn btn-secondary btn-icon" onClick={onClose} aria-label="Close modal dialog">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="modal-body info-detail-grid">
+            <div className="info-detail-item">
+              <span className="info-detail-label">Customer Name</span>
+              <span className="info-detail-value">{booking.customerName}</span>
+            </div>
+            <div className="info-detail-item">
+              <span className="info-detail-label">Check-in</span>
+              <span className="info-detail-value">{formatDate(booking.checkInDate)}</span>
+            </div>
+            <div className="info-detail-item">
+              <span className="info-detail-label">Check-out</span>
+              <span className="info-detail-value">{formatDate(booking.checkOutDate)}</span>
+            </div>
+            <div className="info-detail-item">
+              <span className="info-detail-label">Registered By</span>
+              <span className="info-detail-value">{booking.createdByName || "System"} ({booking.createdByRole || "Admin"})</span>
+            </div>
+          </div>
+          <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", width: "100%" }}>
+            <button className="btn btn-primary" onClick={onClose}>
+              Close Details
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Detail View: Booking ${booking.bookingId}`}>
@@ -72,22 +104,22 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
 
           <div className="info-detail-item">
             <span className="info-detail-label">Name</span>
-            <span className="info-detail-value">{mask(booking.customerName, booking)}</span>
+            <span className="info-detail-value">{booking.customerName}</span>
           </div>
 
           <div className="info-detail-item">
             <span className="info-detail-label">Phone</span>
-            <span className="info-detail-value">{mask(booking.customerPhone, booking)}</span>
+            <span className="info-detail-value">{booking.customerPhone}</span>
           </div>
 
           <div className="info-detail-item">
             <span className="info-detail-label">Email</span>
-            <span className="info-detail-value">{mask(booking.customerEmail, booking, "[Restricted]") || "—"}</span>
+            <span className="info-detail-value">{booking.customerEmail || "—"}</span>
           </div>
 
           <div className="info-detail-item">
             <span className="info-detail-label">Address</span>
-            <span className="info-detail-value">{mask(booking.customerAddress, booking, "[Restricted]") || "—"}</span>
+            <span className="info-detail-value">{booking.customerAddress || "—"}</span>
           </div>
 
           {/* Stay / Room Details Section */}
@@ -105,7 +137,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           <div className="info-detail-item">
             <span className="info-detail-label">Room Type</span>
             <span className="info-detail-value" style={{ textTransform: "capitalize" }}>
-              {roomTypeLabel}
+              {roomTypes.find(rt => rt.id === booking.roomType)?.name || booking.roomType}
             </span>
           </div>
 
@@ -127,7 +159,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           <div className="info-detail-item">
             <span className="info-detail-label">Total Charged</span>
             <span className="info-detail-value">
-              {isOwner(booking) ? `₹${booking.totalAmount}` : "[Restricted]"}
+              ₹{booking.totalAmount}
             </span>
           </div>
 
@@ -174,7 +206,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           <div className="info-detail-item">
             <span className="info-detail-label">Balance Due</span>
             <span className="info-detail-value" style={{ fontWeight: 700, color: "var(--danger)" }}>
-              {isOwner(booking) ? `₹${Number(booking.totalAmount || 0) - Number(booking.advanceAmount || 0)}` : "[Restricted]"}
+              ₹{Number(booking.totalAmount || 0) - Number(booking.advanceAmount || 0)}
             </span>
           </div>
 
@@ -209,21 +241,25 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           <div className="info-detail-full">
             <span className="info-detail-label">Internal Remarks</span>
             <span className="info-detail-value" style={{ fontWeight: "normal", fontSize: "0.85rem", fontStyle: "italic", whiteSpace: "pre-line" }}>
-              {mask(booking.remarks, booking, "[Restricted]") || "No remarks entered."}
+              {booking.remarks || "No remarks entered."}
             </span>
           </div>
         </div>
 
         <div className="modal-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
           <div>
-            {isOwner(booking) && (
+            {isOwner(booking) && (onEditClick || onDelete) && (
               <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button className="btn btn-secondary btn-icon" onClick={() => onEditClick(booking)}>
-                  <Edit2 size={14} /> Edit
-                </button>
-                <button className="btn btn-danger btn-icon" onClick={handleDelete}>
-                  <Trash2 size={14} style={{ color: "white" }} /> Delete
-                </button>
+                {onEditClick && (
+                  <button className="btn btn-secondary" onClick={() => onEditClick(booking)}>
+                    <Edit2 size={14} /> Edit
+                  </button>
+                )}
+                {onDelete && (
+                  <button className="btn btn-danger" onClick={handleDelete}>
+                    <Trash2 size={14} style={{ color: "white" }} /> Delete
+                  </button>
+                )}
               </div>
             )}
           </div>

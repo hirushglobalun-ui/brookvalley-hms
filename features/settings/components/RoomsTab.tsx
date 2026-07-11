@@ -161,10 +161,10 @@ const RoomsTab: React.FC<RoomsTabProps> = ({
                       {isEditing ? (
                         <select className={`input-control`} style={{ padding: "0.3rem", fontSize: "0.85rem", margin: 0 }} value={editRoomFields.status || ""} onChange={e => setEditRoomFields({ ...editRoomFields, status: e.target.value as Room["status"] })}>
                           <option value="available">AVAILABLE</option>
-                          <option value="occupied">OCCUPIED</option>
                           <option value="maintenance">MAINTENANCE</option>
-                          <option value="reserved">RESERVED</option>
-                          <option value="dirty">DIRTY (CLEANING)</option>
+                          {room.status === "occupied" && <option value="occupied" disabled>OCCUPIED (Auto)</option>}
+                          {room.status === "reserved" && <option value="reserved" disabled>RESERVED (Auto)</option>}
+                          {room.status === "dirty" && <option value="dirty" disabled>DIRTY (Auto)</option>}
                         </select>
                       ) : (
                         (() => {

@@ -15,8 +15,8 @@ export class BookingsService {
   /**
    * Retrieves paginated bookings list records.
    */
-  public async getBookings(page: number = 1, limit: number = 50): Promise<{ data: Booking[], count: number }> {
-    const { data: entities, count } = await repo.getBookings(page, limit);
+  public async getBookings(page: number = 1, limit: number = 50, userId?: string): Promise<{ data: Booking[], count: number }> {
+    const { data: entities, count } = await repo.getBookings(page, limit, userId);
     return {
       data: entities.map(e => ({
         id: e.bookingId,
@@ -38,6 +38,8 @@ export class BookingsService {
         paymentProof: e.paymentProof,
         remarks: e.remarks,
         createdByUid: e.createdByUid || null,
+        createdByName: e.createdByName || null,
+        createdByRole: e.createdByRole || null,
         createdAt: null,
         updatedAt: null
       })),

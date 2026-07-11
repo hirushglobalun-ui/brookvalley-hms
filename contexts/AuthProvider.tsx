@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setError("");
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        await syncCookie(session);
+        
         if (session?.user) {
           const profile = await fetchProfile(session.user.id);
           if (profile) {
@@ -58,6 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               await syncCookie(null);
               setError("Your account has been deactivated. Please contact the administrator.");
             } else {
+              await syncCookie(session);
               setUser({
                 uid: session.user.id,
                 email: session.user.email,
@@ -73,6 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
           } else {
             // Profile fallback if not populated yet
+            await syncCookie(session);
             setUser({
               uid: session.user.id,
               email: session.user.email,
@@ -81,6 +83,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             });
           }
         } else {
+          await syncCookie(null);
           setUser(null);
         }
       } catch (err) {
@@ -96,7 +99,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setLoading(true);
       setError("");
-      await syncCookie(session);
+      
       if (session?.user) {
         try {
           const profile = await fetchProfile(session.user.id);
@@ -107,6 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               await syncCookie(null);
               setError("Your account has been deactivated. Please contact the administrator.");
             } else {
+              await syncCookie(session);
               setUser({
                 uid: session.user.id,
                 email: session.user.email,
@@ -121,6 +125,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               });
             }
           } else {
+            await syncCookie(session);
             setUser({
               uid: session.user.id,
               email: session.user.email,
@@ -159,13 +164,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (signInError) throw signInError;
 
-      // 2. Reset rate limit score on successful authentication
-      await resetLoginRateLimit(email);
-      
-      await syncCookie(data.session);
-
-      // Fetch profile to verify active status immediately
+      // 2. Fetch profile to verify active status immediately
       const profile = await fetchProfile(data.user.id);
+      
+      if (!profile && email !== "admin@brookvalley.com") {
+        await supabase.auth.signOut();
+        setUser(null);
+        await syncCookie(null);
+        const deactiveMsg = "Your account has been deactivated or profile not found.";
+        setError(deactiveMsg);
+        throw new Error(deactiveMsg);
+      }
+
       if (profile && profile.status === "inactive") {
         await supabase.auth.signOut();
         setUser(null);
@@ -174,6 +184,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setError(deactiveMsg);
         throw new Error(deactiveMsg);
       }
+
+      // 3. Reset rate limit score on successful authentication
+      await resetLoginRateLimit(email);
+      await syncCookie(data.session);
 
       return data.user;
     } catch (err: any) {

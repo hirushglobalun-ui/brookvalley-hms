@@ -52,8 +52,9 @@ const BookingsContent: React.FC = () => {
   const initialLoad = async (currentPage: number = page) => {
     try {
       setLoading(true);
+      const filterUserId = user?.role !== "admin" ? user?.uid : undefined;
       const [bookingsRes, rList, rtList] = await Promise.all([
-        bookingsService.getBookings(currentPage, limit),
+        bookingsService.getBookings(currentPage, limit, filterUserId),
         settingsService.getRooms(),
         settingsService.getRoomTypes()
       ]);
@@ -117,6 +118,19 @@ const BookingsContent: React.FC = () => {
     refreshData();
   };
 
+  // Quick status update from table row
+  const handleQuickUpdateStatus = async (bId: string, newStatus: Booking["bookingStatus"]) => {
+    const booking = bookings.find(b => b.bookingId === bId);
+    if (!booking) return;
+
+    try {
+      await bookingsService.updateBooking(bId, { ...booking, bookingStatus: newStatus }, user);
+      refreshData();
+    } catch (err: any) {
+      alert("Failed to update status: " + err.message);
+    }
+  };
+
   // Delete booking handler
   const handleDeleteBooking = async (bId: string, rNum: string) => {
     if (!window.confirm(`Are you sure you want to delete booking ${bId}?`)) return;
@@ -156,7 +170,7 @@ const BookingsContent: React.FC = () => {
         </div>
 
         <button 
-          className="btn btn-primary btn-icon"
+          className="btn btn-primary" 
           onClick={() => {
             setSelectedBooking(null);
             setPrefillParams(null);
@@ -212,6 +226,8 @@ const BookingsContent: React.FC = () => {
             setPrefillParams(null);
             setIsFormOpen(true);
           }}
+          onDeleteClick={(b: Booking) => handleDeleteBooking(b.bookingId, b.roomNumber)}
+          onUpdateStatus={handleQuickUpdateStatus}
           page={page}
           totalPages={totalPages}
           onPageChange={setPage}
