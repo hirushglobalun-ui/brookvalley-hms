@@ -117,7 +117,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
           </button>
         </div>
         
-        <form onSubmit={handleFormSubmit} className="modal-body">
+        <form onSubmit={handleFormSubmit} className="modal-body" autoComplete="off">
           {formError && (
             <div style={{ 
               display: "flex", 
@@ -156,6 +156,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={!!employee}
                 required
+                autoComplete="off"
               />
             </div>
 
@@ -181,6 +182,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    autoComplete="new-password"
                     style={{ paddingRight: "2.5rem" }}
                   />
                   <button 
