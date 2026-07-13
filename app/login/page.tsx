@@ -31,52 +31,55 @@ const Login = () => {
       await login(email, password);
       router.push("/dashboard");
     } catch (err: any) {
+      const errMsg = err.message || "";
+      
+      // If rate limited by Supabase, show friendly message and stop
+      if (errMsg.includes("Too many") || errMsg.includes("rate limit")) {
+        setLocalError("Too many attempts. Please wait a moment and try again.");
+        setLoading(false);
+        return;
+      }
+
       // Auto-initialize when logging in with admin credentials for the first time
       if (email === "admin@brookvalley.com" && password === "admin123") {
         try {
-          let uid;
-          try {
-            const { data, error: signUpErr } = await supabase.auth.signUp({
-              email: "admin@brookvalley.com",
-              password: "admin123",
-              options: {
-                data: {
-                  full_name: "System Admin"
-                }
-              }
-            });
-            if (signUpErr) {
-              if (signUpErr.message.includes("already registered") || signUpErr.message.includes("User already exists") || signUpErr.message.includes("already exists")) {
-                // Ignore, user exists
-              } else {
-                throw signUpErr;
+          const { data, error: signUpErr } = await supabase.auth.signUp({
+            email: "admin@brookvalley.com",
+            password: "admin123",
+            options: {
+              data: {
+                full_name: "System Admin"
               }
             }
-            uid = data?.user?.id;
-            if (!uid) {
-              const { data: signInData } = await supabase.auth.signInWithPassword({
-                email: "admin@brookvalley.com",
-                password: "admin123"
-              });
-              uid = signInData?.user?.id;
+          });
+          
+          let uid = data?.user?.id;
+          
+          if (signUpErr) {
+            if (signUpErr.message.includes("already registered") || signUpErr.message.includes("already exists")) {
+              // User exists — just need to login, will be handled below
+            } else {
+              throw signUpErr;
             }
-          } catch (authErr) {
-            console.error("Auth sign up error:", authErr);
           }
+          
           if (uid) {
             await createFirstAdminUser(uid, "admin@brookvalley.com", "System Admin");
           }
           await seedInitialData(true);
-          // Log in again now that user exists in database
+          
+          // Log in now that user exists in database
           await login(email, password);
           router.push("/dashboard");
           return;
-        } catch (initErr) {
+        } catch (initErr: any) {
           console.error("Auto-initialization fallback failed:", initErr);
+          setLocalError(initErr.message || "Setup failed. Please try again.");
         }
+      } else {
+        console.error("Login failed error:", err);
+        setLocalError(errMsg || "Failed to sign in.");
       }
-      console.error("Login failed error:", err);
-      setLocalError(err.message || "Failed to sign in.");
     } finally {
       setLoading(false);
     }

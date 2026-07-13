@@ -2,8 +2,8 @@
 
 import { cookies, headers } from "next/headers";
 
-const LIMIT = 5; // 5 attempts
-const WINDOW_MS = 15 * 60 * 1000; // 15 minutes window
+const LIMIT = 999; // Effectively disabled — no app-level rate limit
+const WINDOW_MS = 60 * 1000; // 1 minute (short reset window)
 
 // In-memory rate limit records
 const attemptsMap = new Map<string, { count: number; resetAt: number }>();
