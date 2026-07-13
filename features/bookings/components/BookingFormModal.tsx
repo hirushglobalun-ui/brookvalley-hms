@@ -249,6 +249,14 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       setFormError("Customer phone number must be exactly 10 digits.");
       return;
     }
+
+    if (customerEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(customerEmail)) {
+        setFormError("Please enter a valid email address.");
+        return;
+      }
+    }
     
     if (new Date(checkInDate) >= new Date(checkOutDate)) {
       setFormError("Check-out date must be after check-in date.");
