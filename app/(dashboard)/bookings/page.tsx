@@ -124,7 +124,7 @@ const BookingsContent: React.FC = () => {
     if (!booking) return;
 
     try {
-      await bookingsService.updateBooking(bId, { ...booking, bookingStatus: newStatus }, user);
+      await bookingsService.updateBookingStatus(bId, booking.bookingStatus, newStatus, booking, user);
       refreshData();
     } catch (err: any) {
       alert("Failed to update status: " + err.message);

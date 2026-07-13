@@ -35,22 +35,34 @@ const SecurityTab: React.FC<SecurityTabProps> = ({ user }) => {
       setSecurityError("Email cannot be empty.");
       return;
     }
+    if (securityEmail === user?.email) {
+      setSecurityError("This is already your current email.");
+      return;
+    }
     setEmailLoading(true);
     try {
       const { data: { user: cu }, error: userErr } = await supabase.auth.getUser();
       if (userErr || !cu) throw new Error("No authenticated user found.");
       
       if (securityEmail !== cu.email) {
-        const { error: updateAuthErr } = await supabase.auth.updateUser({ email: securityEmail });
-        if (updateAuthErr) throw updateAuthErr;
+        const { error: rpcErr } = await supabase.rpc("update_user_email_direct", { p_new_email: securityEmail });
+        if (rpcErr) throw rpcErr;
         
-        await supabase.from("profiles").update({ email: securityEmail }).eq("id", cu.id);
-        await supabase.from("employees").update({ email: securityEmail }).eq("user_id", cu.id);
+        // Refresh the local session so the new email is baked into the client JWT
+        await supabase.auth.refreshSession();
+        
+        setSecuritySuccess("Email updated successfully! Reloading session...");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       }
-      setSecuritySuccess("Email update request sent! Please check your inbox for confirmation.");
-      setTimeout(() => setSecuritySuccess(""), 5000);
     } catch (err: any) {
-      setSecurityError(err.message || "Failed to update email.");
+      const msg = err.message || "Failed to update email.";
+      if (msg.includes("security purposes")) {
+        setSecurityError("Please wait before requesting another email change.");
+      } else {
+        setSecurityError(msg);
+      }
     } finally {
       setEmailLoading(false);
     }

@@ -95,6 +95,28 @@ export class BookingsService {
   }
 
   /**
+   * Updates only the booking status with a descriptive activity log.
+   * Used by dashboard and bookings table quick-status dropdowns.
+   */
+  public async updateBookingStatus(
+    bookingId: string,
+    oldStatus: string,
+    newStatus: Booking["bookingStatus"],
+    booking: any,
+    user: any
+  ): Promise<void> {
+    Logger.info("Quick status update", { bookingId, oldStatus, newStatus, actor: user?.email });
+
+    await repo.updateBookingSafe(bookingId, { ...booking, bookingStatus: newStatus });
+
+    await logActivity(
+      "UPDATE_BOOKING_STATUS",
+      `Changed booking ${bookingId} status: ${oldStatus} → ${newStatus} (Room ${booking.roomNumber}, ${booking.customerName})`,
+      user
+    );
+  }
+
+  /**
    * Soft-deletes a reservation from database and releases occupied rooms.
    */
   public async deleteBooking(

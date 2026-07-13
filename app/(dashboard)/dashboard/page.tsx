@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../../lib/auth";
 import { BookingsService } from "../../../features/bookings";
 import { SettingsService } from "../../../features/settings";
@@ -30,32 +30,45 @@ const Dashboard = () => {
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user) return;
-      try {
-        setLoading(true);
-        const [bookingsData, roomsData, employeesData, logsData, roomTypesData] = await Promise.all([
-          bookingsService.getBookings(),
-          settingsService.getRooms(),
-          employeesService.getEmployees(),
-          user.role === "admin" ? getActivityLogs(8) : Promise.resolve([]),
-          settingsService.getRoomTypes()
-        ]);
-        
-        setBookings(bookingsData.data);
-        setRooms(roomsData);
-        setEmployees(employeesData);
-        setLogs(logsData);
-        setRoomTypes(roomTypesData);
-      } catch (err) {
-        console.error("Dashboard fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+  const fetchData = useCallback(async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const [bookingsData, roomsData, employeesData, logsData, roomTypesData] = await Promise.all([
+        bookingsService.getBookings(),
+        settingsService.getRooms(),
+        employeesService.getEmployees(),
+        getActivityLogs(15),
+        settingsService.getRoomTypes()
+      ]);
+      
+      setBookings(bookingsData.data);
+      setRooms(roomsData);
+      setEmployees(employeesData);
+      setLogs(logsData);
+      setRoomTypes(roomTypesData);
+    } catch (err) {
+      console.error("Dashboard fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Quick status update handler for dashboard recent bookings
+  const handleDashboardStatusUpdate = async (bookingId: string, newStatus: Booking["bookingStatus"]) => {
+    const booking = bookings.find(b => b.bookingId === bookingId);
+    if (!booking) return;
+    try {
+      await bookingsService.updateBookingStatus(bookingId, booking.bookingStatus, newStatus, booking, user);
+      await fetchData();
+    } catch (err: any) {
+      alert("Failed to update status: " + err.message);
+    }
+  };
 
   if (loading) {
     return (
@@ -77,20 +90,33 @@ const Dashboard = () => {
   const todayCheckIns = bookings.filter(b => b.checkInDate === todayStr && b.bookingStatus !== "cancelled");
   const todayCheckOuts = bookings.filter(b => b.checkOutDate === todayStr && b.bookingStatus !== "cancelled");
 
-  const occupiedRooms = rooms.filter(r => r.status === "occupied").length;
-  const occupiedRoomsList = rooms.filter(r => r.status === "occupied");
   const totalRoomsCount = rooms.length;
-
   const employeeCount = employees.length;
 
-  // Find checked-in guest booking for an occupied room
-  const findActiveBookingForRoom = (roomNo: string) => {
-    return bookings.find(b => {
-      if (b.bookingStatus !== "checked-in") return false;
-      const roomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
-      return roomNumbers.includes(roomNo);
+  // Derive occupied rooms from checked-in bookings (reliable source of truth)
+  const checkedInBookings = bookings.filter(b => b.bookingStatus === "checked-in");
+  const occupiedRoomEntries: { room: Room; booking: Booking }[] = [];
+  checkedInBookings.forEach(booking => {
+    const roomNumbers = booking.roomNumber ? booking.roomNumber.split(",").map(r => r.trim()) : [];
+    roomNumbers.forEach(rn => {
+      const roomData = rooms.find(r => r.roomNumber === rn);
+      if (roomData) {
+        occupiedRoomEntries.push({ room: roomData, booking });
+      }
     });
-  };
+  });
+  // Also include rooms marked occupied in DB but without a matching checked-in booking (edge case)
+  rooms.filter(r => r.status === "occupied").forEach(room => {
+    if (!occupiedRoomEntries.find(e => e.room.roomNumber === room.roomNumber)) {
+      const matchingBooking = bookings.find(b => {
+        if (b.bookingStatus !== "checked-in") return false;
+        const rns = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
+        return rns.includes(room.roomNumber);
+      });
+      occupiedRoomEntries.push({ room, booking: matchingBooking as Booking });
+    }
+  });
+  const occupiedRooms = occupiedRoomEntries.length;
 
   // Masking utility for employee view
   const maskText = (text: string | number, booking: Booking) => {
@@ -166,6 +192,16 @@ const Dashboard = () => {
             </div>
 
             <div className="card stat-card">
+              <div className="stat-icon" style={{ backgroundColor: "rgba(59, 130, 246, 0.08)", color: "var(--info)" }}>
+                <ArrowUpRight size={24} />
+              </div>
+              <div className="stat-info">
+                <span className="value stat-value">{todayCheckIns.length}</span>
+                <span className="stat-label">Check-ins Today</span>
+              </div>
+            </div>
+
+            <div className="card stat-card">
               <div className="stat-icon" style={{ backgroundColor: "var(--warning-glow)", color: "var(--warning)" }}>
                 <Users size={24} />
               </div>
@@ -229,12 +265,12 @@ const Dashboard = () => {
         <div className="card-header" style={{ marginBottom: "1rem" }}>
           <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <DoorOpen size={18} className="text-primary" />
-            <span>Current Room Occupancy ({occupiedRoomsList.length} occupied)</span>
+            <span>Current Room Occupancy ({occupiedRoomEntries.length} occupied)</span>
           </h2>
         </div>
         
         <div className="table-wrapper">
-          {occupiedRoomsList.length > 0 ? (
+          {occupiedRoomEntries.length > 0 ? (
             <table className="table-custom" style={{ fontSize: "0.85rem" }}>
               <thead>
                 <tr>
@@ -247,8 +283,7 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {occupiedRoomsList.map(room => {
-                  const activeBooking = findActiveBookingForRoom(room.roomNumber);
+                {occupiedRoomEntries.map(({ room, booking: activeBooking }) => {
                   const displayTypeName = roomTypes.find(rt => rt.id === room.roomType)?.name || room.roomType;
                   
                   return (
@@ -268,7 +303,7 @@ const Dashboard = () => {
                         </>
                       ) : (
                         <td colSpan={4} style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
-                          No active checked-in booking details found (status occupied).
+                          Room marked occupied (no matching checked-in booking found).
                         </td>
                       )}
                     </tr>
@@ -301,6 +336,7 @@ const Dashboard = () => {
                       <th>Customer Name</th>
                       <th>Dates</th>
                       <th>Created By</th>
+                      <th>Status</th>
                       <th>Amount</th>
                     </tr>
                   </thead>
@@ -311,6 +347,26 @@ const Dashboard = () => {
                         <td>{maskText(b.customerName, b)}</td>
                         <td>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</td>
                         <td>{b.createdByName} ({b.createdByRole})</td>
+                        <td>
+                          <select 
+                            className={`badge badge-${
+                              b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                              b.bookingStatus === "cancelled" ? "danger" : "warning"
+                            }`}
+                            style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600 }}
+                            value={b.bookingStatus}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleDashboardStatusUpdate(b.bookingId, e.target.value as Booking["bookingStatus"]);
+                            }}
+                          >
+                            <option value="pending">PENDING</option>
+                            <option value="confirmed">CONFIRMED</option>
+                            <option value="checked-in">CHECKED-IN</option>
+                            <option value="checked-out">CHECKED-OUT</option>
+                            <option value="cancelled">CANCELLED</option>
+                          </select>
+                        </td>
                         <td style={{ fontWeight: 600 }}>₹{maskText(b.totalAmount, b)}</td>
                       </tr>
                     ))}
@@ -323,7 +379,27 @@ const Dashboard = () => {
                     <div key={b.bookingId} className="booking-mobile-card">
                       <div className="booking-card-row">
                         <span className="booking-card-room">Room {b.roomNumber}</span>
-                        <span className="booking-card-amount">₹{maskText(b.totalAmount, b)}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                          <select 
+                            className={`badge badge-${
+                              b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                              b.bookingStatus === "cancelled" ? "danger" : "warning"
+                            }`}
+                            style={{ fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600, margin: 0 }}
+                            value={b.bookingStatus}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleDashboardStatusUpdate(b.bookingId, e.target.value as Booking["bookingStatus"]);
+                            }}
+                          >
+                            <option value="pending">PENDING</option>
+                            <option value="confirmed">CONFIRMED</option>
+                            <option value="checked-in">CHECKED-IN</option>
+                            <option value="checked-out">CHECKED-OUT</option>
+                            <option value="cancelled">CANCELLED</option>
+                          </select>
+                          <span className="booking-card-amount">₹{maskText(b.totalAmount, b)}</span>
+                        </div>
                       </div>
                       <div className="booking-card-row">
                         <span className="booking-card-customer">{maskText(b.customerName, b)}</span>
@@ -344,8 +420,8 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Activity Logs Feed (Admin Only) */}
-        {user.role === "admin" && (
+        {/* Activity Logs Feed */}
+        {logs.length > 0 && (
           <div className="card">
             <div className="card-header">
               <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
