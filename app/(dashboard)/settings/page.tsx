@@ -124,15 +124,24 @@ const SettingsContent = () => {
     refreshData();
   };
 
+  const handleClearLogs = async () => {
+    const { clearAllLogs } = await import("../../../lib/db");
+    await clearAllLogs(user);
+    refreshData();
+  };
+
   const tabs = [
     ...(user?.role === "admin" || user?.role === "developer" || user?.role === "manager" ? [
       { id: "types",    label: "Room Types", icon: <BedDouble size={16} /> },
       { id: "rooms",    label: "Room Numbers", icon: <KeyRound size={16} /> }
     ] : []),
-    { id: "security", label: "Security",   icon: <Lock size={16} /> },
+    { id: "security", label: "Security",   icon: <Lock size={16} /> }
+    // Note: System Reset tab hidden as requested
+    /*
     ...(user?.role === "admin" || user?.role === "developer" || user?.role === "manager" ? [
       { id: "reset",    label: "System Reset", icon: <AlertOctagon size={16} /> }
     ] : [])
+    */
   ];
 
   if (!user) return null;
@@ -208,6 +217,7 @@ const SettingsContent = () => {
               onClearBookings={handleClearBookings}
               onClearEmployees={handleClearEmployees}
               onClearRoomTypes={handleClearRoomTypes}
+              onClearLogs={handleClearLogs}
             />
           )}
         </>

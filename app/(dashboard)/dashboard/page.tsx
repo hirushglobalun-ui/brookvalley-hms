@@ -70,6 +70,19 @@ const Dashboard = () => {
     }
   };
 
+  const handleClearLogs = async () => {
+    if (!window.confirm("WARNING: Are you sure you want to clear ALL activity logs? This action cannot be undone.")) return;
+    if (!window.confirm("DOUBLE CONFIRMATION: Are you absolutely certain you want to wipe the activity history logs?")) return;
+    try {
+      const { clearAllLogs } = await import("../../../lib/db");
+      await clearAllLogs(user);
+      alert("All activity logs cleared successfully!");
+      await fetchData();
+    } catch (err: any) {
+      alert("Failed to clear activity logs: " + err.message);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center", height: "60vh" }}>
@@ -423,11 +436,31 @@ const Dashboard = () => {
         {/* Activity Logs Feed */}
         {logs.length > 0 && (
           <div className="card">
-            <div className="card-header">
-              <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
                 <Activity size={18} className="text-primary" />
                 <span>Recent Audit Logs</span>
               </h2>
+              {(user.role === "admin" || user.role === "developer" || user.role === "manager") && (
+                <button 
+                  onClick={handleClearLogs}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--danger)",
+                    cursor: "pointer",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    padding: "4px 10px",
+                    borderRadius: "6px",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--danger-glow)"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                >
+                  Clear Logs
+                </button>
+              )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: "350px", overflowY: "auto", paddingRight: "0.25rem" }}>
               {logs.length > 0 ? (

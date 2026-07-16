@@ -8,7 +8,7 @@ import { SettingsService } from "../features/settings";
 import { BookingsService } from "../features/bookings";
 
 export { formatDate } from "./dateUtils";
-export { logActivity, getActivityLogs } from "../services/activityService";
+export { logActivity, getActivityLogs, clearAllLogs } from "../services/activityService";
 
 const empService = new EmployeesService();
 const settingsService = new SettingsService();

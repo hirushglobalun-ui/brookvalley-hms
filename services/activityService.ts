@@ -62,3 +62,24 @@ export const getActivityLogs = async (limitCount = 10): Promise<ActivityLog[]> =
   if (error) throw error;
   return (data || []).map(mapActivityLogFromDb).filter((l): l is ActivityLog => l !== null);
 };
+
+/**
+ * Permanently deletes all activity logs from the database.
+ * Writes a final audit log for the action.
+ * 
+ * @param adminUser - The active user profile triggering the action.
+ * @returns A promise that resolves when the logs are cleared.
+ */
+export const clearAllLogs = async (adminUser: any): Promise<void> => {
+  const { error } = await supabase
+    .from("activity_logs")
+    .delete()
+    .neq("id", "00000000-0000-0000-0000-000000000000");
+
+  if (error) {
+    throw new Error(`Failed to clear activity logs: ${error.message}`);
+  }
+
+  // Record the log clearing action
+  await logActivity("CLEAR_ALL_LOGS", "Permanently cleared all activity logs", adminUser);
+};

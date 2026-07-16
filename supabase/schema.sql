@@ -408,3 +408,13 @@ CREATE POLICY "Authenticated users can insert activity logs"
   ON public.activity_logs FOR INSERT 
   TO authenticated 
   WITH CHECK (true);
+
+CREATE POLICY "Admins can delete activity logs" 
+  ON public.activity_logs FOR DELETE 
+  TO authenticated 
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles 
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
