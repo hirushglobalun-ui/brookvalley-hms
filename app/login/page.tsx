@@ -66,10 +66,14 @@ const Login = () => {
           if (uid) {
             await createFirstAdminUser(uid, "admin@brookvalley.com", "System Admin");
           }
-          await seedInitialData(true);
           
           // Log in now that user exists in database
           await login(email, password);
+          try {
+            await seedInitialData(true);
+          } catch (seedErr: any) {
+            console.warn("Seeding initial room configurations failed:", seedErr);
+          }
           router.push("/dashboard");
           return;
         } catch (initErr: any) {
