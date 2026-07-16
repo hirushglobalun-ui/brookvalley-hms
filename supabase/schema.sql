@@ -304,6 +304,11 @@ CREATE POLICY "Users can update their own profile"
   TO authenticated 
   USING (auth.uid() = id);
 
+CREATE POLICY "Users can insert their own profile" 
+  ON public.profiles FOR INSERT 
+  TO authenticated 
+  WITH CHECK (auth.uid() = id);
+
 CREATE POLICY "Admins can update profiles" 
   ON public.profiles FOR UPDATE 
   TO authenticated 
