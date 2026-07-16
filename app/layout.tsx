@@ -6,9 +6,9 @@ export const metadata = {
   title: "Brookvalley Hotel HMS",
   description: "Guest Reservation & Staff Portal",
   icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/icon.png",
+    icon: "/image-Photoroom (27).png",
+    shortcut: "/image-Photoroom (27).png",
+    apple: "/image-Photoroom (27).png",
   },
 };
 
