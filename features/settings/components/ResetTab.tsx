@@ -8,17 +8,19 @@ interface ResetTabProps {
   onClearBookings: () => Promise<void>;
   onClearEmployees: () => Promise<void>;
   onClearRoomTypes: () => Promise<void>;
+  onClearLogs: () => Promise<void>;
 }
 
 const ResetTab: React.FC<ResetTabProps> = ({
   user,
   onClearBookings,
   onClearEmployees,
-  onClearRoomTypes
+  onClearRoomTypes,
+  onClearLogs
 }) => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  if (user?.role !== "admin") return null;
+  if (user?.role !== "admin" && user?.role !== "developer" && user?.role !== "manager") return null;
 
   const handleClearBookings = async () => {
     if (!window.confirm("WARNING: Are you sure you want to clear ALL booking records? This action cannot be undone.")) return;
@@ -62,6 +64,20 @@ const ResetTab: React.FC<ResetTabProps> = ({
     }
   };
 
+  const handleClearLogs = async () => {
+    if (!window.confirm("WARNING: Are you sure you want to clear ALL activity logs? This action cannot be undone.")) return;
+    if (!window.confirm("DOUBLE CONFIRMATION: Are you absolutely certain you want to wipe the activity history logs?")) return;
+    setActionLoading("logs");
+    try {
+      await onClearLogs();
+      alert("All activity logs cleared successfully!");
+    } catch (err: any) {
+      alert("Failed to clear activity logs: " + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   return (
     <div className="card" style={{ padding: "1.5rem", border: "1px solid var(--danger)", backgroundColor: "var(--danger-glow)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.25rem", color: "var(--danger)" }}>
@@ -99,7 +115,7 @@ const ResetTab: React.FC<ResetTabProps> = ({
         </div>
 
         {/* Room Types Reset */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }} className="mobile-stacked-flex">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "1rem", borderBottom: "1px solid var(--card-border)" }} className="mobile-stacked-flex">
           <div>
             <h4 style={{ fontSize: "0.9rem", fontWeight: 600 }}>Reset Rooms Configuration</h4>
             <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "2px" }}>Wipes all room sizes, rates, and numbers.</p>
@@ -107,6 +123,18 @@ const ResetTab: React.FC<ResetTabProps> = ({
           <button className="btn btn-danger" onClick={handleClearRoomTypes} disabled={actionLoading !== null}>
             <Trash2 size={15} style={{ color: "white" }} />
             <span>{actionLoading === "types" ? "Wiping Rooms..." : "Clear Room Configs"}</span>
+          </button>
+        </div>
+
+        {/* Activity Logs Reset */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }} className="mobile-stacked-flex">
+          <div>
+            <h4 style={{ fontSize: "0.9rem", fontWeight: 600 }}>Clear Activity Logs</h4>
+            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "2px" }}>Permanently deletes all audit and activity history logs.</p>
+          </div>
+          <button className="btn btn-danger" onClick={handleClearLogs} disabled={actionLoading !== null}>
+            <Trash2 size={15} style={{ color: "white" }} />
+            <span>{actionLoading === "logs" ? "Wiping Logs..." : "Clear All Logs"}</span>
           </button>
         </div>
       </div>

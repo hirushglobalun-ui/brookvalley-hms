@@ -80,8 +80,12 @@ const RoomTypesTab: React.FC<RoomTypesTabProps> = ({
   };
 
   const saveEdit = async (id: string) => {
-    if (!editFields.name || !editFields.price) {
+    if (!editFields.name || editFields.price === undefined || (editFields.price as any) === "") {
       alert("Name and price are required.");
+      return;
+    }
+    if (editFields.capacity === undefined || (editFields.capacity as any) === "" || Number(editFields.capacity) <= 0) {
+      alert("Capacity must be at least 1.");
       return;
     }
     setEditSaving(true);
@@ -182,13 +186,13 @@ const RoomTypesTab: React.FC<RoomTypesTabProps> = ({
 
                     <td>
                       {isEditing ? (
-                        <input type="number" className="input-control" style={{ padding: "0.3rem", fontSize: "0.85rem" }} value={editFields.price || 0} onChange={e => setEditFields({ ...editFields, price: Number(e.target.value) })} />
+                        <input type="number" className="input-control" style={{ padding: "0.3rem", fontSize: "0.85rem" }} value={editFields.price !== undefined && editFields.price !== null ? editFields.price : ""} onChange={e => setEditFields({ ...editFields, price: e.target.value === "" ? "" as any : Number(e.target.value) })} />
                       ) : `₹${rt.price}`}
                     </td>
 
                     <td>
                       {isEditing ? (
-                        <input type="number" className="input-control" style={{ padding: "0.3rem", fontSize: "0.85rem" }} value={editFields.capacity || 1} onChange={e => setEditFields({ ...editFields, capacity: Number(e.target.value) })} />
+                        <input type="number" className="input-control" style={{ padding: "0.3rem", fontSize: "0.85rem" }} value={editFields.capacity !== undefined && editFields.capacity !== null ? editFields.capacity : ""} onChange={e => setEditFields({ ...editFields, capacity: e.target.value === "" ? "" as any : Number(e.target.value) })} />
                       ) : `${rt.capacity} Guests`}
                     </td>
 

@@ -118,7 +118,7 @@ const CalendarViewContent: React.FC = () => {
 
   // Booking access masking logic (non-admins can only view their own bookings)
   const isOwner = (booking: Booking): boolean => {
-    if (user?.role === "admin") return true;
+    if (user?.role === "admin" || user?.role === "developer" || user?.role === "manager") return true;
     return booking.createdByUid === user?.uid;
   };
 

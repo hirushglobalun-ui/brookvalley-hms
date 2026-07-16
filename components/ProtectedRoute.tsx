@@ -29,8 +29,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
     if (!loading) {
       if (!user) {
         router.replace("/login");
-      } else if (allowedRoles && !allowedRoles.includes(user.role)) {
-        router.replace("/dashboard");
+      } else if (allowedRoles) {
+        const hasAccess = allowedRoles.includes(user.role) || 
+          ((user.role === "developer" || user.role === "manager") && allowedRoles.includes("admin"));
+        if (!hasAccess) {
+          router.replace("/dashboard");
+        }
       }
     }
   }, [user, loading, allowedRoles, router]);
@@ -68,7 +72,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
     );
   }
 
-  if (!user || (allowedRoles && !allowedRoles.includes(user.role))) {
+  const hasAccess = !allowedRoles || allowedRoles.includes(user.role) || 
+    ((user.role === "developer" || user.role === "manager") && allowedRoles.includes("admin"));
+  if (!user || !hasAccess) {
     return null;
   }
 

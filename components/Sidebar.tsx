@@ -95,7 +95,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
     { name: "Settings", path: "/settings", icon: Settings, roles: ["admin", "employee"] },
   ];
 
-  const filteredMenu = menuItems.filter(item => item.roles.includes(user.role));
+  const filteredMenu = menuItems.filter(item => 
+    item.roles.includes(user.role) || 
+    ((user.role === "developer" || user.role === "manager") && item.roles.includes("admin"))
+  );
   
   const initials = user.fullName
     ? user.fullName.split(" ").map((n: string) => n[0]).join("").toUpperCase().substring(0, 2)

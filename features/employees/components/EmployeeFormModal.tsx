@@ -204,6 +204,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 onChange={(e) => setRole(e.target.value)}
               >
                 <option value="employee">Staff Employee</option>
+                <option value="manager">Manager</option>
                 <option value="admin">System Administrator</option>
               </select>
             </div>
@@ -214,7 +215,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 className="input-control" 
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                disabled={employee?.role === "admin"}
+                disabled={employee?.role === "admin" || employee?.role === "manager"}
               >
                 <option value="active">Active (Access Granted)</option>
                 <option value="inactive">Inactive (Access Suspended)</option>

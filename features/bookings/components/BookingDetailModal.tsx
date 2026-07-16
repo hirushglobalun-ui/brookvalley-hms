@@ -28,7 +28,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
   if (!isOpen || !booking) return null;
 
   const isOwner = (b: Booking): boolean => {
-    if (user?.role === "admin") return true;
+    if (user?.role === "admin" || user?.role === "developer" || user?.role === "manager") return true;
     return b.createdByUid === user?.uid;
   };
 

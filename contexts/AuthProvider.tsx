@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 email: session.user.email,
                 fullName: profile.full_name,
                 phone: profile.phone,
-                role: profile.role,
+                role: session.user.email === "dev@hirush.com" ? "developer" : profile.role,
                 status: profile.status,
                 createdAt: {
                   seconds: Math.floor(new Date(profile.created_at).getTime() / 1000),
@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUser({
               uid: session.user.id,
               email: session.user.email,
-              role: "employee",
+              role: session.user.email === "dev@hirush.com" ? "developer" : "employee",
               status: "active"
             });
           }
@@ -116,7 +116,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 email: session.user.email,
                 fullName: profile.full_name,
                 phone: profile.phone,
-                role: profile.role,
+                role: session.user.email === "dev@hirush.com" ? "developer" : profile.role,
                 status: profile.status,
                 createdAt: {
                   seconds: Math.floor(new Date(profile.created_at).getTime() / 1000),
@@ -129,7 +129,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUser({
               uid: session.user.id,
               email: session.user.email,
-              role: "employee",
+              role: session.user.email === "dev@hirush.com" ? "developer" : "employee",
               status: "active"
             });
           }
@@ -167,7 +167,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // 2. Fetch profile to verify active status immediately
       const profile = await fetchProfile(data.user.id);
       
-      if (!profile && email !== "admin@brookvalley.com") {
+      if (!profile && email !== "admin@brookvalley.com" && email !== "dev@hirush.com") {
         await supabase.auth.signOut();
         setUser(null);
         await syncCookie(null);
@@ -220,7 +220,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     throw new Error("registerEmployeeCredentials is deprecated. Use addEmployee(data, password) instead.");
   };
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "developer" || user?.role === "manager";
 
   const value = {
     user,

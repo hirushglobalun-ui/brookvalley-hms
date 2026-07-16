@@ -90,7 +90,7 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({
       </div>
 
       {/* Actions Panel */}
-      {user?.role === "admin" && (
+      {(user?.role === "admin" || user?.role === "developer" || user?.role === "manager") && (
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
           <button 
             className="btn btn-secondary btn-icon-label" 
@@ -115,7 +115,7 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({
           >
             {employee.status === "active" ? <UserX size={14} /> : <UserCheck size={14} />}
           </button>
-          {employee.role !== "admin" && (
+          {employee.role !== "admin" && employee.role !== "manager" && (
             <button 
               className="btn btn-danger" 
               style={{ padding: "0.5rem", width: "36px", height: "36px", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", justifyContent: "center" }}
