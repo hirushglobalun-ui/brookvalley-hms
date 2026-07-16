@@ -125,11 +125,14 @@ const SettingsContent = () => {
   };
 
   const tabs = [
-    ...(user?.role === "admin" ? [
+    ...(user?.role === "admin" || user?.role === "developer" || user?.role === "manager" ? [
       { id: "types",    label: "Room Types", icon: <BedDouble size={16} /> },
       { id: "rooms",    label: "Room Numbers", icon: <KeyRound size={16} /> }
     ] : []),
-    { id: "security", label: "Security",   icon: <Lock size={16} /> }
+    { id: "security", label: "Security",   icon: <Lock size={16} /> },
+    ...(user?.role === "admin" || user?.role === "developer" || user?.role === "manager" ? [
+      { id: "reset",    label: "System Reset", icon: <AlertOctagon size={16} /> }
+    ] : [])
   ];
 
   if (!user) return null;
@@ -196,6 +199,16 @@ const SettingsContent = () => {
           {/* Security Tab */}
           {safeActiveTab === "security" && (
             <SecurityTab user={user} />
+          )}
+
+          {/* System Reset tab */}
+          {safeActiveTab === "reset" && (
+            <ResetTab
+              user={user}
+              onClearBookings={handleClearBookings}
+              onClearEmployees={handleClearEmployees}
+              onClearRoomTypes={handleClearRoomTypes}
+            />
           )}
         </>
       )}

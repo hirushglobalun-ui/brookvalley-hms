@@ -10,7 +10,7 @@ export class EmployeeEntity {
   public readonly fullName: string;
   public readonly email: string;
   public readonly phone: string;
-  public readonly role: "admin" | "employee";
+  public readonly role: "admin" | "employee" | "manager";
   public readonly status: "active" | "inactive";
   public readonly joinedDate: string;
   public readonly notes: string;
@@ -22,7 +22,7 @@ export class EmployeeEntity {
     fullName: string,
     email: string,
     phone: string,
-    role: "admin" | "employee",
+    role: "admin" | "employee" | "manager",
     status: "active" | "inactive",
     joinedDate: string,
     notes = ""

@@ -18,7 +18,7 @@ const ResetTab: React.FC<ResetTabProps> = ({
 }) => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  if (user?.role !== "admin") return null;
+  if (user?.role !== "admin" && user?.role !== "developer" && user?.role !== "manager") return null;
 
   const handleClearBookings = async () => {
     if (!window.confirm("WARNING: Are you sure you want to clear ALL booking records? This action cannot be undone.")) return;

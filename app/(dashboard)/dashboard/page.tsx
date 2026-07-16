@@ -120,7 +120,7 @@ const Dashboard = () => {
 
   // Masking utility for employee view
   const maskText = (text: string | number, booking: Booking) => {
-    if (user.role === "admin") return String(text);
+    if (user.role === "admin" || user.role === "developer" || user.role === "manager") return String(text);
     if (booking.createdByUid === user.uid) return String(text);
     return "[Restricted]";
   };
@@ -169,7 +169,7 @@ const Dashboard = () => {
 
       {/* Metric Cards */}
       <div className="grid-stats">
-        {user.role === "admin" ? (
+        {(user.role === "admin" || user.role === "developer" || user.role === "manager") ? (
           <>
             <div className="card stat-card">
               <div className="stat-icon" style={{ backgroundColor: "var(--primary-glow)", color: "var(--primary)" }}>
@@ -318,7 +318,7 @@ const Dashboard = () => {
       </div>
 
       {/* Bottom Section: Recent Activity / Today Checklist */}
-      <div className={user.role === "admin" ? "grid-2col-responsive" : ""} style={{ marginTop: "0.5rem" }}>
+      <div className={(user.role === "admin" || user.role === "developer" || user.role === "manager") ? "grid-2col-responsive" : ""} style={{ marginTop: "0.5rem" }}>
         
         {/* Recent Bookings Feed (Masked for employee) */}
         <div className="card">

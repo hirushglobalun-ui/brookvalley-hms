@@ -212,7 +212,7 @@ const ReportsContent = () => {
     { id: "revenue",  label: "Revenue Contribution", icon: <BarChart3 size={16} /> }
   ];
 
-  if (user?.role === "admin") {
+  if (user?.role === "admin" || user?.role === "developer" || user?.role === "manager") {
     tabs.push({ id: "employees", label: "Employee Contribution", icon: <Users size={16} /> });
   }
 
@@ -308,7 +308,7 @@ const ReportsContent = () => {
               setFilterStatus={setFilterStatus}
               filterEmployee={filterEmployee}
               setFilterEmployee={setFilterEmployee}
-              isAdmin={user?.role === "admin"}
+              isAdmin={user?.role === "admin" || user?.role === "developer" || user?.role === "manager"}
               formatDate={formatDate}
               statusColor={statusColor}
               payColor={payColor}
@@ -326,7 +326,7 @@ const ReportsContent = () => {
             />
           )}
 
-          {activeTab === "employees" && user?.role === "admin" && (
+          {activeTab === "employees" && (user?.role === "admin" || user?.role === "developer" || user?.role === "manager") && (
             <EmployeeReportTab 
               performance={employeePerformance}
             />

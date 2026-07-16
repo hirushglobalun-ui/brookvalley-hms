@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   full_name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
   phone TEXT,
-  role TEXT CHECK (role IN ('admin', 'employee')) NOT NULL DEFAULT 'employee',
+  role TEXT CHECK (role IN ('admin', 'employee', 'manager', 'developer')) NOT NULL DEFAULT 'employee',
   status TEXT CHECK (status IN ('active', 'inactive')) NOT NULL DEFAULT 'active',
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS public.employees (
   full_name TEXT NOT NULL,
   email TEXT NOT NULL,
   phone TEXT,
-  role TEXT CHECK (role IN ('admin', 'employee')) NOT NULL DEFAULT 'employee',
+  role TEXT CHECK (role IN ('admin', 'employee', 'manager', 'developer')) NOT NULL DEFAULT 'employee',
   status TEXT CHECK (status IN ('active', 'inactive')) NOT NULL DEFAULT 'active',
   joined_date DATE NOT NULL DEFAULT CURRENT_DATE,
   notes TEXT DEFAULT '',

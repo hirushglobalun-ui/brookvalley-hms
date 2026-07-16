@@ -91,7 +91,7 @@ const RoomsTab: React.FC<RoomsTabProps> = ({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {/* Add New Room Number Form */}
-      {user.role === "admin" && (
+      {(user.role === "admin" || user.role === "developer" || user.role === "manager") && (
         <div className="card" style={{ padding: "1.5rem" }}>
           <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1.25rem" }}>Configure New Room Number</h3>
           
@@ -216,7 +216,7 @@ const RoomsTab: React.FC<RoomsTabProps> = ({
                             <button className="btn btn-secondary btn-icon" style={{ padding: "0.3rem" }} onClick={() => startEditRoom(room)} title="Edit room details">
                               <Pencil size={14} />
                             </button>
-                            {user.role === "admin" && (
+                            {(user.role === "admin" || user.role === "developer" || user.role === "manager") && (
                               <button className="btn btn-danger btn-icon" style={{ padding: "0.3rem" }} onClick={() => handleDelete(room.roomNumber)} title="Delete room">
                                 <Trash2 size={14} style={{ color: "white" }} />
                               </button>

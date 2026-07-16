@@ -111,7 +111,7 @@ const EmployeesContent = () => {
           </p>
         </div>
 
-        {user?.role === "admin" && (
+        {(user?.role === "admin" || user?.role === "developer" || user?.role === "manager") && (
           <button 
             className="btn btn-primary"
             onClick={() => {
