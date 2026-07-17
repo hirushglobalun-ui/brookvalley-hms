@@ -7,6 +7,22 @@ import { seedInitialData, createFirstAdminUser } from "../../lib/db";
 import { supabase } from "../../lib/supabase";
 import { KeyRound, Mail, ShieldAlert, Eye, EyeOff } from "lucide-react";
 
+const Spinner = ({ size = 16, color = "currentColor" }: { size?: number; color?: string }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ animation: "spin 0.8s linear infinite", display: "inline-block", flexShrink: 0 }}
+  >
+    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+  </svg>
+);
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -216,10 +232,24 @@ const Login = () => {
           <button 
             type="submit" 
             className="btn btn-primary" 
-            style={{ width: "100%", marginTop: "1rem" }}
+            style={{ 
+              width: "100%", 
+              marginTop: "1rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem"
+            }}
             disabled={loading}
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? (
+              <>
+                <Spinner size={16} />
+                <span>Signing in...</span>
+              </>
+            ) : (
+              "Sign In"
+            )}
           </button>
         </form>
 
