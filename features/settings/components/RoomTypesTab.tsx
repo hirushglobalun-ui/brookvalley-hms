@@ -23,7 +23,7 @@ const RoomTypesTab: React.FC<RoomTypesTabProps> = ({
   const [rtId, setRtId] = useState("");
   const [rtName, setRtName] = useState("");
   const [rtPrice, setRtPrice] = useState("");
-  const [rtCapacity, setRtCapacity] = useState(2);
+  const [rtCapacity, setRtCapacity] = useState<number | "">(2);
   const [rtDescription, setRtDescription] = useState("");
   
   const [rtError, setRtError] = useState("");
@@ -138,7 +138,7 @@ const RoomTypesTab: React.FC<RoomTypesTabProps> = ({
           <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: "1rem" }} className="mobile-stacked-grid">
             <div className="form-group">
               <label>Standard Capacity *</label>
-              <input type="number" className="input-control" min="1" value={rtCapacity} onChange={e => setRtCapacity(Number(e.target.value))} required />
+              <input type="number" className="input-control" min="1" value={rtCapacity} onChange={e => setRtCapacity(e.target.value === "" ? "" : Number(e.target.value))} required />
             </div>
             <div className="form-group">
               <label>Short Description</label>

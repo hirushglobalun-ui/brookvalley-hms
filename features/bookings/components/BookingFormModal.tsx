@@ -35,12 +35,12 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
   const [selectedRoomNumbers, setSelectedRoomNumbers] = useState<string[]>([]);
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
-  const [guestCount, setGuestCount] = useState<number>(1);
-  const [totalAmount, setTotalAmount] = useState<number>(0);
+  const [guestCount, setGuestCount] = useState<number | "">(1);
+  const [totalAmount, setTotalAmount] = useState<number | "">(0);
   const [paymentStatus, setPaymentStatus] = useState<Booking["paymentStatus"]>("unpaid");
   const [bookingStatus, setBookingStatus] = useState<Booking["bookingStatus"]>("confirmed");
   const [paymentMethod, setPaymentMethod] = useState("none");
-  const [advanceAmount, setAdvanceAmount] = useState<number>(0);
+  const [advanceAmount, setAdvanceAmount] = useState<number | "">(0);
   const [paymentProof, setPaymentProof] = useState("");
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const [remarks, setRemarks] = useState("");
@@ -441,7 +441,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                 className="input-control" 
                 min="1"
                 value={guestCount}
-                onChange={(e) => setGuestCount(Number(e.target.value))}
+                onChange={(e) => setGuestCount(e.target.value === "" ? "" : Number(e.target.value))}
                 required
               />
             </div>
@@ -454,7 +454,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                 type="number" 
                 className="input-control" 
                 value={totalAmount}
-                onChange={(e) => setTotalAmount(Number(e.target.value))}
+                onChange={(e) => setTotalAmount(e.target.value === "" ? "" : Number(e.target.value))}
               />
             </div>
             <div className="form-group" style={{ margin: 0 }}>
@@ -523,7 +523,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                 className="input-control" 
                 min="0"
                 value={advanceAmount}
-                onChange={(e) => setAdvanceAmount(Number(e.target.value))}
+                onChange={(e) => setAdvanceAmount(e.target.value === "" ? "" : Number(e.target.value))}
               />
             </div>
             <div className="form-group" style={{ gridColumn: "span 2" }}>
