@@ -3,6 +3,7 @@ const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
   "/image-Photoroom (27).png",
+  "/logo-192.png",
   "/manifest.json"
 ];
 
