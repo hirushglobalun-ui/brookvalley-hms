@@ -8,6 +8,10 @@ import { RoomType } from "../../../types";
 
 const repo = new SettingsRepository();
 
+let cachedRoomTypes: { data: RoomType[], timestamp: number } | null = null;
+let cachedRooms: { data: any[], timestamp: number } | null = null;
+const CACHE_TTL = 30000; // 30 seconds
+
 /**
  * Service orchestrating room and settings domain calculations.
  */
@@ -16,14 +20,19 @@ export class SettingsService {
    * Retrieves list of configured room types.
    */
   public async getRoomTypes(): Promise<RoomType[]> {
+    if (cachedRoomTypes && Date.now() - cachedRoomTypes.timestamp < CACHE_TTL) {
+      return cachedRoomTypes.data;
+    }
     const entities = await repo.getRoomTypes();
-    return entities.map(e => ({
+    const result = entities.map(e => ({
       id: e.id,
       name: e.name,
       price: e.price,
       capacity: e.capacity,
       description: e.description
     }));
+    cachedRoomTypes = { data: result, timestamp: Date.now() };
+    return result;
   }
 
   /**
@@ -38,6 +47,7 @@ export class SettingsService {
     Logger.info("Creating room type config", { id: dto.id, creator: adminUser?.email });
     await repo.addRoomType(dto);
     await logActivity("CREATE_ROOM_TYPE", `Created room type ${dto.name}`, adminUser);
+    cachedRoomTypes = null;
   }
 
   /**
@@ -52,6 +62,7 @@ export class SettingsService {
     Logger.info("Updating room type config", { id, creator: adminUser?.email });
     await repo.updateRoomType(id, dto);
     await logActivity("UPDATE_ROOM_TYPE", `Updated room type ${dto.name}`, adminUser);
+    cachedRoomTypes = null;
   }
 
   /**
@@ -61,6 +72,7 @@ export class SettingsService {
     Logger.warn("Soft-deleting room type config", { id, creator: adminUser?.email });
     await repo.deleteRoomType(id, reason, adminUser);
     await logActivity("DELETE_ROOM_TYPE", `Soft-deleted room type ${name}. Reason: ${reason}`, adminUser);
+    cachedRoomTypes = null;
   }
 
   /**
@@ -90,6 +102,7 @@ export class SettingsService {
     Logger.info("Restoring room type", { id, user: adminUser?.email });
     await repo.restoreRoomType(id);
     await logActivity("RESTORE_ROOM_TYPE", `Restored room type ${id}`, adminUser);
+    cachedRoomTypes = null;
   }
 
   /**
@@ -102,19 +115,25 @@ export class SettingsService {
     Logger.error("Purging room type config permanently", undefined, { id, user: adminUser?.email });
     await repo.purgeRoomType(id);
     await logActivity("PURGE_ROOM_TYPE", `Permanently purged room type ${id}`, adminUser);
+    cachedRoomTypes = null;
   }
 
   /**
    * Retrieves all room list models.
    */
   public async getRooms() {
+    if (cachedRooms && Date.now() - cachedRooms.timestamp < CACHE_TTL) {
+      return cachedRooms.data;
+    }
     const entities = await repo.getRooms();
-    return entities.map(e => ({
+    const result = entities.map(e => ({
       id: e.roomNumber,
       roomNumber: e.roomNumber,
       roomType: e.roomType,
       status: e.status
     }));
+    cachedRooms = { data: result, timestamp: Date.now() };
+    return result;
   }
 
   /**
@@ -129,6 +148,7 @@ export class SettingsService {
     Logger.info("Adding physical room config", { roomNumber: dto.roomNumber, creator: adminUser?.email });
     await repo.addRoom(dto);
     await logActivity("CREATE_ROOM", `Added room ${dto.roomNumber} (${dto.roomType})`, adminUser);
+    cachedRooms = null;
   }
 
   /**
@@ -138,6 +158,7 @@ export class SettingsService {
     Logger.info("Updating room status state", { roomNumber, status, user: adminUser?.email });
     await repo.updateRoomStatus(roomNumber, status);
     await logActivity("UPDATE_ROOM_STATUS", `Updated room ${roomNumber} to ${status}`, adminUser);
+    cachedRooms = null;
   }
 
   /**
@@ -147,6 +168,7 @@ export class SettingsService {
     Logger.info("Marking room as clean", { roomNumber, user: adminUser?.email });
     await repo.updateRoomStatus(roomNumber, "available");
     await logActivity("CLEAN_ROOM", `Cleaned room ${roomNumber} (status changed to available)`, adminUser);
+    cachedRooms = null;
   }
 
   /**
@@ -156,6 +178,7 @@ export class SettingsService {
     Logger.warn("Soft-deleting room number configuration", { roomNumber, user: adminUser?.email });
     await repo.deleteRoom(roomNumber, reason, adminUser);
     await logActivity("DELETE_ROOM", `Soft-deleted room ${roomNumber}. Reason: ${reason}`, adminUser);
+    cachedRooms = null;
   }
 
   /**
@@ -184,6 +207,7 @@ export class SettingsService {
     Logger.info("Restoring room configuration", { roomNumber, user: adminUser?.email });
     await repo.restoreRoom(roomNumber);
     await logActivity("RESTORE_ROOM", `Restored room ${roomNumber}`, adminUser);
+    cachedRooms = null;
   }
 
   /**
@@ -196,6 +220,7 @@ export class SettingsService {
     Logger.error("Purging room config permanently", undefined, { roomNumber, user: adminUser?.email });
     await repo.purgeRoom(roomNumber);
     await logActivity("PURGE_ROOM", `Permanently purged room ${roomNumber}`, adminUser);
+    cachedRooms = null;
   }
 
   /**
@@ -210,6 +235,7 @@ export class SettingsService {
     Logger.info("Updating room specifications", { oldRoomNumber, roomNumber: dto.roomNumber, user: adminUser?.email });
     await repo.updateRoom(oldRoomNumber, dto);
     await logActivity("UPDATE_ROOM", `Updated room ${oldRoomNumber} to ${dto.roomNumber} (${dto.roomType})`, adminUser);
+    cachedRooms = null;
   }
 
   /**
@@ -219,6 +245,8 @@ export class SettingsService {
     Logger.error("Wiping all rooms configurations", undefined, { admin: adminUser?.email });
     await repo.clearAllRoomTypes();
     await logActivity("CLEAR_ALL_ROOM_TYPES", "Cleared all room types and rooms configurations", adminUser);
+    cachedRoomTypes = null;
+    cachedRooms = null;
   }
 
   /**
@@ -257,6 +285,8 @@ export class SettingsService {
 
     Logger.info("Executing room seeding sequence", { force });
     await repo.seedInitialData(roomTypesData, roomsData);
+    cachedRoomTypes = null;
+    cachedRooms = null;
     return true;
   }
 }

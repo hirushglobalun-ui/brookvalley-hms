@@ -98,6 +98,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Listen for authentication changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Prevent full app reload just for a background token refresh
+      if (event === "TOKEN_REFRESHED") {
+        await syncCookie(session);
+        return;
+      }
+      
       setLoading(true);
       setError("");
       
@@ -186,8 +192,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error(deactiveMsg);
       }
 
-      // 3. Reset rate limit score on successful authentication
-      await resetLoginRateLimit(email);
+      // 3. Reset rate limit non-blocking, and sync cookie before proceeding
+      resetLoginRateLimit(email).catch(console.error);
       await syncCookie(data.session);
 
       return data.user;
