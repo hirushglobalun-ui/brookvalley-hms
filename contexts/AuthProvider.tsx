@@ -34,7 +34,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const syncCookie = async (session: any) => {
     if (session) {
-      const maxAge = session.expires_in || 3600;
+      // Keep the session cookie for 30 days to prevent premature auto-logout
+      const maxAge = 30 * 24 * 60 * 60; // 30 days in seconds
       await setServerCookie("sb-access-token", session.access_token, maxAge);
     } else {
       await removeServerCookie("sb-access-token");
