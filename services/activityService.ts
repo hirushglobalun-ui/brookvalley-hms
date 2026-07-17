@@ -24,6 +24,9 @@ export const mapActivityLogFromDb = (log: any): ActivityLog | null => {
   };
 };
 
+let cachedLogs: { data: ActivityLog[], timestamp: number } | null = null;
+const CACHE_TTL = 30000; // 30 seconds
+
 /**
  * Creates an activity log entry in the database.
  * 
@@ -41,6 +44,7 @@ export const logActivity = async (action: string, details: string, user: any): P
       user_name: user?.fullName || user?.email || "System",
       user_role: user?.role || "system"
     });
+    cachedLogs = null;
   } catch (err) {
     console.error("Failed to write activity log:", err);
   }
@@ -53,6 +57,10 @@ export const logActivity = async (action: string, details: string, user: any): P
  * @returns A promise resolving to an array of ActivityLog objects.
  */
 export const getActivityLogs = async (limitCount = 10): Promise<ActivityLog[]> => {
+  if (cachedLogs && Date.now() - cachedLogs.timestamp < CACHE_TTL && cachedLogs.data.length >= limitCount) {
+    return cachedLogs.data.slice(0, limitCount);
+  }
+
   const { data, error } = await supabase
     .from("activity_logs")
     .select("*")
@@ -60,7 +68,13 @@ export const getActivityLogs = async (limitCount = 10): Promise<ActivityLog[]> =
     .limit(limitCount);
 
   if (error) throw error;
-  return (data || []).map(mapActivityLogFromDb).filter((l): l is ActivityLog => l !== null);
+  const result = (data || []).map(mapActivityLogFromDb).filter((l): l is ActivityLog => l !== null);
+  
+  if (limitCount === 10 || limitCount === 15) {
+    cachedLogs = { data: result, timestamp: Date.now() };
+  }
+  
+  return result;
 };
 
 /**
@@ -80,6 +94,7 @@ export const clearAllLogs = async (adminUser: any): Promise<void> => {
     throw new Error(`Failed to clear activity logs: ${error.message}`);
   }
 
+  cachedLogs = null;
   // Record the log clearing action
   await logActivity("CLEAR_ALL_LOGS", "Permanently cleared all activity logs", adminUser);
 };

@@ -8,6 +8,9 @@ import { Booking } from "../../../types";
 
 const repo = new BookingsRepository();
 
+let cachedBookings: { data: Booking[], count: number, timestamp: number } | null = null;
+const CACHE_TTL = 15000; // 15 seconds
+
 /**
  * Service orchestrating customer reservations and date validations.
  */
@@ -16,8 +19,15 @@ export class BookingsService {
    * Retrieves paginated bookings list records.
    */
   public async getBookings(page: number = 1, limit: number = 50, userId?: string): Promise<{ data: Booking[], count: number }> {
+    // Return cache if valid and it's the standard dashboard query
+    if (page === 1 && limit === 50 && !userId) {
+      if (cachedBookings && Date.now() - cachedBookings.timestamp < CACHE_TTL) {
+        return cachedBookings;
+      }
+    }
+
     const { data: entities, count } = await repo.getBookings(page, limit, userId);
-    return {
+    const result = {
       data: entities.map(e => ({
         id: e.bookingId,
         bookingId: e.bookingId,
@@ -45,6 +55,12 @@ export class BookingsService {
       })),
       count
     };
+
+    if (page === 1 && limit === 50 && !userId) {
+      cachedBookings = { ...result, timestamp: Date.now() };
+    }
+
+    return result;
   }
 
   /**
@@ -69,6 +85,7 @@ export class BookingsService {
       user
     );
 
+    cachedBookings = null;
     return bookingId;
   }
 
@@ -92,6 +109,7 @@ export class BookingsService {
       `Updated booking ${bookingId} (Room(s) ${dto.roomNumber})`,
       user
     );
+    cachedBookings = null;
   }
 
   /**
@@ -114,6 +132,7 @@ export class BookingsService {
       `Changed booking ${bookingId} status: ${oldStatus} → ${newStatus} (Room ${booking.roomNumber}, ${booking.customerName})`,
       user
     );
+    cachedBookings = null;
   }
 
   /**
@@ -131,6 +150,7 @@ export class BookingsService {
     await repo.deleteBooking(bookingId, reason, user);
 
     await logActivity("DELETE_BOOKING", `Soft-deleted booking ${bookingId}. Reason: ${reason}`, user);
+    cachedBookings = null;
   }
 
   /**
@@ -179,6 +199,7 @@ export class BookingsService {
     Logger.info("Restoring soft-deleted booking", { bookingId, actor: adminUser?.email });
     await repo.restoreBooking(bookingId, adminUser);
     await logActivity("RESTORE_BOOKING", `Restored soft-deleted booking ${bookingId}`, adminUser);
+    cachedBookings = null;
   }
 
   /**
@@ -191,6 +212,7 @@ export class BookingsService {
     Logger.error("Permanently purging booking record", undefined, { bookingId, actor: adminUser?.email });
     await repo.purgeBooking(bookingId);
     await logActivity("PURGE_BOOKING", `Permanently purged booking ${bookingId}`, adminUser);
+    cachedBookings = null;
   }
 
   /**
@@ -200,5 +222,6 @@ export class BookingsService {
     Logger.error("Executing wipe bookings sequence", undefined, { actor: adminUser?.email });
     await repo.clearAllBookings();
     await logActivity("CLEAR_ALL_BOOKINGS", "Cleared all bookings records and reset room availability status", adminUser);
+    cachedBookings = null;
   }
 }
