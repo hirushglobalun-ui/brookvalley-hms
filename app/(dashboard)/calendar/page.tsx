@@ -12,6 +12,7 @@ import { CalendarGrid } from "../../../features/calendar";
 import { formatDate } from "../../../lib/db";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Booking, Room, RoomType } from "../../../types";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 const bookingsService = new BookingsService();
 const settingsService = new SettingsService();
@@ -188,8 +189,21 @@ const CalendarViewContent: React.FC = () => {
 
       {/* Grid container */}
       {loading ? (
-        <div className="card" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>
-          Loading calendar timeline...
+        <div className="card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Skeleton width={180} height={24} />
+            <Skeleton width={140} height={32} borderRadius={8} />
+          </div>
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+              <Skeleton width={100} height={36} borderRadius={8} />
+              <div style={{ flex: 1, display: "flex", gap: "0.5rem" }}>
+                {Array.from({ length: 10 }).map((_, j) => (
+                  <Skeleton key={j} style={{ flex: 1 }} height={36} borderRadius={6} />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <CalendarGrid
@@ -254,8 +268,11 @@ const CalendarViewContent: React.FC = () => {
 export default function CalendarPage() {
   return (
     <Suspense fallback={
-      <div className="card" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>
-        Loading calendar dashboard...
+      <div className="card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <Skeleton width={180} height={24} />
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} width="100%" height={36} borderRadius={8} />
+        ))}
       </div>
     }>
       <CalendarViewContent />

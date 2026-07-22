@@ -95,6 +95,7 @@ CREATE OR REPLACE FUNCTION public.soft_delete_booking_safe(
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_room_number TEXT;
@@ -165,6 +166,7 @@ CREATE OR REPLACE FUNCTION public.restore_booking_safe(
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_booking_record RECORD;

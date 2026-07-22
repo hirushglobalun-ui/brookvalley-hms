@@ -3,6 +3,7 @@
 import React from "react";
 import { Eye, Edit2, Trash2 } from "lucide-react";
 import { Booking } from "../../../types";
+import { useAuth } from "../../../lib/auth";
 
 /**
  * Props expected by the BookingTable component.
@@ -46,6 +47,14 @@ const BookingTable: React.FC<BookingTableProps> = ({
   totalPages,
   onPageChange
 }) => {
+  const { user } = useAuth();
+
+  const canUpdateStatus = (booking: Booking) => {
+    if (!user) return false;
+    if (user.role === "admin" || user.role === "developer" || user.role === "manager") return true;
+    return booking.createdByUid === user.uid;
+  };
+
   if (bookings.length === 0) {
     return <div className="no-data" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>No bookings match the search criteria.</div>;
   }
@@ -89,26 +98,38 @@ const BookingTable: React.FC<BookingTableProps> = ({
                   </td>
                   <td>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                      <select 
-                        className={`badge badge-${
-                          b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
-                          b.bookingStatus === "cancelled" ? "danger" : "warning"
-                        }`}
-                        style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600 }}
-                        value={b.bookingStatus}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          if (onUpdateStatus) {
-                            onUpdateStatus(b.bookingId, e.target.value as Booking["bookingStatus"]);
-                          }
-                        }}
-                      >
-                        <option value="pending">PENDING</option>
-                        <option value="confirmed">CONFIRMED</option>
-                        <option value="checked-in">CHECKED-IN</option>
-                        <option value="checked-out">CHECKED-OUT</option>
-                        <option value="cancelled">CANCELLED</option>
-                      </select>
+                      {canUpdateStatus(b) ? (
+                        <select 
+                          className={`badge badge-${
+                            b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                            b.bookingStatus === "cancelled" ? "danger" : "warning"
+                          }`}
+                          style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600 }}
+                          value={b.bookingStatus}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            if (onUpdateStatus) {
+                              onUpdateStatus(b.bookingId, e.target.value as Booking["bookingStatus"]);
+                            }
+                          }}
+                        >
+                          <option value="pending">PENDING</option>
+                          <option value="confirmed">CONFIRMED</option>
+                          <option value="checked-in">CHECKED-IN</option>
+                          <option value="checked-out">CHECKED-OUT</option>
+                          <option value="cancelled">CANCELLED</option>
+                        </select>
+                      ) : (
+                        <span 
+                          className={`badge badge-${
+                            b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                            b.bookingStatus === "cancelled" ? "danger" : "warning"
+                          }`}
+                          style={{ width: "fit-content", fontSize: "0.7rem", padding: "4px 10px", fontWeight: 600, textTransform: "uppercase" }}
+                        >
+                          {b.bookingStatus}
+                        </span>
+                      )}
                       <span className={`badge badge-${b.paymentStatus === "paid" ? "success" : b.paymentStatus === "partial" || b.paymentStatus === "partially-paid" ? "warning" : "danger"}`} style={{ width: "fit-content", fontSize: "0.65rem", padding: "1px 4px", border: "1px solid currentColor", background: "none" }}>
                         {b.paymentStatus}
                       </span>
@@ -156,26 +177,38 @@ const BookingTable: React.FC<BookingTableProps> = ({
             <div className="booking-card-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span className="booking-card-room" style={{ fontFamily: "monospace", fontWeight: 700 }}>{b.bookingId}</span>
               <div style={{ display: "flex", gap: "0.25rem" }}>
-                  <select 
-                    className={`badge badge-${
-                      b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
-                      b.bookingStatus === "cancelled" ? "danger" : "warning"
-                    }`}
-                    style={{ fontSize: "0.75rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600, margin: 0 }}
-                    value={b.bookingStatus}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      if (onUpdateStatus) {
-                        onUpdateStatus(b.bookingId, e.target.value as Booking["bookingStatus"]);
-                      }
-                    }}
-                  >
-                    <option value="pending">PENDING</option>
-                    <option value="confirmed">CONFIRMED</option>
-                    <option value="checked-in">CHECKED-IN</option>
-                    <option value="checked-out">CHECKED-OUT</option>
-                    <option value="cancelled">CANCELLED</option>
-                  </select>
+                  {canUpdateStatus(b) ? (
+                    <select 
+                      className={`badge badge-${
+                        b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                        b.bookingStatus === "cancelled" ? "danger" : "warning"
+                      }`}
+                      style={{ fontSize: "0.75rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600, margin: 0 }}
+                      value={b.bookingStatus}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        if (onUpdateStatus) {
+                          onUpdateStatus(b.bookingId, e.target.value as Booking["bookingStatus"]);
+                        }
+                      }}
+                    >
+                      <option value="pending">PENDING</option>
+                      <option value="confirmed">CONFIRMED</option>
+                      <option value="checked-in">CHECKED-IN</option>
+                      <option value="checked-out">CHECKED-OUT</option>
+                      <option value="cancelled">CANCELLED</option>
+                    </select>
+                  ) : (
+                    <span 
+                      className={`badge badge-${
+                        b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                        b.bookingStatus === "cancelled" ? "danger" : "warning"
+                      }`}
+                      style={{ fontSize: "0.75rem", padding: "3px 10px", fontWeight: 600, textTransform: "uppercase", margin: 0 }}
+                    >
+                      {b.bookingStatus}
+                    </span>
+                  )}
                 <span className={`badge badge-${b.paymentStatus === "paid" ? "success" : b.paymentStatus === "partial" || b.paymentStatus === "partially-paid" ? "warning" : "danger"}`} style={{ fontSize: "0.65rem", padding: "2px 6px", border: "1px solid currentColor", background: "none" }}>
                   {b.paymentStatus}
                 </span>

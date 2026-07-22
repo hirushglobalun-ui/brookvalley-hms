@@ -107,6 +107,7 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger 
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
 AS $$
 BEGIN
   INSERT INTO public.profiles (id, full_name, email, role, status)
@@ -160,6 +161,7 @@ CREATE OR REPLACE FUNCTION public.create_employee_user(
 RETURNS TEXT
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_user_id UUID;
@@ -270,6 +272,7 @@ CREATE OR REPLACE FUNCTION public.delete_employee_user(
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
 AS $$
 BEGIN
   -- Assert caller is admin
@@ -360,7 +363,7 @@ CREATE POLICY "Authenticated users can read rooms"
 CREATE POLICY "Authenticated users can update room status"
   ON public.rooms FOR UPDATE
   TO authenticated
-  USING (true);
+  USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Admins can manage rooms" 
   ON public.rooms FOR ALL 
@@ -381,12 +384,12 @@ CREATE POLICY "Authenticated users can read bookings"
 CREATE POLICY "Authenticated users can create bookings" 
   ON public.bookings FOR INSERT 
   TO authenticated 
-  WITH CHECK (true);
+  WITH CHECK (auth.role() = 'authenticated');
 
 CREATE POLICY "Authenticated users can update bookings" 
   ON public.bookings FOR UPDATE 
   TO authenticated 
-  USING (true);
+  USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Admins can delete bookings" 
   ON public.bookings FOR DELETE 
@@ -412,7 +415,7 @@ CREATE POLICY "Admins can read activity logs"
 CREATE POLICY "Authenticated users can insert activity logs" 
   ON public.activity_logs FOR INSERT 
   TO authenticated 
-  WITH CHECK (true);
+  WITH CHECK (auth.role() = 'authenticated' AND (user_id IS NULL OR user_id = auth.uid()));
 
 CREATE POLICY "Admins can delete activity logs" 
   ON public.activity_logs FOR DELETE 

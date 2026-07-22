@@ -29,6 +29,7 @@ CREATE OR REPLACE FUNCTION public.create_booking_safe(
 ) RETURNS TEXT
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_rooms TEXT[];
@@ -102,6 +103,7 @@ CREATE OR REPLACE FUNCTION public.update_booking_safe(
 ) RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_new_rooms TEXT[];

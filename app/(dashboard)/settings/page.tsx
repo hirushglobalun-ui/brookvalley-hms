@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import ProtectedRoute from "../../../components/ProtectedRoute";
 import { Room, RoomType } from "../../../types";
+import { SkeletonCard } from "../../../components/ui/Skeleton";
 
 const settingsService = new SettingsService();
 
@@ -177,9 +178,7 @@ const SettingsContent = () => {
       </div>
 
       {loading ? (
-        <div className="card" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.75rem" }}>
-          <Spinner size={20} /> Loading settings...
-        </div>
+        <SkeletonCard rows={5} />
       ) : (
         <>
           {/* Room Types tab */}

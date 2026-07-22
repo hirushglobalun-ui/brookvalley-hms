@@ -16,6 +16,7 @@ import {
   UserCheck
 } from "lucide-react";
 import { Booking, Room, Employee, ActivityLog, RoomType } from "../../../types";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 const bookingsService = new BookingsService();
 const settingsService = new SettingsService();
@@ -85,8 +86,38 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center", height: "60vh" }}>
-        <p style={{ color: "var(--text-secondary)" }}>Loading dashboard analytics...</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+        {/* Welcome card skeleton */}
+        <div className="card" style={{ padding: "1.5rem" }}>
+          <Skeleton width={240} height={28} style={{ marginBottom: "0.5rem" }} />
+          <Skeleton width={320} height={14} />
+        </div>
+
+        {/* Metric Cards Skeleton */}
+        <div className="grid-stats">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="card stat-card" style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1.25rem" }}>
+              <Skeleton width={48} height={48} borderRadius={12} />
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", flex: 1 }}>
+                <Skeleton width="50%" height={24} />
+                <Skeleton width="80%" height={12} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Content Table Skeleton */}
+        <div className="card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <Skeleton width={200} height={20} />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+              <Skeleton width="20%" height={14} />
+              <Skeleton width="30%" height={14} />
+              <Skeleton width="25%" height={14} />
+              <Skeleton width="15%" height={20} borderRadius={6} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -136,6 +167,12 @@ const Dashboard = () => {
     if (user.role === "admin" || user.role === "developer" || user.role === "manager") return String(text);
     if (booking.createdByUid === user.uid) return String(text);
     return "[Restricted]";
+  };
+
+  // Permission check for updating booking status dropdown
+  const canUpdateBookingStatus = (booking: Booking) => {
+    if (user.role === "admin" || user.role === "developer" || user.role === "manager") return true;
+    return booking.createdByUid === user.uid;
   };
 
   // Recent bookings list (limit 5)
@@ -361,24 +398,36 @@ const Dashboard = () => {
                         <td>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</td>
                         <td>{b.createdByName} ({b.createdByRole})</td>
                         <td>
-                          <select 
-                            className={`badge badge-${
-                              b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
-                              b.bookingStatus === "cancelled" ? "danger" : "warning"
-                            }`}
-                            style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600 }}
-                            value={b.bookingStatus}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              handleDashboardStatusUpdate(b.bookingId, e.target.value as Booking["bookingStatus"]);
-                            }}
-                          >
-                            <option value="pending">PENDING</option>
-                            <option value="confirmed">CONFIRMED</option>
-                            <option value="checked-in">CHECKED-IN</option>
-                            <option value="checked-out">CHECKED-OUT</option>
-                            <option value="cancelled">CANCELLED</option>
-                          </select>
+                          {canUpdateBookingStatus(b) ? (
+                            <select 
+                              className={`badge badge-${
+                                b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                                b.bookingStatus === "cancelled" ? "danger" : "warning"
+                              }`}
+                              style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600 }}
+                              value={b.bookingStatus}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                handleDashboardStatusUpdate(b.bookingId, e.target.value as Booking["bookingStatus"]);
+                              }}
+                            >
+                              <option value="pending">PENDING</option>
+                              <option value="confirmed">CONFIRMED</option>
+                              <option value="checked-in">CHECKED-IN</option>
+                              <option value="checked-out">CHECKED-OUT</option>
+                              <option value="cancelled">CANCELLED</option>
+                            </select>
+                          ) : (
+                            <span 
+                              className={`badge badge-${
+                                b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                                b.bookingStatus === "cancelled" ? "danger" : "warning"
+                              }`}
+                              style={{ width: "fit-content", fontSize: "0.7rem", padding: "4px 10px", fontWeight: 600, textTransform: "uppercase" }}
+                            >
+                              {b.bookingStatus}
+                            </span>
+                          )}
                         </td>
                         <td style={{ fontWeight: 600 }}>₹{maskText(b.totalAmount, b)}</td>
                       </tr>
@@ -393,24 +442,36 @@ const Dashboard = () => {
                       <div className="booking-card-row">
                         <span className="booking-card-room">Room {b.roomNumber}</span>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                          <select 
-                            className={`badge badge-${
-                              b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
-                              b.bookingStatus === "cancelled" ? "danger" : "warning"
-                            }`}
-                            style={{ fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600, margin: 0 }}
-                            value={b.bookingStatus}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              handleDashboardStatusUpdate(b.bookingId, e.target.value as Booking["bookingStatus"]);
-                            }}
-                          >
-                            <option value="pending">PENDING</option>
-                            <option value="confirmed">CONFIRMED</option>
-                            <option value="checked-in">CHECKED-IN</option>
-                            <option value="checked-out">CHECKED-OUT</option>
-                            <option value="cancelled">CANCELLED</option>
-                          </select>
+                          {canUpdateBookingStatus(b) ? (
+                            <select 
+                              className={`badge badge-${
+                                b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                                b.bookingStatus === "cancelled" ? "danger" : "warning"
+                              }`}
+                              style={{ fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600, margin: 0 }}
+                              value={b.bookingStatus}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                handleDashboardStatusUpdate(b.bookingId, e.target.value as Booking["bookingStatus"]);
+                              }}
+                            >
+                              <option value="pending">PENDING</option>
+                              <option value="confirmed">CONFIRMED</option>
+                              <option value="checked-in">CHECKED-IN</option>
+                              <option value="checked-out">CHECKED-OUT</option>
+                              <option value="cancelled">CANCELLED</option>
+                            </select>
+                          ) : (
+                            <span 
+                              className={`badge badge-${
+                                b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                                b.bookingStatus === "cancelled" ? "danger" : "warning"
+                              }`}
+                              style={{ fontSize: "0.7rem", padding: "3px 10px", fontWeight: 600, textTransform: "uppercase", margin: 0 }}
+                            >
+                              {b.bookingStatus}
+                            </span>
+                          )}
                           <span className="booking-card-amount">₹{maskText(b.totalAmount, b)}</span>
                         </div>
                       </div>
