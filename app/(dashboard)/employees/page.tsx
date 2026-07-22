@@ -14,6 +14,7 @@ import { getBookings, formatDate } from "../../../lib/db";
 import { UserPlus } from "lucide-react";
 import ProtectedRoute from "../../../components/ProtectedRoute";
 import { Employee, Booking } from "../../../types";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 const employeesService = new EmployeesService();
 const settingsService = new SettingsService();
@@ -126,8 +127,19 @@ const EmployeesContent = () => {
 
       {/* Grid container */}
       {loading ? (
-        <div className="card" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>
-          Loading employee records...
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                <Skeleton width={48} height={48} borderRadius="50%" />
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <Skeleton width="60%" height={18} />
+                  <Skeleton width="40%" height={12} />
+                </div>
+              </div>
+              <Skeleton width="100%" height={36} borderRadius={8} />
+            </div>
+          ))}
         </div>
       ) : employees.length === 0 ? (
         <div className="card" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>

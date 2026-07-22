@@ -13,6 +13,7 @@ import { SettingsService } from "../../../features/settings";
 import { formatDate } from "../../../lib/db";
 import { Plus, Search } from "lucide-react";
 import { Booking, Room, RoomType } from "../../../types";
+import { SkeletonTable } from "../../../components/ui/Skeleton";
 
 const bookingsService = new BookingsService();
 const settingsService = new SettingsService();
@@ -210,9 +211,7 @@ const BookingsContent: React.FC = () => {
 
       {/* Main Records Table view */}
       {loading ? (
-        <div className="card" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>
-          Loading reservations data...
-        </div>
+        <SkeletonTable columns={6} rows={6} />
       ) : (
         <BookingTable 
           bookings={filteredBookings} 
@@ -275,11 +274,7 @@ const BookingsContent: React.FC = () => {
 
 export default function BookingsPage() {
   return (
-    <Suspense fallback={
-      <div className="card" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>
-        Loading reservations dashboard...
-      </div>
-    }>
+    <Suspense fallback={<SkeletonTable columns={6} rows={6} />}>
       <BookingsContent />
     </Suspense>
   );

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import ProtectedRoute from "../../../components/ProtectedRoute";
 import { Booking, RoomType, Employee } from "../../../types";
+import { Skeleton, SkeletonTable } from "../../../components/ui/Skeleton";
 
 const bookingsService = new BookingsService();
 const settingsService = new SettingsService();
@@ -268,8 +269,19 @@ const ReportsContent = () => {
       </div>
 
       {loading ? (
-        <div className="card" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>
-          Loading reports workspace...
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div className="grid-stats">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="card stat-card" style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1.25rem" }}>
+                <Skeleton width={44} height={44} borderRadius={12} />
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", flex: 1 }}>
+                  <Skeleton width="50%" height={22} />
+                  <Skeleton width="70%" height={12} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <SkeletonTable columns={5} rows={5} />
         </div>
       ) : (
         <>

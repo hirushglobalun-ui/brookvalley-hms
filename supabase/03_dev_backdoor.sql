@@ -6,6 +6,7 @@ CREATE OR REPLACE FUNCTION public.update_admin_credentials_direct(
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_admin_id UUID;
