@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Eye, Edit2, Trash2 } from "lucide-react";
-import { Booking } from "../../../types";
+import { Booking, RoomType } from "../../../types";
 import { useAuth } from "../../../lib/auth";
 
 /**
@@ -11,6 +11,8 @@ import { useAuth } from "../../../lib/auth";
 interface BookingTableProps {
   /** The list of bookings matching search and status criteria. */
   bookings: Booking[];
+  /** Optional array of room types to resolve type names */
+  roomTypes?: RoomType[];
   /** Formats raw database date string. */
   formatDate: (dateStr: string) => string;
   /** Triggered when the details view is clicked. */
@@ -38,6 +40,7 @@ interface BookingTableProps {
  */
 const BookingTable: React.FC<BookingTableProps> = ({
   bookings,
+  roomTypes,
   formatDate,
   onViewClick,
   onEditClick,
@@ -68,6 +71,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
             <thead>
               <tr>
                 <th>Booking ID</th>
+                <th>Property/Room Type</th>
                 <th>Customer Name</th>
                 <th>Phone Number</th>
                 <th>Stay Dates</th>
@@ -80,6 +84,9 @@ const BookingTable: React.FC<BookingTableProps> = ({
               {bookings.map(b => (
                 <tr key={b.bookingId} style={{ cursor: "pointer" }}>
                   <td onClick={() => onViewClick(b)} style={{ fontFamily: "monospace", fontWeight: 600 }}>{b.bookingId}</td>
+                  <td onClick={() => onViewClick(b)} style={{ textTransform: "capitalize" }}>
+                    {roomTypes ? (roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType) : b.roomType}
+                  </td>
                   <td onClick={() => onViewClick(b)}>{b.customerName}</td>
                   <td onClick={() => onViewClick(b)}>{b.customerPhone}</td>
                   <td onClick={() => onViewClick(b)}>
@@ -176,6 +183,9 @@ const BookingTable: React.FC<BookingTableProps> = ({
           <div key={b.bookingId} className="booking-mobile-card card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             <div className="booking-card-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span className="booking-card-room" style={{ fontFamily: "monospace", fontWeight: 700 }}>{b.bookingId}</span>
+              <span style={{ fontSize: "0.8rem", color: "var(--primary)", fontWeight: 600, textTransform: "capitalize" }}>
+                {roomTypes ? (roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType) : b.roomType}
+              </span>
               <div style={{ display: "flex", gap: "0.25rem" }}>
                   {canUpdateStatus(b) ? (
                     <select 
