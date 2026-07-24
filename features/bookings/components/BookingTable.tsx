@@ -180,13 +180,15 @@ const BookingTable: React.FC<BookingTableProps> = ({
       {/* Mobile Card List Layout */}
       <div className="bookings-mobile-cards">
         {bookings.map(b => (
-          <div key={b.bookingId} className="booking-mobile-card card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            <div className="booking-card-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span className="booking-card-room" style={{ fontFamily: "monospace", fontWeight: 700 }}>{b.bookingId}</span>
-              <span style={{ fontSize: "0.8rem", color: "var(--primary)", fontWeight: 600, textTransform: "capitalize" }}>
-                {roomTypes ? (roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType) : b.roomType}
-              </span>
-              <div style={{ display: "flex", gap: "0.25rem" }}>
+          <div key={b.bookingId} className="booking-mobile-card card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div className="booking-card-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <span className="booking-card-room" style={{ fontFamily: "monospace", fontWeight: 700, fontSize: "0.95rem" }}>{b.bookingId}</span>
+                <span style={{ fontSize: "0.75rem", color: "var(--primary)", fontWeight: 600, textTransform: "capitalize" }}>
+                  {roomTypes ? (roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType) : b.roomType}
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap", justifyContent: "flex-end", flexShrink: 0 }}>
                   {canUpdateStatus(b) ? (
                     <select 
                       className={`badge badge-${
