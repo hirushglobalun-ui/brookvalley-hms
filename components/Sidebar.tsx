@@ -90,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard, roles: ["admin", "employee"] },
     { name: "Bookings", path: "/bookings", icon: BookOpen, roles: ["admin", "employee"] },
     { name: "Calendar", path: "/calendar", icon: Calendar, roles: ["admin", "employee"] },
-    { name: "Employees", path: "/employees", icon: Users, roles: ["admin"] },
+    { name: "Employees", path: "/employees", icon: Users, roles: ["admin", "developer", "manager"] },
     { name: "Reports", path: "/reports", icon: BarChart3, roles: ["admin"] },
     { name: "Settings", path: "/settings", icon: Settings, roles: ["admin", "employee"] },
   ];

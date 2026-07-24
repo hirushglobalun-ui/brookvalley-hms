@@ -213,7 +213,7 @@ const EmployeesContent = () => {
 
 export default function EmployeesPage() {
   return (
-    <ProtectedRoute allowedRoles={["admin"]}>
+    <ProtectedRoute allowedRoles={["admin", "developer", "manager"]}>
       <EmployeesContent />
     </ProtectedRoute>
   );

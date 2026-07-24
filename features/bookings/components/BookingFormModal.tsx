@@ -502,6 +502,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                 type="date" 
                 className="input-control" 
                 value={checkOutDate}
+                min={checkInDate || undefined}
                 onChange={(e) => setCheckOutDate(e.target.value)}
                 required
               />
