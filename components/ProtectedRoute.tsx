@@ -31,7 +31,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
         router.replace("/login");
       } else if (allowedRoles) {
         const hasAccess = allowedRoles.includes(user.role) || 
-          ((user.role === "developer" || user.role === "manager") && allowedRoles.includes("admin"));
+          (user.role === "developer" && allowedRoles.includes("admin"));
         if (!hasAccess) {
           router.replace("/dashboard");
         }
@@ -73,7 +73,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
   }
 
   const hasAccess = !allowedRoles || allowedRoles.includes(user.role) || 
-    ((user.role === "developer" || user.role === "manager") && allowedRoles.includes("admin"));
+    (user.role === "developer" && allowedRoles.includes("admin"));
   if (!user || !hasAccess) {
     return null;
   }

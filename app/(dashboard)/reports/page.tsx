@@ -388,7 +388,7 @@ const ReportsContent = () => {
 
 export default function ReportsPage() {
   return (
-    <ProtectedRoute allowedRoles={["admin", "employee"]}>
+    <ProtectedRoute allowedRoles={["admin", "manager"]}>
       <ReportsContent />
     </ProtectedRoute>
   );
