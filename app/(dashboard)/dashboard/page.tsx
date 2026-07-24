@@ -398,7 +398,7 @@ const Dashboard = () => {
       </div>
 
       {/* Bottom Section: Recent Activity / Today Checklist */}
-      <div className={(user.role === "admin" || user.role === "developer" || user.role === "manager") ? "grid-2col-responsive" : ""} style={{ marginTop: "0.5rem" }}>
+      <div style={{ marginTop: "0.5rem" }}>
         
         {/* Recent Bookings Feed (Masked for employee) */}
         <div className="card">
@@ -529,91 +529,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Activity Logs Feed */}
-        {(user.role === "admin" || user.role === "developer" || user.role === "manager") && (
-          <div className="card">
-            <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
-                <Activity size={18} className="text-primary" />
-                <span>Recent Audit Logs</span>
-              </h2>
-              {(user.role === "admin" || user.role === "developer" || user.role === "manager") && (
-                <button 
-                  onClick={handleClearLogs}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--danger)",
-                    cursor: "pointer",
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    padding: "4px 10px",
-                    borderRadius: "6px",
-                    transition: "all 0.2s"
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--danger-glow)"}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                >
-                  Clear Logs
-                </button>
-              )}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: "350px", overflowY: "auto", paddingRight: "0.25rem" }}>
-              {logs.length > 0 ? (
-                logs.map(log => {
-                  const date = log.createdAt?.seconds 
-                    ? new Date(log.createdAt.seconds * 1000).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' })
-                    : "";
-                  const isAdmin = log.userRole === "admin";
-                  return (
-                    <div 
-                      key={log.id} 
-                      style={{ 
-                        padding: "0.75rem 1rem", 
-                        backgroundColor: "var(--bg-secondary)", 
-                        border: "1px solid var(--card-border)", 
-                        borderRadius: "var(--radius-sm)",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: "1rem",
-                        boxShadow: "var(--shadow-sm)"
-                      }}
-                    >
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", flex: 1 }}>
-                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>
-                          {log.details}
-                        </span>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                            By: {log.userName}
-                          </span>
-                          <span style={{ 
-                            fontSize: "0.65rem", 
-                            fontWeight: 700, 
-                            padding: "2px 8px", 
-                            borderRadius: "99px", 
-                            textTransform: "uppercase",
-                            backgroundColor: isAdmin ? "rgba(168, 85, 247, 0.1)" : "rgba(16, 185, 129, 0.1)",
-                            color: isAdmin ? "#a855f7" : "#10b981",
-                            border: `1px solid ${isAdmin ? "rgba(168, 85, 247, 0.15)" : "rgba(16, 185, 129, 0.15)"}`
-                          }}>
-                            {log.userRole}
-                          </span>
-                        </div>
-                      </div>
-                      <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", whiteSpace: "nowrap", fontWeight: 500 }}>
-                        {date}
-                      </span>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="no-data" style={{ padding: "1.5rem" }}>No system logs yet.</div>
-              )}
-            </div>
-          </div>
-        )}
+
 
       </div>
     </div>

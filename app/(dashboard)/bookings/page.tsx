@@ -54,6 +54,22 @@ const BookingsContent: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (sessionStorage.getItem("isFormOpen") === "true") {
+        setIsFormOpen(true);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isFormOpen) {
+      sessionStorage.setItem("isFormOpen", "true");
+    } else {
+      sessionStorage.removeItem("isFormOpen");
+    }
+  }, [isFormOpen]);
+
   // Cache for calendar prefill redirects
   const [prefillParams, setPrefillParams] = useState<{ checkInDate?: string; checkOutDate?: string; roomNumber?: string } | null>(null);
 
@@ -61,7 +77,8 @@ const BookingsContent: React.FC = () => {
   const initialLoad = async (currentPage: number = page) => {
     try {
       if (!bookingsCache) setLoading(true);
-      const filterUserId = user?.role !== "admin" ? user?.uid : undefined;
+      const isAdminOrManager = user?.role === "admin" || user?.role === "developer" || user?.role === "manager";
+      const filterUserId = isAdminOrManager ? undefined : user?.uid;
       const [bookingsRes, rList, rtList] = await Promise.all([
         bookingsService.getBookings(currentPage, limit, filterUserId),
         settingsService.getRooms(),
