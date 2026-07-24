@@ -191,7 +191,8 @@ const ReportsContent = () => {
   });
 
   // Calculate Revenue contribution by room type
-  const roomTypeRevenue = roomTypes.map(rt => {
+  const activeRoomTypes = filterRoomType === "all" ? roomTypes : roomTypes.filter(rt => rt.id === filterRoomType);
+  const roomTypeRevenue = activeRoomTypes.map(rt => {
     const typeRevenue = dateFilteredBookings
       .filter(b => b.roomType === rt.id && b.bookingStatus !== "cancelled")
       .reduce((acc, b) => acc + (b.advanceAmount || 0), 0);

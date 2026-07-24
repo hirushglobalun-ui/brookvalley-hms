@@ -98,6 +98,35 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
           }
         }
       } else {
+        // Try to recover from sessionStorage if no prefill
+        try {
+          const draftStr = sessionStorage.getItem("bookingFormDraft");
+          if (draftStr) {
+            const draft = JSON.parse(draftStr);
+            setCustomerName(draft.customerName || "");
+            setCustomerPhone(draft.customerPhone || "");
+            setCustomerEmail(draft.customerEmail || "");
+            setCustomerAddress(draft.customerAddress || "");
+            setSelectedRoomType(draft.selectedRoomType || "");
+            setSelectedRoomNumbers(draft.selectedRoomNumbers || []);
+            setCheckInDate(draft.checkInDate || "");
+            setCheckOutDate(draft.checkOutDate || "");
+            setGuestCount(draft.guestCount || 1);
+            setTotalAmount(draft.totalAmount || 0);
+            setPaymentStatus(draft.paymentStatus || "unpaid");
+            setBookingStatus(draft.bookingStatus || "confirmed");
+            setPaymentMethod(draft.paymentMethod || "none");
+            setAdvanceAmount(draft.advanceAmount || 0);
+            setPaymentProofs(draft.paymentProofs || []);
+            setRemarks(draft.remarks || "");
+            setFormError("Draft recovered. Please review your details.");
+            hasInitialized.current = true;
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to parse draft", e);
+        }
+
         setCheckInDate("");
         setCheckOutDate("");
       }
@@ -115,6 +144,23 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     
     hasInitialized.current = true;
   }, [isOpen, booking, initialPrefill, rooms, roomTypes]);
+
+  // Save to draft on change
+  useEffect(() => {
+    if (!isOpen || booking) return; // Only save drafts for new bookings
+    const draft = {
+      customerName, customerPhone, customerEmail, customerAddress,
+      selectedRoomType, selectedRoomNumbers, checkInDate, checkOutDate,
+      guestCount, totalAmount, paymentStatus, bookingStatus,
+      paymentMethod, advanceAmount, paymentProofs, remarks
+    };
+    sessionStorage.setItem("bookingFormDraft", JSON.stringify(draft));
+  }, [
+    isOpen, booking, customerName, customerPhone, customerEmail, customerAddress,
+    selectedRoomType, selectedRoomNumbers, checkInDate, checkOutDate,
+    guestCount, totalAmount, paymentStatus, bookingStatus,
+    paymentMethod, advanceAmount, paymentProofs, remarks
+  ]);
 
   // Date Formatting for Auto assignment messages
   const formatMsgDate = (dateStr: string): string => {
@@ -316,6 +362,8 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
         remarks
       };
 
+      sessionStorage.removeItem("bookingFormDraft");
+      sessionStorage.removeItem("isFormOpen");
       await onSubmit(payload);
       onClose();
     } catch (err: any) {
@@ -551,13 +599,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
               <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "0.5rem" }}>
                 {paymentProofs.map((proof, idx) => (
                   <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "center", border: "1px solid var(--card-border)", padding: "0.5rem", borderRadius: "8px", backgroundColor: "var(--bg-secondary)" }}>
-                    {proof.includes("application/pdf") || proof.endsWith(".pdf") ? (
-                      <div style={{ width: "120px", height: "120px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "var(--bg-tertiary)", borderRadius: "4px" }}>
-                        <span style={{ fontSize: "0.8rem", fontWeight: "bold" }}>PDF</span>
-                      </div>
-                    ) : (
-                      <img src={proof} alt={`Proof ${idx + 1}`} style={{ width: "120px", height: "120px", objectFit: "contain", borderRadius: "4px", backgroundColor: "var(--bg-tertiary)" }} />
-                    )}
+                    <img src={proof} alt={`Proof ${idx + 1}`} style={{ width: "120px", height: "120px", objectFit: "contain", borderRadius: "4px", backgroundColor: "var(--bg-tertiary)" }} />
                     <button type="button" className="btn btn-danger" style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", width: "100%" }} onClick={() => handleRemoveProof(idx)}>Remove</button>
                   </div>
                 ))}
@@ -577,7 +619,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                   <input 
                     type="file" 
                     style={{ display: "none" }}
-                    accept="image/*,application/pdf"
+                    accept="image/*"
                     multiple
                     onChange={handleFileChange}
                   />
@@ -597,7 +639,11 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
           </div>
 
           <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+            <button type="button" className="btn btn-secondary" onClick={() => {
+              sessionStorage.removeItem("bookingFormDraft");
+              sessionStorage.removeItem("isFormOpen");
+              onClose();
+            }}>
               Cancel
             </button>
             <button type="submit" className="btn btn-primary" disabled={formLoading}>
