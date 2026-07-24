@@ -119,7 +119,6 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
             setAdvanceAmount(draft.advanceAmount || 0);
             setPaymentProofs(draft.paymentProofs || []);
             setRemarks(draft.remarks || "");
-            setFormError("Draft recovered. Please review your details.");
             hasInitialized.current = true;
             return;
           }
@@ -373,16 +372,22 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     }
   };
 
+  const handleClose = () => {
+    sessionStorage.removeItem("bookingFormDraft");
+    sessionStorage.removeItem("isFormOpen");
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={booking ? "Edit Booking Modal" : "Create Booking Modal"}>
+    <div className="modal-overlay" onClick={handleClose} role="dialog" aria-modal="true" aria-label={booking ? "Edit Booking Modal" : "Create Booking Modal"}>
       <div className="modal-content modal-content-lg" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 style={{ fontSize: "1.2rem", fontWeight: 600 }}>
             {booking ? `Edit Booking ${booking.bookingId}` : "Create New Booking"}
           </h2>
-          <button className="btn btn-secondary btn-icon" onClick={onClose} aria-label="Close modal">
+          <button type="button" className="btn btn-secondary btn-icon" onClick={handleClose} aria-label="Close modal">
             <X size={16} />
           </button>
         </div>
