@@ -22,19 +22,27 @@ const bookingsService = new BookingsService();
 const settingsService = new SettingsService();
 const employeesService = new EmployeesService();
 
+let dashboardCache: {
+  bookings: Booking[];
+  rooms: Room[];
+  employees: Employee[];
+  logs: ActivityLog[];
+  roomTypes: RoomType[];
+} | null = null;
+
 const Dashboard = () => {
   const { user } = useAuth();
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [logs, setLogs] = useState<ActivityLog[]>([]);
-  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [bookings, setBookings] = useState<Booking[]>(dashboardCache?.bookings || []);
+  const [rooms, setRooms] = useState<Room[]>(dashboardCache?.rooms || []);
+  const [employees, setEmployees] = useState<Employee[]>(dashboardCache?.employees || []);
+  const [logs, setLogs] = useState<ActivityLog[]>(dashboardCache?.logs || []);
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>(dashboardCache?.roomTypes || []);
+  const [loading, setLoading] = useState(!dashboardCache);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
     try {
-      setLoading(true);
+      if (!dashboardCache) setLoading(true);
       const [bookingsData, roomsData, employeesData, logsData, roomTypesData] = await Promise.all([
         bookingsService.getBookings(),
         settingsService.getRooms(),
@@ -43,11 +51,19 @@ const Dashboard = () => {
         settingsService.getRoomTypes()
       ]);
       
-      setBookings(bookingsData.data);
-      setRooms(roomsData);
-      setEmployees(employeesData);
-      setLogs(logsData);
-      setRoomTypes(roomTypesData);
+      dashboardCache = {
+        bookings: bookingsData.data,
+        rooms: roomsData,
+        employees: employeesData,
+        logs: logsData,
+        roomTypes: roomTypesData
+      };
+      
+      setBookings(dashboardCache.bookings);
+      setRooms(dashboardCache.rooms);
+      setEmployees(dashboardCache.employees);
+      setLogs(dashboardCache.logs);
+      setRoomTypes(dashboardCache.roomTypes);
     } catch (err) {
       console.error("Dashboard fetch error:", err);
     } finally {
@@ -63,8 +79,22 @@ const Dashboard = () => {
   const handleDashboardStatusUpdate = async (bookingId: string, newStatus: Booking["bookingStatus"]) => {
     const booking = bookings.find(b => b.bookingId === bookingId);
     if (!booking) return;
+
+    let updatedBooking = { ...booking };
+
+    if (newStatus === "checked-out" && booking.paymentStatus !== "paid") {
+      const balance = (booking.totalAmount || 0) - (booking.advanceAmount || 0);
+      if (balance > 0) {
+        const confirmPay = window.confirm(`This booking has a pending balance of ₹${balance}.\nHas the customer paid this amount?\n\nClick OK to automatically mark the payment as PAID.`);
+        if (confirmPay) {
+          updatedBooking.paymentStatus = "paid";
+          updatedBooking.advanceAmount = booking.totalAmount;
+        }
+      }
+    }
+
     try {
-      await bookingsService.updateBookingStatus(bookingId, booking.bookingStatus, newStatus, booking, user);
+      await bookingsService.updateBookingStatus(bookingId, booking.bookingStatus, newStatus, updatedBooking, user);
       await fetchData();
     } catch (err: any) {
       alert("Failed to update status: " + err.message);
@@ -383,6 +413,7 @@ const Dashboard = () => {
                   <thead>
                     <tr>
                       <th>Room</th>
+                      <th>Property/Room Type</th>
                       <th>Customer Name</th>
                       <th>Dates</th>
                       <th>Created By</th>
@@ -394,6 +425,7 @@ const Dashboard = () => {
                     {recentBookings.map(b => (
                       <tr key={b.bookingId}>
                         <td>Room {b.roomNumber}</td>
+                        <td style={{ textTransform: "capitalize" }}>{roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType}</td>
                         <td>{maskText(b.customerName, b)}</td>
                         <td>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</td>
                         <td>{b.createdByName} ({b.createdByRole})</td>
@@ -441,6 +473,9 @@ const Dashboard = () => {
                     <div key={b.bookingId} className="booking-mobile-card">
                       <div className="booking-card-row">
                         <span className="booking-card-room">Room {b.roomNumber}</span>
+                        <span style={{ fontSize: "0.8rem", color: "var(--primary)", fontWeight: 600, textTransform: "capitalize" }}>
+                          {roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType}
+                        </span>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
                           {canUpdateBookingStatus(b) ? (
                             <select 
@@ -495,7 +530,7 @@ const Dashboard = () => {
         </div>
 
         {/* Activity Logs Feed */}
-        {logs.length > 0 && (
+        {(user.role === "admin" || user.role === "developer" || user.role === "manager") && (
           <div className="card">
             <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>

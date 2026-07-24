@@ -212,21 +212,33 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
 
           {booking.paymentProof && (
             <div className="info-detail-full" style={{ marginTop: "0.75rem", borderTop: "1px dashed var(--card-border)", paddingTop: "0.75rem" }}>
-              <span className="info-detail-label" style={{ display: "block", marginBottom: "0.5rem" }}>Payment Proof Attachment</span>
-              <div style={{ display: "flex", gap: "1rem", alignItems: "flex-end" }}>
-                <img 
-                  src={booking.paymentProof} 
-                  alt="Payment Proof" 
-                  style={{ maxWidth: "200px", maxHeight: "200px", borderRadius: "4px", border: "1px solid var(--card-border)", boxShadow: "var(--shadow-sm)" }} 
-                />
-                <a 
-                  href={booking.paymentProof} 
-                  download={`payment_proof_${booking.bookingId}`} 
-                  className="btn btn-secondary" 
-                  style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", height: "fit-content", display: "inline-flex", alignItems: "center" }}
-                >
-                  Download Proof
-                </a>
+              <span className="info-detail-label" style={{ display: "block", marginBottom: "0.5rem" }}>Payment Proof Attachment(s)</span>
+              <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+                {booking.paymentProof.split(",").map(p => p.trim()).filter(Boolean).map((proof, idx) => (
+                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    {proof.includes(".pdf") || proof.includes("application/pdf") ? (
+                      <div style={{ width: "200px", height: "150px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "var(--bg-secondary)", borderRadius: "4px", border: "1px solid var(--card-border)" }}>
+                        <span style={{ fontSize: "1rem", fontWeight: "bold" }}>PDF Document</span>
+                      </div>
+                    ) : (
+                      <img 
+                        src={proof} 
+                        alt={`Payment Proof ${idx + 1}`} 
+                        style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain", borderRadius: "4px", border: "1px solid var(--card-border)", boxShadow: "var(--shadow-sm)" }} 
+                      />
+                    )}
+                    <a 
+                      href={proof} 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download={`payment_proof_${booking.bookingId}_${idx + 1}`} 
+                      className="btn btn-secondary" 
+                      style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", height: "fit-content", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                      Download {idx + 1}
+                    </a>
+                  </div>
+                ))}
               </div>
             </div>
           )}

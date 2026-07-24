@@ -18,6 +18,13 @@ import { SkeletonTable } from "../../../components/ui/Skeleton";
 const bookingsService = new BookingsService();
 const settingsService = new SettingsService();
 
+let bookingsCache: {
+  bookings: Booking[];
+  rooms: Room[];
+  roomTypes: RoomType[];
+  totalPages: number;
+} | null = null;
+
 /**
  * Core Bookings Dashboard controller.
  * Orchestrates filtering queries, loading data, auth states, and subcomponent modals.
@@ -27,19 +34,20 @@ const BookingsContent: React.FC = () => {
   const searchParams = useSearchParams();
   
   // Data States
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [bookings, setBookings] = useState<Booking[]>(bookingsCache?.bookings || []);
+  const [rooms, setRooms] = useState<Room[]>(bookingsCache?.rooms || []);
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>(bookingsCache?.roomTypes || []);
+  const [loading, setLoading] = useState(!bookingsCache);
 
   // Pagination State
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(bookingsCache?.totalPages || 1);
   const limit = 50;
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [roomTypeFilter, setRoomTypeFilter] = useState("all");
 
   // Modal Overlay States
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -52,17 +60,25 @@ const BookingsContent: React.FC = () => {
   // Initial Data loading sequence
   const initialLoad = async (currentPage: number = page) => {
     try {
-      setLoading(true);
+      if (!bookingsCache) setLoading(true);
       const filterUserId = user?.role !== "admin" ? user?.uid : undefined;
       const [bookingsRes, rList, rtList] = await Promise.all([
         bookingsService.getBookings(currentPage, limit, filterUserId),
         settingsService.getRooms(),
         settingsService.getRoomTypes()
       ]);
-      setBookings(bookingsRes.data);
-      setTotalPages(Math.ceil(bookingsRes.count / limit));
-      setRooms(rList);
-      setRoomTypes(rtList);
+      
+      bookingsCache = {
+        bookings: bookingsRes.data,
+        rooms: rList,
+        roomTypes: rtList,
+        totalPages: Math.ceil(bookingsRes.count / limit)
+      };
+      
+      setBookings(bookingsCache.bookings);
+      setTotalPages(bookingsCache.totalPages);
+      setRooms(bookingsCache.rooms);
+      setRoomTypes(bookingsCache.roomTypes);
     } catch (err) {
       console.error("Failed to load dashboard data:", err);
     } finally {
@@ -124,8 +140,21 @@ const BookingsContent: React.FC = () => {
     const booking = bookings.find(b => b.bookingId === bId);
     if (!booking) return;
 
+    let updatedBooking = { ...booking };
+
+    if (newStatus === "checked-out" && booking.paymentStatus !== "paid") {
+      const balance = (booking.totalAmount || 0) - (booking.advanceAmount || 0);
+      if (balance > 0) {
+        const confirmPay = window.confirm(`This booking has a pending balance of ₹${balance}.\nHas the customer paid this amount?\n\nClick OK to automatically mark the payment as PAID.`);
+        if (confirmPay) {
+          updatedBooking.paymentStatus = "paid";
+          updatedBooking.advanceAmount = booking.totalAmount;
+        }
+      }
+    }
+
     try {
-      await bookingsService.updateBookingStatus(bId, booking.bookingStatus, newStatus, booking, user);
+      await bookingsService.updateBookingStatus(bId, booking.bookingStatus, newStatus, updatedBooking, user);
       refreshData();
     } catch (err: any) {
       alert("Failed to update status: " + err.message);
@@ -145,9 +174,10 @@ const BookingsContent: React.FC = () => {
   // Apply filters
   const filteredBookings = bookings.filter(b => {
     const matchStatus = statusFilter === "all" || b.bookingStatus === statusFilter;
+    const matchRoomType = roomTypeFilter === "all" || b.roomType === roomTypeFilter;
     
     const query = searchQuery.toLowerCase().trim();
-    if (!query) return matchStatus;
+    if (!query) return matchStatus && matchRoomType;
 
     const matchQuery = 
       b.bookingId.toLowerCase().includes(query) ||
@@ -156,7 +186,7 @@ const BookingsContent: React.FC = () => {
       b.customerEmail.toLowerCase().includes(query) ||
       (b.roomNumber && b.roomNumber.toLowerCase().includes(query));
 
-    return matchStatus && matchQuery;
+    return matchStatus && matchRoomType && matchQuery;
   });
 
   return (
@@ -197,6 +227,17 @@ const BookingsContent: React.FC = () => {
         <select 
           className="input-control" 
           style={{ width: "auto", minWidth: 160, margin: 0 }}
+          value={roomTypeFilter}
+          onChange={e => setRoomTypeFilter(e.target.value)}
+        >
+          <option value="all">All Room Types</option>
+          {roomTypes.map(rt => (
+            <option key={rt.id} value={rt.id}>{rt.name}</option>
+          ))}
+        </select>
+        <select 
+          className="input-control" 
+          style={{ width: "auto", minWidth: 160, margin: 0 }}
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
         >
@@ -215,6 +256,7 @@ const BookingsContent: React.FC = () => {
       ) : (
         <BookingTable 
           bookings={filteredBookings} 
+          roomTypes={roomTypes}
           formatDate={formatDate}
           onViewClick={(b: React.SetStateAction<Booking | null>) => {
             setSelectedBooking(b);

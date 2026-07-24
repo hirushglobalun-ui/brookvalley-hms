@@ -41,16 +41,22 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
   const [bookingStatus, setBookingStatus] = useState<Booking["bookingStatus"]>("confirmed");
   const [paymentMethod, setPaymentMethod] = useState("none");
   const [advanceAmount, setAdvanceAmount] = useState<number | "">(0);
-  const [paymentProof, setPaymentProof] = useState("");
-  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
+  const [paymentProofs, setPaymentProofs] = useState<string[]>([]);
   const [remarks, setRemarks] = useState("");
   
   const [formError, setFormError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
 
+  const hasInitialized = React.useRef(false);
+
   // Prefill or Load Existing Booking data
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      hasInitialized.current = false;
+      return;
+    }
+
+    if (hasInitialized.current) return;
 
     if (booking) {
       setCustomerName(booking.customerName);
@@ -67,7 +73,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       setBookingStatus(booking.bookingStatus);
       setPaymentMethod(booking.paymentMethod || "none");
       setAdvanceAmount(booking.advanceAmount || 0);
-      setPaymentProof(booking.paymentProof || "");
+      setPaymentProofs(booking.paymentProof ? booking.paymentProof.split(",").map(p => p.trim()).filter(Boolean) : []);
       setRemarks(booking.remarks || "");
       setFormError("");
     } else {
@@ -102,10 +108,12 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       setBookingStatus("confirmed");
       setPaymentMethod("none");
       setAdvanceAmount(0);
-      setPaymentProof("");
+      setPaymentProofs([]);
       setRemarks("");
       setFormError("");
     }
+    
+    hasInitialized.current = true;
   }, [isOpen, booking, initialPrefill, rooms, roomTypes]);
 
   // Date Formatting for Auto assignment messages
@@ -221,23 +229,28 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     }
   }, [selectedRoomType, checkInDate, checkOutDate, roomTypes, selectedRoomNumbers]);
 
-  // Handle file selection — store the raw File for upload
+  // Handle file selection — store as data URLs
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        alert("File is too large. Please select a file under 10MB.");
-        e.target.value = "";
-        return;
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      const validFiles = files.filter(f => f.size <= 10 * 1024 * 1024);
+      if (validFiles.length < files.length) {
+        alert("Some files are too large and were ignored. Please select files under 10MB.");
       }
-      setPaymentProofFile(file);
-      // Show preview for the UI
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPaymentProof(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      
+      validFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPaymentProofs(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
     }
+    e.target.value = "";
+  };
+
+  const handleRemoveProof = (indexToRemove: number) => {
+    setPaymentProofs(prev => prev.filter((_, i) => i !== indexToRemove));
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -271,12 +284,18 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
 
     setFormLoading(true);
     try {
-      let finalPaymentProof = paymentProof;
-      if (paymentProofFile) {
-        finalPaymentProof = await uploadPaymentProof(paymentProofFile);
-      } else if (paymentProof && paymentProof.startsWith("data:")) {
-        finalPaymentProof = await uploadPaymentProof(paymentProof);
+      let finalPaymentProofs: string[] = [];
+      for (const proof of paymentProofs) {
+        if (proof.startsWith("http://") || proof.startsWith("https://")) {
+          finalPaymentProofs.push(proof);
+        } else if (proof.startsWith("data:")) {
+          const uploadedUrl = await uploadPaymentProof(proof);
+          finalPaymentProofs.push(uploadedUrl);
+        } else {
+          finalPaymentProofs.push(proof);
+        }
       }
+      const finalPaymentProofString = finalPaymentProofs.join(",");
 
       const payload = {
         customerName,
@@ -293,7 +312,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
         bookingStatus,
         paymentMethod,
         advanceAmount: Number(advanceAmount),
-        paymentProof: finalPaymentProof,
+        paymentProof: finalPaymentProofString,
         remarks
       };
 
@@ -527,19 +546,43 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
               />
             </div>
             <div className="form-group" style={{ gridColumn: "span 2" }}>
-              <label>Upload Payment Proof (Receipt / Screenshot)</label>
-              <input 
-                type="file" 
-                className="input-control" 
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-              {paymentProof && (
-                <div style={{ marginTop: "0.5rem", display: "flex", gap: "1rem", alignItems: "flex-end" }}>
-                  <img src={paymentProof} alt="Payment Proof" style={{ maxWidth: "120px", maxHeight: "120px", borderRadius: "4px", border: "1px solid var(--card-border)" }} />
-                  <button type="button" className="btn btn-danger" style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem" }} onClick={() => setPaymentProof("")}>Remove</button>
-                </div>
-              )}
+              <label>Upload Payment Proof(s) (Receipt / Screenshot)</label>
+              
+              <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "0.5rem" }}>
+                {paymentProofs.map((proof, idx) => (
+                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "center", border: "1px solid var(--card-border)", padding: "0.5rem", borderRadius: "8px", backgroundColor: "var(--bg-secondary)" }}>
+                    {proof.includes("application/pdf") || proof.endsWith(".pdf") ? (
+                      <div style={{ width: "120px", height: "120px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "var(--bg-tertiary)", borderRadius: "4px" }}>
+                        <span style={{ fontSize: "0.8rem", fontWeight: "bold" }}>PDF</span>
+                      </div>
+                    ) : (
+                      <img src={proof} alt={`Proof ${idx + 1}`} style={{ width: "120px", height: "120px", objectFit: "contain", borderRadius: "4px", backgroundColor: "var(--bg-tertiary)" }} />
+                    )}
+                    <button type="button" className="btn btn-danger" style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", width: "100%" }} onClick={() => handleRemoveProof(idx)}>Remove</button>
+                  </div>
+                ))}
+
+                <label style={{ 
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", 
+                  width: paymentProofs.length > 0 ? "138px" : "100%", 
+                  height: paymentProofs.length > 0 ? "auto" : "120px", 
+                  minHeight: "120px",
+                  border: "2px dashed var(--primary)", borderRadius: "8px", 
+                  cursor: "pointer", backgroundColor: "rgba(59,130,246,0.05)",
+                  color: "var(--primary)", transition: "all 0.2s"
+                }}>
+                  <span style={{ fontSize: "2rem", marginBottom: paymentProofs.length > 0 ? "0" : "0.5rem", lineHeight: 1 }}>+</span>
+                  {paymentProofs.length === 0 && <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>Click to Add Payment Proofs</span>}
+                  {paymentProofs.length > 0 && <span style={{ fontWeight: 600, fontSize: "0.75rem", marginTop: "0.5rem" }}>Add More</span>}
+                  <input 
+                    type="file" 
+                    style={{ display: "none" }}
+                    accept="image/*,application/pdf"
+                    multiple
+                    onChange={handleFileChange}
+                  />
+                </label>
+              </div>
             </div>
           </div>
 

@@ -2,11 +2,12 @@
 
 import React from "react";
 import { Search } from "lucide-react";
-import { Booking, Employee } from "../../../types";
+import { Booking, Employee, RoomType } from "../../../types";
 
 interface BookingDetailsTabProps {
   bookings: Booking[];
   employees: Employee[];
+  roomTypes?: RoomType[];
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   filterStatus: string;
@@ -23,6 +24,7 @@ interface BookingDetailsTabProps {
 const BookingDetailsTab: React.FC<BookingDetailsTabProps> = ({
   bookings,
   employees,
+  roomTypes,
   searchQuery,
   setSearchQuery,
   filterStatus,
@@ -77,6 +79,7 @@ const BookingDetailsTab: React.FC<BookingDetailsTabProps> = ({
               <thead>
                 <tr>
                   <th>Booking ID</th>
+                  <th>Property/Room Type</th>
                   <th>Customer Name</th>
                   <th>Phone Number</th>
                   <th>Stay Dates</th>
@@ -95,6 +98,9 @@ const BookingDetailsTab: React.FC<BookingDetailsTabProps> = ({
                       style={{ cursor: onBookingClick ? "pointer" : "default" }}
                     >
                       <td style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--primary)" }}>{b.bookingId}</td>
+                      <td style={{ textTransform: "capitalize" }}>
+                        {roomTypes ? (roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType) : b.roomType}
+                      </td>
                       <td style={{ fontWeight: 600 }}>{b.customerName}</td>
                       <td style={{ color: "var(--text-secondary)" }}>{b.customerPhone}</td>
                       <td>

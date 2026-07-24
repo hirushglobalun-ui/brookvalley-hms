@@ -94,14 +94,18 @@ const ReportsContent = () => {
   const currentYear = new Date().getFullYear().toString();
   const [filterMonth, setFilterMonth] = useState("all");
   const [filterYear, setFilterYear] = useState(currentYear);
+  const [filterRoomType, setFilterRoomType] = useState("all");
 
   // Dynamic available years based on bookings
   const availableYears = Array.from(new Set(bookings.map(b => new Date(b.checkInDate).getFullYear().toString()))).sort((a,b)=>b.localeCompare(a));
   if (availableYears.length === 0) availableYears.push(currentYear);
   else if (!availableYears.includes(currentYear)) availableYears.push(currentYear);
 
-  // Apply Global Date Filter
+  // Apply Global Filters (Date and Room Type)
   const dateFilteredBookings = bookings.filter(b => {
+    const matchRoomType = filterRoomType === "all" || b.roomType === filterRoomType;
+    if (!matchRoomType) return false;
+
     if (filterMonth === "all" && filterYear === "all") return true;
     const checkIn = new Date(b.checkInDate);
     const m = (checkIn.getMonth() + 1).toString().padStart(2, "0");
@@ -124,10 +128,18 @@ const ReportsContent = () => {
       return acc + Number(amount);
     }, 0);
 
+  // Calculate total pending balance for active bookings
+  const totalPendingBalance = dateFilteredBookings
+    .filter(b => b.bookingStatus !== "cancelled")
+    .reduce((acc, b) => {
+      const balance = b.paymentStatus === "paid" ? 0 : (Number(b.totalAmount || 0) - Number(b.advanceAmount || 0));
+      return acc + (balance > 0 ? balance : 0);
+    }, 0);
+
   // CSV Exporter Action helper
   const handleExportCSV = () => {
     if (dateFilteredBookings.length === 0) {
-      alert("No data available to export for this selected timeframe.");
+      alert("No data available to export for this selected timeframe and property.");
       return;
     }
     
@@ -262,6 +274,18 @@ const ReportsContent = () => {
             ))}
           </select>
 
+          <select 
+            className="input-control" 
+            style={{ width: "auto", margin: 0, padding: "0.5rem 1rem", minHeight: "auto", borderRadius: "999px" }} 
+            value={filterRoomType} 
+            onChange={e => setFilterRoomType(e.target.value)}
+          >
+            <option value="all">All Properties/Rooms</option>
+            {roomTypes.map(rt => (
+              <option key={rt.id} value={rt.id}>{rt.name}</option>
+            ))}
+          </select>
+
           <button className="btn btn-primary" onClick={handleExportCSV} style={{ display: "flex", alignItems: "center", gap: "0.5rem", boxShadow: "var(--shadow-sm)" }}>
             <Download size={16} /> Export CSV
           </button>
@@ -291,6 +315,7 @@ const ReportsContent = () => {
             confirmedCount={confirmedCount}
             cancelledCount={cancelledCount}
             totalRevenue={totalRevenue}
+            totalPendingBalance={totalPendingBalance}
           />
 
           {/* Sub Navigation Tabs */}
@@ -314,6 +339,7 @@ const ReportsContent = () => {
             <BookingDetailsTab 
               bookings={filteredBookings}
               employees={employees}
+              roomTypes={roomTypes}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               filterStatus={filterStatus}
