@@ -87,17 +87,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   if (!user) return null;
 
   const menuItems: MenuItem[] = [
-    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard, roles: ["admin", "employee"] },
-    { name: "Bookings", path: "/bookings", icon: BookOpen, roles: ["admin", "employee"] },
-    { name: "Calendar", path: "/calendar", icon: Calendar, roles: ["admin", "employee"] },
-    { name: "Employees", path: "/employees", icon: Users, roles: ["admin", "developer", "manager"] },
-    { name: "Reports", path: "/reports", icon: BarChart3, roles: ["admin"] },
-    { name: "Settings", path: "/settings", icon: Settings, roles: ["admin", "employee"] },
+    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard, roles: ["admin", "employee", "manager"] },
+    { name: "Bookings", path: "/bookings", icon: BookOpen, roles: ["admin", "employee", "manager"] },
+    { name: "Calendar", path: "/calendar", icon: Calendar, roles: ["admin", "employee", "manager"] },
+    { name: "Employees", path: "/employees", icon: Users, roles: ["admin"] },
+    { name: "Reports", path: "/reports", icon: BarChart3, roles: ["admin", "manager"] },
+    { name: "Settings", path: "/settings", icon: Settings, roles: ["admin", "employee", "manager"] },
   ];
 
   const filteredMenu = menuItems.filter(item => 
     item.roles.includes(user.role) || 
-    ((user.role === "developer" || user.role === "manager") && item.roles.includes("admin"))
+    (user.role === "developer" && item.roles.includes("admin"))
   );
   
   const initials = user.fullName
