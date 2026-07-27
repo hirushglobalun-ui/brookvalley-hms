@@ -5,7 +5,7 @@ import { useAuth } from "../../../lib/auth";
 import { BookingsService } from "../../../features/bookings";
 import { SettingsService } from "../../../features/settings";
 import { EmployeesService } from "../../../features/employees";
-import { getActivityLogs, formatDate } from "../../../lib/db";
+import { formatDate } from "../../../lib/db";
 import { 
   BookOpen, 
   DoorOpen, 
@@ -15,7 +15,7 @@ import {
   Activity,
   UserCheck
 } from "lucide-react";
-import { Booking, Room, Employee, ActivityLog, RoomType } from "../../../types";
+import { Booking, Room, Employee, RoomType } from "../../../types";
 import { Skeleton } from "../../../components/ui/Skeleton";
 
 const bookingsService = new BookingsService();
@@ -26,7 +26,6 @@ let dashboardCache: {
   bookings: Booking[];
   rooms: Room[];
   employees: Employee[];
-  logs: ActivityLog[];
   roomTypes: RoomType[];
 } | null = null;
 
@@ -35,7 +34,6 @@ const Dashboard = () => {
   const [bookings, setBookings] = useState<Booking[]>(dashboardCache?.bookings || []);
   const [rooms, setRooms] = useState<Room[]>(dashboardCache?.rooms || []);
   const [employees, setEmployees] = useState<Employee[]>(dashboardCache?.employees || []);
-  const [logs, setLogs] = useState<ActivityLog[]>(dashboardCache?.logs || []);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>(dashboardCache?.roomTypes || []);
   const [loading, setLoading] = useState(!dashboardCache);
 
@@ -43,11 +41,10 @@ const Dashboard = () => {
     if (!user) return;
     try {
       if (!dashboardCache) setLoading(true);
-      const [bookingsData, roomsData, employeesData, logsData, roomTypesData] = await Promise.all([
+      const [bookingsData, roomsData, employeesData, roomTypesData] = await Promise.all([
         bookingsService.getBookings(),
         settingsService.getRooms(),
         employeesService.getEmployees(),
-        getActivityLogs(15),
         settingsService.getRoomTypes()
       ]);
       
@@ -55,14 +52,12 @@ const Dashboard = () => {
         bookings: bookingsData.data,
         rooms: roomsData,
         employees: employeesData,
-        logs: logsData,
         roomTypes: roomTypesData
       };
       
       setBookings(dashboardCache.bookings);
       setRooms(dashboardCache.rooms);
       setEmployees(dashboardCache.employees);
-      setLogs(dashboardCache.logs);
       setRoomTypes(dashboardCache.roomTypes);
     } catch (err) {
       console.error("Dashboard fetch error:", err);
@@ -101,18 +96,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleClearLogs = async () => {
-    if (!window.confirm("WARNING: Are you sure you want to clear ALL activity logs? This action cannot be undone.")) return;
-    if (!window.confirm("DOUBLE CONFIRMATION: Are you absolutely certain you want to wipe the activity history logs?")) return;
-    try {
-      const { clearAllLogs } = await import("../../../lib/db");
-      await clearAllLogs(user);
-      alert("All activity logs cleared successfully!");
-      await fetchData();
-    } catch (err: any) {
-      alert("Failed to clear activity logs: " + err.message);
-    }
-  };
+
 
   if (loading) {
     return (
@@ -533,8 +517,8 @@ const Dashboard = () => {
         </div>
 
 
-
       </div>
+
     </div>
   );
 };

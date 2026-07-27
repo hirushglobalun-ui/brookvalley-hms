@@ -9,3 +9,4 @@ export { default as RoomsTab } from "./components/RoomsTab";
 export { default as SecurityTab } from "./components/SecurityTab";
 export { default as ResetTab } from "./components/ResetTab";
 export { default as SafetyTab } from "./components/SafetyTab";
+export { default as ActivityLogsTab } from "./components/ActivityLogsTab";

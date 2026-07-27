@@ -375,6 +375,15 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       sessionStorage.removeItem("bookingFormDraft");
       sessionStorage.removeItem("isFormOpen");
       await onSubmit(payload);
+      
+      if (!booking) {
+        const typeName = roomTypes.find(rt => rt.id === selectedRoomType)?.name || selectedRoomType;
+        const msg = `*New Booking Alert!* 🔔\n\n*Customer:* ${customerName}\n*Phone:* ${customerPhone}\n*Room:* ${result.roomNumber} (${typeName})\n*Check-In:* ${checkInDate}\n*Check-Out:* ${checkOutDate}\n*Guests:* ${guestCount}\n*Total Amount:* ₹${totalAmount}\n*Source:* ${bookingSource}`;
+        
+        const encodedMsg = encodeURIComponent(msg);
+        window.open(`https://wa.me/919567220971?text=${encodedMsg}`, '_blank');
+      }
+
       onClose();
     } catch (err: any) {
       setFormError(err.message || "Failed to save booking.");
@@ -390,6 +399,14 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  const localToday = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })();
 
   return (
     <div className="modal-overlay" onClick={handleClose} role="dialog" aria-modal="true" aria-label={booking ? "Edit Booking Modal" : "Create Booking Modal"}>
@@ -527,6 +544,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                 type="date" 
                 className="input-control" 
                 value={checkInDate}
+                min={!booking ? localToday : undefined}
                 onChange={(e) => setCheckInDate(e.target.value)}
                 required
               />
@@ -537,7 +555,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                 type="date" 
                 className="input-control" 
                 value={checkOutDate}
-                min={checkInDate || undefined}
+                min={checkInDate || (!booking ? localToday : undefined)}
                 onChange={(e) => setCheckOutDate(e.target.value)}
                 required
               />

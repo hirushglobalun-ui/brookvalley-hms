@@ -34,6 +34,14 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   onEmptyCellClick,
   onBookingClick
 }) => {
+  const localTodayStr = (() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  })();
+
   return (
     <div className="calendar-grid-wrapper">
       <div className="calendar-grid" style={{ gridTemplateColumns: `180px repeat(${daysInMonth}, 1fr)` }}>
@@ -133,11 +141,18 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                   return null;
                 }
 
+                const isPast = cellDateStr < localTodayStr;
+
                 return (
                   <div 
                     key={day} 
-                    className={`grid-day-cell ${isColToday ? "today-column" : ""}`}
-                    onClick={() => onEmptyCellClick(room.roomNumber, day)}
+                    className={`grid-day-cell ${isColToday ? "today-column" : ""} ${isPast ? "past-column" : ""}`}
+                    style={isPast ? { cursor: "not-allowed", backgroundColor: "rgba(0,0,0,0.02)" } : {}}
+                    onClick={() => {
+                      if (!isPast) {
+                        onEmptyCellClick(room.roomNumber, day);
+                      }
+                    }}
                   />
                 );
               })}

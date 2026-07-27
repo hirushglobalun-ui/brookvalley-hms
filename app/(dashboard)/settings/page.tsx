@@ -8,14 +8,16 @@ import {
   RoomsTab,
   SecurityTab,
   ResetTab,
-  SafetyTab
+  SafetyTab,
+  ActivityLogsTab
 } from "../../../features/settings";
 import {
   BedDouble,
   Lock,
   KeyRound,
   AlertOctagon,
-  Shield
+  Shield,
+  Activity
 } from "lucide-react";
 import ProtectedRoute from "../../../components/ProtectedRoute";
 import { Room, RoomType } from "../../../types";
@@ -134,7 +136,8 @@ const SettingsContent = () => {
   const tabs = [
     ...(user?.role === "admin" || user?.role === "developer" || user?.role === "manager" ? [
       { id: "types",    label: "Room Types", icon: <BedDouble size={16} /> },
-      { id: "rooms",    label: "Room Numbers", icon: <KeyRound size={16} /> }
+      { id: "rooms",    label: "Room Numbers", icon: <KeyRound size={16} /> },
+      { id: "activity", label: "Activity Logs", icon: <Activity size={16} /> }
     ] : []),
     { id: "security", label: "Security",   icon: <Lock size={16} /> }
     // Note: System Reset tab hidden as requested
@@ -207,6 +210,14 @@ const SettingsContent = () => {
           {/* Security Tab */}
           {safeActiveTab === "security" && (
             <SecurityTab user={user} />
+          )}
+
+          {/* Activity Logs Tab */}
+          {safeActiveTab === "activity" && (
+            <ActivityLogsTab 
+              user={user} 
+              onClearLogs={handleClearLogs} 
+            />
           )}
 
           {/* System Reset tab */}
