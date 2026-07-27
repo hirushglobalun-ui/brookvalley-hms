@@ -378,18 +378,6 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       sessionStorage.removeItem("bookingFormDraft");
       sessionStorage.removeItem("isFormOpen");
       await onSubmit(payload);
-      
-      if (!booking) {
-        const typeName = roomTypes.find(rt => rt.id === selectedRoomType)?.name || selectedRoomType;
-        const employeeName = user?.fullName || user?.email || "Staff";
-        const employeeRole = (user?.role || "employee").toUpperCase();
-        
-        const msg = `*New Booking Alert!* 🔔\n\n*Customer:* ${customerName}\n*Phone:* ${customerPhone}\n*Room:* ${result.roomNumber} (${typeName})\n*Check-In:* ${checkInDate}\n*Check-Out:* ${checkOutDate}\n*Guests:* ${guestCount}\n*Total Amount:* ₹${totalAmount}\n*Advance Paid:* ₹${advanceAmount || 0}\n*Source:* ${bookingSource}\n\n_Booking taken by: ${employeeName} (${employeeRole})_`;
-        
-        const encodedMsg = encodeURIComponent(msg);
-        window.open(`https://wa.me/919567220971?text=${encodedMsg}`, '_blank');
-      }
-
       onClose();
     } catch (err: any) {
       setFormError(err.message || "Failed to save booking.");
