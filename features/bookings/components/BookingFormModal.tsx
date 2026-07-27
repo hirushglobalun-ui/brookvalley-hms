@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { X, AlertCircle } from "lucide-react";
 import { Booking, Room, RoomType } from "../../../types";
 import { uploadPaymentProof } from "../../../lib/storage";
+import { useAuth } from "../../../lib/auth";
 
 interface BookingFormModalProps {
   isOpen: boolean;
@@ -26,6 +27,8 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
   onClose,
   onSubmit
 }) => {
+  const { user } = useAuth();
+  
   // Form States
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -375,15 +378,6 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       sessionStorage.removeItem("bookingFormDraft");
       sessionStorage.removeItem("isFormOpen");
       await onSubmit(payload);
-      
-      if (!booking) {
-        const typeName = roomTypes.find(rt => rt.id === selectedRoomType)?.name || selectedRoomType;
-        const msg = `*New Booking Alert!* 🔔\n\n*Customer:* ${customerName}\n*Phone:* ${customerPhone}\n*Room:* ${result.roomNumber} (${typeName})\n*Check-In:* ${checkInDate}\n*Check-Out:* ${checkOutDate}\n*Guests:* ${guestCount}\n*Total Amount:* ₹${totalAmount}\n*Source:* ${bookingSource}`;
-        
-        const encodedMsg = encodeURIComponent(msg);
-        window.open(`https://wa.me/919567220971?text=${encodedMsg}`, '_blank');
-      }
-
       onClose();
     } catch (err: any) {
       setFormError(err.message || "Failed to save booking.");
