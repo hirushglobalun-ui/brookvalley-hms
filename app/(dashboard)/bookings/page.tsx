@@ -48,6 +48,7 @@ const BookingsContent: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [roomTypeFilter, setRoomTypeFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
 
   // Modal Overlay States
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -192,9 +193,10 @@ const BookingsContent: React.FC = () => {
   const filteredBookings = bookings.filter(b => {
     const matchStatus = statusFilter === "all" || b.bookingStatus === statusFilter;
     const matchRoomType = roomTypeFilter === "all" || b.roomType === roomTypeFilter;
+    const matchSource = sourceFilter === "all" || (b.bookingSource || "direct") === sourceFilter;
     
     const query = searchQuery.toLowerCase().trim();
-    if (!query) return matchStatus && matchRoomType;
+    if (!query) return matchStatus && matchRoomType && matchSource;
 
     const matchQuery = 
       b.bookingId.toLowerCase().includes(query) ||
@@ -203,7 +205,7 @@ const BookingsContent: React.FC = () => {
       b.customerEmail.toLowerCase().includes(query) ||
       (b.roomNumber && b.roomNumber.toLowerCase().includes(query));
 
-    return matchStatus && matchRoomType && matchQuery;
+    return matchStatus && matchRoomType && matchSource && matchQuery;
   });
 
   return (
@@ -264,6 +266,16 @@ const BookingsContent: React.FC = () => {
           <option value="checked-in">Checked-In</option>
           <option value="checked-out">Checked-Out</option>
           <option value="cancelled">Cancelled</option>
+        </select>
+        <select 
+          className="input-control" 
+          style={{ width: "auto", minWidth: 160, margin: 0 }}
+          value={sourceFilter}
+          onChange={e => setSourceFilter(e.target.value)}
+        >
+          <option value="all">All Sources</option>
+          <option value="direct">Direct</option>
+          <option value="agency">Agency / Third-Party</option>
         </select>
       </div>
 

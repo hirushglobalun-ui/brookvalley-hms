@@ -416,6 +416,7 @@ const Dashboard = () => {
                       <th>Property/Room Type</th>
                       <th>Customer Name</th>
                       <th>Dates</th>
+                      <th>Source</th>
                       <th>Created By</th>
                       <th>Status</th>
                       <th>Amount</th>
@@ -428,6 +429,7 @@ const Dashboard = () => {
                         <td style={{ textTransform: "capitalize" }}>{roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType}</td>
                         <td>{maskText(b.customerName, b)}</td>
                         <td>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</td>
+                        <td style={{ textTransform: "capitalize" }}>{b.bookingSource || "direct"}</td>
                         <td>{b.createdByName} ({b.createdByRole})</td>
                         <td>
                           {canUpdateBookingStatus(b) ? (
@@ -512,6 +514,7 @@ const Dashboard = () => {
                       </div>
                       <div className="booking-card-row">
                         <span className="booking-card-customer">{maskText(b.customerName, b)}</span>
+                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "capitalize" }}>{b.bookingSource || "direct"}</span>
                       </div>
                       <div className="booking-card-dates">
                         <span>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</span>

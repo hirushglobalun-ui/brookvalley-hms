@@ -24,6 +24,8 @@ export class BookingEntity {
   public readonly createdByUid?: string | null;
   public readonly createdByName?: string | null;
   public readonly createdByRole?: string | null;
+  public readonly bookingSource?: 'direct' | 'agency';
+  public readonly agencyCommission?: number;
   public readonly deletedAt?: string | null;
   public readonly deletedBy?: string | null;
   public readonly deleteReason?: string | null;
@@ -49,6 +51,8 @@ export class BookingEntity {
     createdByUid?: string | null,
     createdByName?: string | null,
     createdByRole?: string | null,
+    bookingSource?: 'direct' | 'agency',
+    agencyCommission?: number,
     deletedAt?: string | null,
     deletedBy?: string | null,
     deleteReason?: string | null
@@ -73,6 +77,8 @@ export class BookingEntity {
     this.createdByUid = createdByUid;
     this.createdByName = createdByName;
     this.createdByRole = createdByRole;
+    this.bookingSource = bookingSource;
+    this.agencyCommission = agencyCommission;
     this.deletedAt = deletedAt;
     this.deletedBy = deletedBy;
     this.deleteReason = deleteReason;

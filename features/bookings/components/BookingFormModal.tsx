@@ -43,6 +43,8 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
   const [advanceAmount, setAdvanceAmount] = useState<number | "">(0);
   const [paymentProofs, setPaymentProofs] = useState<string[]>([]);
   const [remarks, setRemarks] = useState("");
+  const [bookingSource, setBookingSource] = useState<Booking["bookingSource"]>("direct");
+  const [agencyCommission, setAgencyCommission] = useState<number | "">(0);
   
   const [formError, setFormError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
@@ -75,6 +77,8 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       setAdvanceAmount(booking.advanceAmount || 0);
       setPaymentProofs(booking.paymentProof ? booking.paymentProof.split(",").map(p => p.trim()).filter(Boolean) : []);
       setRemarks(booking.remarks || "");
+      setBookingSource(booking.bookingSource || "direct");
+      setAgencyCommission(booking.agencyCommission || 0);
       setFormError("");
     } else {
       setCustomerName("");
@@ -119,6 +123,8 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
             setAdvanceAmount(draft.advanceAmount || 0);
             setPaymentProofs(draft.paymentProofs || []);
             setRemarks(draft.remarks || "");
+            setBookingSource(draft.bookingSource || "direct");
+            setAgencyCommission(draft.agencyCommission || 0);
             hasInitialized.current = true;
             return;
           }
@@ -138,6 +144,8 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       setAdvanceAmount(0);
       setPaymentProofs([]);
       setRemarks("");
+      setBookingSource("direct");
+      setAgencyCommission(0);
       setFormError("");
     }
     
@@ -151,14 +159,15 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       customerName, customerPhone, customerEmail, customerAddress,
       selectedRoomType, selectedRoomNumbers, checkInDate, checkOutDate,
       guestCount, totalAmount, paymentStatus, bookingStatus,
-      paymentMethod, advanceAmount, paymentProofs, remarks
+      paymentMethod, advanceAmount, paymentProofs, remarks,
+      bookingSource, agencyCommission
     };
     sessionStorage.setItem("bookingFormDraft", JSON.stringify(draft));
   }, [
     isOpen, booking, customerName, customerPhone, customerEmail, customerAddress,
     selectedRoomType, selectedRoomNumbers, checkInDate, checkOutDate,
     guestCount, totalAmount, paymentStatus, bookingStatus,
-    paymentMethod, advanceAmount, paymentProofs, remarks
+    paymentMethod, advanceAmount, paymentProofs, remarks, bookingSource, agencyCommission
   ]);
 
   // Date Formatting for Auto assignment messages
@@ -358,7 +367,9 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
         paymentMethod,
         advanceAmount: Number(advanceAmount),
         paymentProof: finalPaymentProofString,
-        remarks
+        remarks,
+        bookingSource,
+        agencyCommission: bookingSource === 'agency' ? Number(agencyCommission) : 0
       };
 
       sessionStorage.removeItem("bookingFormDraft");
@@ -456,6 +467,30 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                 placeholder="123 Street Name"
               />
             </div>
+            <div className="form-group">
+              <label>Booking Source</label>
+              <select 
+                className="input-control"
+                value={bookingSource}
+                onChange={(e) => setBookingSource(e.target.value as Booking["bookingSource"])}
+              >
+                <option value="direct">Direct</option>
+                <option value="agency">Agency / Third-Party</option>
+              </select>
+            </div>
+            {bookingSource === 'agency' && (
+              <div className="form-group">
+                <label>Agency Commission (₹)</label>
+                <input 
+                  type="number" 
+                  className="input-control" 
+                  min="0"
+                  value={agencyCommission}
+                  onChange={(e) => setAgencyCommission(e.target.value === "" ? "" : Number(e.target.value))}
+                  placeholder="e.g. 500"
+                />
+              </div>
+            )}
           </div>
 
           <h3 style={{ fontSize: "0.9rem", color: "var(--primary)", textTransform: "uppercase", marginTop: "1.5rem", marginBottom: "1rem", letterSpacing: "0.05em" }}>

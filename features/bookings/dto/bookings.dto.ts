@@ -20,6 +20,8 @@ export interface CreateBookingDTO {
   advanceAmount: number;
   paymentProof?: string;
   remarks?: string;
+  bookingSource?: 'direct' | 'agency';
+  agencyCommission?: number;
 }
 
 /**
@@ -51,6 +53,8 @@ export class BookingsMapper {
       row.created_by_uid,
       row.created_by_name,
       row.created_by_role,
+      row.booking_source || 'direct',
+      Number(row.agency_commission || 0),
       row.deleted_at,
       row.deleted_by,
       row.delete_reason

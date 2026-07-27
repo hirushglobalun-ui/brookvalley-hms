@@ -71,6 +71,8 @@ export interface Booking {
   createdByUid?: string | null;
   createdByName?: string | null;
   createdByRole?: string | null;
+  bookingSource?: 'direct' | 'agency';
+  agencyCommission?: number;
   createdAt: {
     seconds: number;
     toDate: () => Date;

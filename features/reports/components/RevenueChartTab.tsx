@@ -6,7 +6,9 @@ interface RevenueChartTabProps {
   roomTypeRevenue: {
     typeId: string;
     name: string;
+    gross: number;
     revenue: number;
+    commission?: number;
   }[];
   maxRevenue: number;
 }
@@ -25,9 +27,19 @@ const RevenueChartTab: React.FC<RevenueChartTabProps> = ({ roomTypeRevenue, maxR
               const percent = maxRevenue > 0 ? (item.revenue / maxRevenue) * 100 : 0;
               return (
                 <div key={item.typeId} style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.85rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", fontSize: "0.85rem" }}>
                     <span style={{ fontWeight: 600 }}>{item.name}</span>
-                    <span style={{ fontWeight: 700, color: "var(--success)" }}>₹{item.revenue.toLocaleString()}</span>
+                    <div style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: "2px" }}>
+                      {item.commission && item.commission > 0 ? (
+                        <>
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Gross: ₹{item.gross.toLocaleString()}</span>
+                          <span style={{ fontSize: "0.75rem", color: "var(--danger)" }}>- ₹{item.commission.toLocaleString()} (Agency)</span>
+                          <span style={{ fontWeight: 700, color: "var(--success)", borderTop: "1px solid var(--border-color)", paddingTop: "2px", marginTop: "2px" }}>Balance: ₹{item.revenue.toLocaleString()}</span>
+                        </>
+                      ) : (
+                        <span style={{ fontWeight: 700, color: "var(--success)" }}>₹{item.revenue.toLocaleString()}</span>
+                      )}
+                    </div>
                   </div>
                   
                   <div style={{ 
