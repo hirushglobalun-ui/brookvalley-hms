@@ -83,6 +83,7 @@ const BookingDetailsTab: React.FC<BookingDetailsTabProps> = ({
                   <th>Customer Name</th>
                   <th>Phone Number</th>
                   <th>Stay Dates</th>
+                  <th>Source</th>
                   <th>Created By</th>
                   <th>Status</th>
                 </tr>
@@ -107,6 +108,16 @@ const BookingDetailsTab: React.FC<BookingDetailsTabProps> = ({
                         <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>
                           {formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}
                         </span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: "0.85rem", textTransform: "capitalize", fontWeight: 600 }}>
+                          {b.bookingSource || "Direct"}
+                        </span>
+                        {b.bookingSource === 'agency' && (
+                          <div style={{ fontSize: "0.75rem", color: "var(--primary)", marginTop: "2px" }}>
+                            ₹{b.agencyCommission || 0}
+                          </div>
+                        )}
                       </td>
                       <td>
                         <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>

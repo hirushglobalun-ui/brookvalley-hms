@@ -25,7 +25,9 @@ CREATE OR REPLACE FUNCTION public.create_booking_safe(
   p_remarks TEXT,
   p_created_by_uid UUID,
   p_created_by_name TEXT,
-  p_created_by_role TEXT
+  p_created_by_role TEXT,
+  p_booking_source TEXT,
+  p_agency_commission NUMERIC
 ) RETURNS TEXT
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -60,12 +62,14 @@ BEGIN
     booking_id, customer_name, customer_phone, customer_email, customer_address,
     room_type_id, room_number, check_in_date, check_out_date, guest_count,
     total_amount, payment_status, booking_status, payment_method, advance_amount,
-    payment_proof, remarks, created_by_uid, created_by_name, created_by_role
+    payment_proof, remarks, created_by_uid, created_by_name, created_by_role,
+    booking_source, agency_commission
   ) VALUES (
     p_booking_id, p_customer_name, p_customer_phone, p_customer_email, p_customer_address,
     p_room_type_id, p_room_number, p_check_in_date, p_check_out_date, p_guest_count,
     p_total_amount, p_payment_status, p_booking_status, p_payment_method, p_advance_amount,
-    p_payment_proof, p_remarks, p_created_by_uid, p_created_by_name, p_created_by_role
+    p_payment_proof, p_remarks, p_created_by_uid, p_created_by_name, p_created_by_role,
+    p_booking_source, p_agency_commission
   );
 
   -- 5. Atomic Room Status Update
@@ -99,7 +103,9 @@ CREATE OR REPLACE FUNCTION public.update_booking_safe(
   p_payment_method TEXT,
   p_advance_amount NUMERIC,
   p_payment_proof TEXT,
-  p_remarks TEXT
+  p_remarks TEXT,
+  p_booking_source TEXT,
+  p_agency_commission NUMERIC
 ) RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -163,6 +169,8 @@ BEGIN
     advance_amount = p_advance_amount,
     payment_proof = p_payment_proof,
     remarks = p_remarks,
+    booking_source = p_booking_source,
+    agency_commission = p_agency_commission,
     updated_at = timezone('utc'::text, now())
   WHERE booking_id = p_booking_id;
 

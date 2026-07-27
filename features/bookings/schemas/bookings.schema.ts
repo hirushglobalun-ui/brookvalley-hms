@@ -19,5 +19,7 @@ export const createBookingSchema = z.object({
   paymentMethod: z.string().min(1, "Payment method is required"),
   advanceAmount: z.number().nonnegative("Advance amount cannot be negative"),
   paymentProof: z.string().optional(),
-  remarks: z.string().optional()
+  remarks: z.string().optional(),
+  bookingSource: z.enum(["direct", "agency"]).optional(),
+  agencyCommission: z.number().nonnegative().optional()
 });

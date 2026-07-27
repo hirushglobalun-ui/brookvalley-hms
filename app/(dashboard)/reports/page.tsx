@@ -125,7 +125,8 @@ const ReportsContent = () => {
     .filter(b => b.bookingStatus !== "cancelled")
     .reduce((acc, b) => {
       const amount = b.paymentStatus === "paid" ? b.totalAmount : (b.advanceAmount || 0);
-      return acc + Number(amount);
+      const commission = b.agencyCommission || 0;
+      return acc + (Number(amount) - Number(commission));
     }, 0);
 
   // Calculate total pending balance for active bookings
@@ -136,6 +137,19 @@ const ReportsContent = () => {
       return acc + (balance > 0 ? balance : 0);
     }, 0);
 
+  // Calculate total gross revenue (before commission)
+  const totalGrossRevenue = dateFilteredBookings
+    .filter(b => b.bookingStatus !== "cancelled")
+    .reduce((acc, b) => {
+      const amount = b.paymentStatus === "paid" ? b.totalAmount : (b.advanceAmount || 0);
+      return acc + Number(amount);
+    }, 0);
+
+  // Calculate total agency commission
+  const totalAgencyCommission = dateFilteredBookings
+    .filter(b => b.bookingStatus !== "cancelled" && b.bookingSource === "agency")
+    .reduce((acc, b) => acc + Number(b.agencyCommission || 0), 0);
+
   // CSV Exporter Action helper
   const handleExportCSV = () => {
     if (dateFilteredBookings.length === 0) {
@@ -143,7 +157,7 @@ const ReportsContent = () => {
       return;
     }
     
-    const headers = ["Booking ID", "Customer Name", "Phone", "Email", "Room Type", "Room Number", "Check In", "Check Out", "Total Price", "Advance Paid", "Status", "Payment", "Created By"];
+    const headers = ["Booking ID", "Customer Name", "Phone", "Email", "Room Type", "Room Number", "Check In", "Check Out", "Total Price", "Advance Paid", "Status", "Payment", "Source", "Commission", "Created By"];
     const rows = dateFilteredBookings.map(b => [
       b.bookingId,
       b.customerName,
@@ -157,6 +171,8 @@ const ReportsContent = () => {
       b.advanceAmount,
       b.bookingStatus,
       b.paymentStatus,
+      b.bookingSource === "agency" ? "Agency" : "Direct",
+      b.agencyCommission || 0,
       b.createdByName || "System"
     ]);
 
@@ -193,13 +209,23 @@ const ReportsContent = () => {
   // Calculate Revenue contribution by room type
   const activeRoomTypes = filterRoomType === "all" ? roomTypes : roomTypes.filter(rt => rt.id === filterRoomType);
   const roomTypeRevenue = activeRoomTypes.map(rt => {
+    let typeCommission = 0;
+    let typeGross = 0;
     const typeRevenue = dateFilteredBookings
       .filter(b => b.roomType === rt.id && b.bookingStatus !== "cancelled")
-      .reduce((acc, b) => acc + (b.advanceAmount || 0), 0);
+      .reduce((acc, b) => {
+        const amount = b.paymentStatus === "paid" ? b.totalAmount : (b.advanceAmount || 0);
+        const commission = b.agencyCommission || 0;
+        typeCommission += Number(commission);
+        typeGross += Number(amount);
+        return acc + (Number(amount) - Number(commission));
+      }, 0);
     return {
       typeId: rt.id,
       name: rt.name,
-      revenue: typeRevenue
+      gross: typeGross,
+      revenue: typeRevenue,
+      commission: typeCommission
     };
   }).sort((a, b) => b.revenue - a.revenue);
 
@@ -207,17 +233,27 @@ const ReportsContent = () => {
 
   // Calculate Employee performance metrics
   const employeePerformance = employees.map(emp => {
+    let empCommission = 0;
+    let empGross = 0;
     const empBookings = dateFilteredBookings.filter(b => b.createdByUid === emp.uid);
     const empRevenue = empBookings
       .filter(b => b.bookingStatus !== "cancelled")
-      .reduce((acc, b) => acc + (b.advanceAmount || 0), 0);
+      .reduce((acc, b) => {
+        const amount = b.paymentStatus === "paid" ? b.totalAmount : (b.advanceAmount || 0);
+        const commission = b.agencyCommission || 0;
+        empCommission += Number(commission);
+        empGross += Number(amount);
+        return acc + (Number(amount) - Number(commission));
+      }, 0);
 
     return {
       empId: emp.employeeId,
       name: emp.fullName,
       role: emp.role,
       bookingsCreated: empBookings.length,
-      totalRevenueValue: empRevenue
+      gross: empGross,
+      totalRevenueValue: empRevenue,
+      totalCommissionValue: empCommission
     };
   }).sort((a, b) => b.totalRevenueValue - a.totalRevenueValue);
 
@@ -315,8 +351,10 @@ const ReportsContent = () => {
             totalBookings={totalBookings}
             confirmedCount={confirmedCount}
             cancelledCount={cancelledCount}
+            totalGrossRevenue={totalGrossRevenue}
             totalRevenue={totalRevenue}
             totalPendingBalance={totalPendingBalance}
+            totalAgencyCommission={totalAgencyCommission}
           />
 
           {/* Sub Navigation Tabs */}

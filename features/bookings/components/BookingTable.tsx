@@ -75,6 +75,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
                 <th>Customer Name</th>
                 <th>Phone Number</th>
                 <th>Stay Dates</th>
+                <th>Source</th>
                 <th>Created By</th>
                 <th>Status</th>
                 <th style={{ textAlign: "right" }}>Actions</th>
@@ -93,6 +94,16 @@ const BookingTable: React.FC<BookingTableProps> = ({
                     <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>
                       {formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}
                     </span>
+                  </td>
+                  <td onClick={() => onViewClick(b)}>
+                    <span style={{ fontSize: "0.85rem", textTransform: "capitalize", fontWeight: 600 }}>
+                      {b.bookingSource || "Direct"}
+                    </span>
+                    {b.bookingSource === 'agency' && (
+                      <div style={{ fontSize: "0.75rem", color: "var(--primary)", marginTop: "2px" }}>
+                        ₹{b.agencyCommission || 0}
+                      </div>
+                    )}
                   </td>
                   <td onClick={() => onViewClick(b)}>
                     <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
@@ -238,6 +249,13 @@ const BookingTable: React.FC<BookingTableProps> = ({
 
             <div className="booking-card-dates" style={{ margin: "0.25rem 0", fontSize: "0.85rem" }}>
               <span>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</span>
+            </div>
+
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <span style={{ fontSize: "0.8rem", fontWeight: 600, textTransform: "capitalize" }}>Source: {b.bookingSource || "Direct"}</span>
+              {b.bookingSource === 'agency' && (
+                <span style={{ fontSize: "0.75rem", color: "var(--primary)" }}>(₹{b.agencyCommission || 0})</span>
+              )}
             </div>
 
             <div className="booking-card-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px dashed var(--card-border)", paddingTop: "0.75rem", marginTop: "0.5rem" }}>

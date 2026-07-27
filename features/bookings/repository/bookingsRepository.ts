@@ -78,7 +78,9 @@ export class BookingsRepository {
       p_remarks: dto.remarks || "",
       p_created_by_uid: user.uid,
       p_created_by_name: user.fullName || user.email,
-      p_created_by_role: user.role
+      p_created_by_role: user.role,
+      p_booking_source: dto.bookingSource || 'direct',
+      p_agency_commission: Number(dto.agencyCommission || 0)
     });
 
     if (error) {
@@ -111,7 +113,9 @@ export class BookingsRepository {
       p_payment_method: dto.paymentMethod || "none",
       p_advance_amount: Number(dto.advanceAmount || 0),
       p_payment_proof: dto.paymentProof || "",
-      p_remarks: dto.remarks || ""
+      p_remarks: dto.remarks || "",
+      p_booking_source: dto.bookingSource || 'direct',
+      p_agency_commission: Number(dto.agencyCommission || 0)
     });
 
     if (error) {

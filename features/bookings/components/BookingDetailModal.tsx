@@ -122,6 +122,18 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
             <span className="info-detail-value">{booking.customerAddress || "—"}</span>
           </div>
 
+          <div className="info-detail-item">
+            <span className="info-detail-label">Booking Source</span>
+            <span className="info-detail-value" style={{ textTransform: "capitalize" }}>{booking.bookingSource || "Direct"}</span>
+          </div>
+
+          {booking.bookingSource === 'agency' && (
+            <div className="info-detail-item">
+              <span className="info-detail-label">Agency Commission</span>
+              <span className="info-detail-value">₹{booking.agencyCommission || 0}</span>
+            </div>
+          )}
+
           {/* Stay / Room Details Section */}
           <div className="info-detail-full" style={{ borderBottom: "1px dashed var(--card-border)", paddingBottom: "0.75rem", marginTop: "1rem", marginBottom: "0.5rem" }}>
             <h3 style={{ fontSize: "0.85rem", color: "var(--primary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>

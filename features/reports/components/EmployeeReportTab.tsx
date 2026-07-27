@@ -8,7 +8,9 @@ interface EmployeePerformance {
   name: string;
   role: string;
   bookingsCreated: number;
+  gross?: number;
   totalRevenueValue: number;
+  totalCommissionValue?: number;
 }
 
 interface EmployeeReportTabProps {
@@ -47,7 +49,19 @@ const EmployeeReportTab: React.FC<EmployeeReportTabProps> = ({ performance }) =>
                     </span>
                   </td>
                   <td style={{ fontWeight: 700 }}>{p.bookingsCreated}</td>
-                  <td style={{ fontWeight: 800, color: "var(--success)" }}>₹{p.totalRevenueValue.toLocaleString()}</td>
+                  <td style={{ verticalAlign: "middle" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      {p.totalCommissionValue && p.totalCommissionValue > 0 ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 500 }}>Gross: ₹{(p.gross || 0).toLocaleString()}</span>
+                          <span style={{ fontSize: "0.8rem", color: "var(--danger)", fontWeight: 600 }}>- ₹{p.totalCommissionValue.toLocaleString()} <span style={{fontSize:"0.7rem", fontWeight:400}}>(Agency)</span></span>
+                          <span style={{ fontWeight: 800, color: "var(--success)", fontSize: "1rem" }}>Balance: ₹{p.totalRevenueValue.toLocaleString()}</span>
+                        </div>
+                      ) : (
+                        <span style={{ fontWeight: 800, color: "var(--success)", fontSize: "1rem" }}>₹{p.totalRevenueValue.toLocaleString()}</span>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -50,6 +50,8 @@ export class BookingsService {
         createdByUid: e.createdByUid || null,
         createdByName: e.createdByName || null,
         createdByRole: e.createdByRole || null,
+        bookingSource: e.bookingSource || 'direct',
+        agencyCommission: e.agencyCommission || 0,
         createdAt: null,
         updatedAt: null
       })),
@@ -181,6 +183,8 @@ export class BookingsService {
       paymentProof: e.paymentProof,
       remarks: e.remarks,
       createdByUid: e.createdByUid || null,
+      bookingSource: e.bookingSource || 'direct',
+      agencyCommission: e.agencyCommission || 0,
       deletedAt: e.deletedAt || null,
       deletedBy: e.deletedBy || null,
       deleteReason: e.deleteReason || null,
