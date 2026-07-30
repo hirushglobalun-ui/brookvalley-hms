@@ -19,7 +19,7 @@ import {
   FileText
 } from "lucide-react";
 import ProtectedRoute from "../../../components/ProtectedRoute";
-import { Booking, RoomType, Employee } from "../../../types";
+import { Booking, Room, RoomType, Employee } from "../../../types";
 import { Skeleton, SkeletonTable } from "../../../components/ui/Skeleton";
 
 const bookingsService = new BookingsService();
@@ -53,6 +53,7 @@ const ReportsContent = () => {
   // Data States
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,14 +72,16 @@ const ReportsContent = () => {
   const initialLoad = async () => {
     try {
       setLoading(true);
-      const [bList, rtList, empList] = await Promise.all([
+      const [bList, rtList, empList, rList] = await Promise.all([
         bookingsService.getBookings(),
         settingsService.getRoomTypes(),
-        employeesService.getEmployees()
+        employeesService.getEmployees(),
+        settingsService.getRooms()
       ]);
       setBookings(bList.data);
       setRoomTypes(rtList);
       setEmployees(empList);
+      setRooms(rList);
     } catch (err) {
       console.error("Failed to load reports datasets:", err);
     } finally {
@@ -378,6 +381,7 @@ const ReportsContent = () => {
             <BookingDetailsTab 
               bookings={filteredBookings}
               employees={employees}
+              rooms={rooms}
               roomTypes={roomTypes}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -415,6 +419,7 @@ const ReportsContent = () => {
       <BookingDetailModal 
         isOpen={isBookingDetailOpen}
         booking={selectedBooking}
+        rooms={rooms}
         roomTypes={roomTypes}
         user={user}
         onClose={() => setIsBookingDetailOpen(false)}

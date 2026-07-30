@@ -2,11 +2,12 @@
 
 import React from "react";
 import { X, Edit2, Trash2 } from "lucide-react";
-import { Booking, RoomType } from "../../../types";
+import { Booking, Room, RoomType } from "../../../types";
 
 interface BookingDetailModalProps {
   isOpen: boolean;
   booking: Booking | null;
+  rooms?: Room[];
   roomTypes: RoomType[];
   user: any;
   onClose: () => void;
@@ -18,6 +19,7 @@ interface BookingDetailModalProps {
 const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
   isOpen,
   booking,
+  rooms,
   roomTypes,
   user,
   onClose,
@@ -38,6 +40,26 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
       onClose();
     }
   };
+
+  const roomNums = booking.roomNumber ? booking.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
+
+  const getRoomTypeForNumber = (rNum: string) => {
+    const cleanRNum = rNum.replace(/[^0-9]/g, "").trim();
+    const roomObj = rooms?.find(r => {
+      const dbNum = r.roomNumber.replace(/[^0-9]/g, "").trim();
+      return r.roomNumber === rNum || r.roomNumber === cleanRNum || dbNum === cleanRNum || (dbNum.replace(/^0+/, "") === cleanRNum.replace(/^0+/, "") && cleanRNum.length > 0);
+    });
+    const rtObj = roomTypes?.find(rt => rt.id === roomObj?.roomType) || roomTypes?.find(rt => rt.id === booking.roomType);
+    return rtObj?.name || booking.roomType;
+  };
+
+  const uniqueRoomTypeNames = Array.from(
+    new Set(
+      roomNums.length > 0 
+        ? roomNums.map(rNum => getRoomTypeForNumber(rNum))
+        : [(roomTypes?.find(rt => rt.id === booking.roomType)?.name || booking.roomType)]
+    )
+  ).join(", ");
 
   if (!isOwner(booking)) {
     return (
@@ -142,14 +164,23 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           </div>
 
           <div className="info-detail-item">
-            <span className="info-detail-label">Room Number</span>
-            <span className="info-detail-value">Room {booking.roomNumber}</span>
+            <span className="info-detail-label">Room Number(s)</span>
+            <div className="info-detail-value" style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", alignItems: "center" }}>
+              {roomNums.map(rNum => {
+                const typeName = getRoomTypeForNumber(rNum);
+                return (
+                  <span key={rNum} className="badge" style={{ backgroundColor: "rgba(59,130,246,0.12)", color: "var(--primary)", border: "1px solid var(--primary)", fontWeight: 600, fontSize: "0.8rem", padding: "3px 8px" }}>
+                    Room {rNum} ({typeName})
+                  </span>
+                );
+              })}
+            </div>
           </div>
 
           <div className="info-detail-item">
-            <span className="info-detail-label">Room Type</span>
-            <span className="info-detail-value" style={{ textTransform: "capitalize" }}>
-              {roomTypes.find(rt => rt.id === booking.roomType)?.name || booking.roomType}
+            <span className="info-detail-label">Room Type(s)</span>
+            <span className="info-detail-value" style={{ textTransform: "capitalize", fontWeight: 600 }}>
+              {uniqueRoomTypeNames}
             </span>
           </div>
 

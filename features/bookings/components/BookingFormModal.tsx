@@ -35,7 +35,9 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [selectedRoomType, setSelectedRoomType] = useState("");
+  // State for manual vs multi room selection
   const [selectedRoomNumbers, setSelectedRoomNumbers] = useState<string[]>([]);
+  const [roomFilterType, setRoomFilterType] = useState<string>("all");
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
   const [guestCount, setGuestCount] = useState<number | "">(1);
@@ -48,7 +50,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
   const [remarks, setRemarks] = useState("");
   const [bookingSource, setBookingSource] = useState<Booking["bookingSource"]>("direct");
   const [agencyCommission, setAgencyCommission] = useState<number | "">(0);
-  
+
   const [formError, setFormError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
 
@@ -69,7 +71,9 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       setCustomerEmail(booking.customerEmail);
       setCustomerAddress(booking.customerAddress || "");
       setSelectedRoomType(booking.roomType);
-      setSelectedRoomNumbers(booking.roomNumber ? booking.roomNumber.split(",").map(r => r.trim()) : []);
+      setRoomFilterType(booking.roomType || "all");
+      const rList = booking.roomNumber ? booking.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
+      setSelectedRoomNumbers(rList);
       setCheckInDate(booking.checkInDate);
       setCheckOutDate(booking.checkOutDate);
       setGuestCount(booking.guestCount || 1);
@@ -89,18 +93,22 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       setCustomerEmail("");
       setCustomerAddress("");
       setSelectedRoomType("");
+      setRoomFilterType("all");
       setSelectedRoomNumbers([]);
       
       if (initialPrefill) {
         setCheckInDate(initialPrefill.checkInDate || "");
         setCheckOutDate(initialPrefill.checkOutDate || "");
         if (initialPrefill.roomNumber) {
-          const matchedRoom = rooms.find(r => r.roomNumber === initialPrefill.roomNumber);
+          const prefillRooms = initialPrefill.roomNumber.split(",").map(r => r.trim()).filter(Boolean);
+          setSelectedRoomNumbers(prefillRooms);
+          const matchedRoom = rooms.find(r => r.roomNumber === prefillRooms[0]);
           if (matchedRoom) {
             setSelectedRoomType(matchedRoom.roomType);
+            setRoomFilterType(matchedRoom.roomType);
             const selectedType = roomTypes.find(rt => rt.id === matchedRoom.roomType);
             if (selectedType) {
-              setGuestCount(selectedType.capacity);
+              setGuestCount(selectedType.capacity * prefillRooms.length);
             }
           }
         }
@@ -115,6 +123,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
             setCustomerEmail(draft.customerEmail || "");
             setCustomerAddress(draft.customerAddress || "");
             setSelectedRoomType(draft.selectedRoomType || "");
+            setRoomFilterType(draft.selectedRoomType || "all");
             setSelectedRoomNumbers(draft.selectedRoomNumbers || []);
             setCheckInDate(draft.checkInDate || "");
             setCheckOutDate(draft.checkOutDate || "");
@@ -173,7 +182,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     paymentMethod, advanceAmount, paymentProofs, remarks, bookingSource, agencyCommission
   ]);
 
-  // Date Formatting for Auto assignment messages
+  // Date Formatting for messages
   const formatMsgDate = (dateStr: string): string => {
     if (!dateStr) return "";
     const parts = dateStr.split("-");
@@ -181,100 +190,115 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     return `${parts[2]}-${parts[1]}-${parts[0]}`;
   };
 
-  // Auto assign room number logic
-  const autoAssignRoom = useCallback((roomTypeId: string, checkIn: string, checkOut: string, currentBookingId: string | null = null) => {
-    const candidateRooms = rooms.filter(r => r.roomType === roomTypeId);
-    if (candidateRooms.length === 0) {
-      return { success: false, error: "No rooms configured for this room type." };
+  // Helper to check room availability for selected date range
+  const checkRoomAvailability = useCallback((roomNumber: string, checkIn: string, checkOut: string, currentBookingId: string | null = null) => {
+    const room = rooms.find(r => r.roomNumber === roomNumber);
+    if (!room) return { available: false, reason: "Room not found" };
+
+    if (room.status && room.status !== "available") {
+      return { available: false, reason: `Marked as ${room.status}` };
     }
 
     const start = new Date(checkIn);
     const end = new Date(checkOut);
     if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) {
-      return { success: false, error: "Invalid check-in or check-out date." };
+      return { available: false, reason: "Invalid dates" };
     }
 
-    let availableRoom = null;
-    let conflictMsg = "All rooms of this type are fully booked or unavailable.";
+    const conflict = bookings.find(b => {
+      const activeStatuses = ["confirmed", "pending", "checked-in"];
+      if (!activeStatuses.includes(b.bookingStatus)) return false;
+      if (currentBookingId && b.bookingId === currentBookingId) return false;
 
-    for (const room of candidateRooms) {
-      // Respect the manual room status from Settings (maintenance, dirty, etc.)
-      if (room.status && room.status !== "available") {
-        conflictMsg = `Room ${room.roomNumber} is currently marked as ${room.status}.`;
-        continue; // Skip this room
-      }
+      const bookedRoomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
+      if (!bookedRoomNumbers.includes(roomNumber)) return false;
 
-      const conflict = bookings.find(b => {
-        const activeStatuses = ["confirmed", "pending", "checked-in"];
-        if (!activeStatuses.includes(b.bookingStatus)) return false;
-        if (currentBookingId && b.bookingId === currentBookingId) return false;
-        
-        const bookedRoomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
-        if (!bookedRoomNumbers.includes(room.roomNumber)) return false;
+      const bStart = new Date(b.checkInDate);
+      const bEnd = new Date(b.checkOutDate);
+      return (start < bEnd && end > bStart);
+    });
 
-        const bStart = new Date(b.checkInDate);
-        const bEnd = new Date(b.checkOutDate);
-        return (start < bEnd && end > bStart);
-      });
-
-      if (!conflict) {
-        availableRoom = room;
-        break; // Found an available room!
-      } else {
-        const creator = conflict.createdByName || "System";
-        const statusLabel = conflict.bookingStatus.charAt(0).toUpperCase() + conflict.bookingStatus.slice(1);
-        conflictMsg = `Already booked for ${conflict.customerName} (${statusLabel}) by ${creator} from ${formatMsgDate(conflict.checkInDate)} to ${formatMsgDate(conflict.checkOutDate)}.`;
-      }
+    if (conflict) {
+      return { 
+        available: false, 
+        reason: `Booked by ${conflict.customerName} (${formatMsgDate(conflict.checkInDate)} - ${formatMsgDate(conflict.checkOutDate)})` 
+      };
     }
 
-    if (!availableRoom) {
-      return { success: false, error: conflictMsg };
-    }
-
-    return { success: true, roomNumber: availableRoom.roomNumber };
+    return { available: true, reason: "" };
   }, [rooms, bookings]);
 
-  // Reactive room availability check
-  useEffect(() => {
-    if (selectedRoomType && checkInDate && checkOutDate) {
-      const result = autoAssignRoom(selectedRoomType, checkInDate, checkOutDate, booking?.bookingId || null);
-      if (!result.success) {
-        setFormError(result.error || "Room assignment conflict.");
+  // Toggle room selection state
+  const toggleRoomSelection = (roomNum: string) => {
+    setSelectedRoomNumbers(prev => {
+      if (prev.includes(roomNum)) {
+        const next = prev.filter(r => r !== roomNum);
+        return next;
       } else {
-        setFormError(prev => {
-          const isAutoAssignError = prev.startsWith("Already booked for") || 
-                                    prev === "No rooms configured for this room type." ||
-                                    prev === "Invalid check-in or check-out date.";
-          return isAutoAssignError ? "" : prev;
-        });
+        return [...prev, roomNum];
       }
-    } else {
-      setFormError(prev => {
-        const isAutoAssignError = prev.startsWith("Already booked for") || 
-                                  prev === "No rooms configured for this room type." ||
-                                  prev === "Invalid check-in or check-out date.";
-        return isAutoAssignError ? "" : prev;
-      });
-    }
-  }, [selectedRoomType, checkInDate, checkOutDate, booking, autoAssignRoom]);
+    });
+  };
 
-  // Recalculate price dynamically
+  // Auto assign room helper (picks N available rooms)
+  const autoAssignRooms = (roomTypeId: string, count: number = 1) => {
+    if (!checkInDate || !checkOutDate) {
+      setFormError("Please select Check-in and Check-out dates first.");
+      return;
+    }
+
+    const candidateRooms = rooms.filter(r => roomTypeId === "all" || r.roomType === roomTypeId);
+    const availableCandidateRooms = candidateRooms.filter(r => {
+      const status = checkRoomAvailability(r.roomNumber, checkInDate, checkOutDate, booking?.bookingId || null);
+      return status.available;
+    });
+
+    if (availableCandidateRooms.length === 0) {
+      setFormError("No available rooms found for the selected type and dates.");
+      return;
+    }
+
+    const toSelect = availableCandidateRooms.slice(0, count).map(r => r.roomNumber);
+    setSelectedRoomNumbers(toSelect);
+    setFormError("");
+  };
+
+  // Calculate total combined capacity of selected rooms
+  const combinedCapacity = React.useMemo(() => {
+    return selectedRoomNumbers.reduce((sum, rNum) => {
+      const room = rooms.find(r => r.roomNumber === rNum);
+      if (!room) return sum;
+      const rt = roomTypes.find(t => t.id === room.roomType);
+      return sum + (rt?.capacity || 0);
+    }, 0);
+  }, [selectedRoomNumbers, rooms, roomTypes]);
+
+  // Recalculate dynamic multi-room total amount
   useEffect(() => {
-    if (selectedRoomType && checkInDate && checkOutDate) {
-      const type = roomTypes.find(rt => rt.id === selectedRoomType);
-      const price = type ? type.price : 0;
-      
+    if (checkInDate && checkOutDate) {
       const start = new Date(checkInDate);
       const end = new Date(checkOutDate);
-      
+
       if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
         const utcStart = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
         const utcEnd = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
         const diffDays = Math.floor((utcEnd - utcStart) / (1000 * 60 * 60 * 24));
-        
+
         if (diffDays > 0) {
-          const roomsCount = selectedRoomNumbers.length || 1;
-          setTotalAmount(price * diffDays * roomsCount);
+          if (selectedRoomNumbers.length > 0) {
+            let sumPerNight = 0;
+            selectedRoomNumbers.forEach(rNum => {
+              const room = rooms.find(r => r.roomNumber === rNum);
+              const rt = roomTypes.find(t => t.id === room?.roomType) || roomTypes.find(t => t.id === selectedRoomType);
+              sumPerNight += (rt ? rt.price : 0);
+            });
+            setTotalAmount(sumPerNight * diffDays);
+          } else if (selectedRoomType) {
+            const rt = roomTypes.find(t => t.id === selectedRoomType);
+            setTotalAmount((rt ? rt.price : 0) * diffDays);
+          } else {
+            setTotalAmount(0);
+          }
         } else {
           setTotalAmount(0);
         }
@@ -284,7 +308,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     } else {
       setTotalAmount(0);
     }
-  }, [selectedRoomType, checkInDate, checkOutDate, roomTypes, selectedRoomNumbers]);
+  }, [selectedRoomNumbers, selectedRoomType, checkInDate, checkOutDate, rooms, roomTypes]);
 
   // Handle file selection — store as data URLs
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -333,11 +357,21 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       return;
     }
 
-    const result = autoAssignRoom(selectedRoomType, checkInDate, checkOutDate, booking?.bookingId || null);
-    if (!result.success) {
-      setFormError(result.error || "Room assignment conflict.");
+    if (selectedRoomNumbers.length === 0) {
+      setFormError("Please select at least one room for this booking.");
       return;
     }
+
+    // Check availability of each selected room
+    for (const rNum of selectedRoomNumbers) {
+      const status = checkRoomAvailability(rNum, checkInDate, checkOutDate, booking?.bookingId || null);
+      if (!status.available) {
+        setFormError(`Room ${rNum} cannot be booked for selected dates: ${status.reason}`);
+        return;
+      }
+    }
+
+    const primaryRoomType = selectedRoomType || (selectedRoomNumbers.length > 0 ? (rooms.find(r => r.roomNumber === selectedRoomNumbers[0])?.roomType || "") : "");
 
     setFormLoading(true);
     try {
@@ -359,8 +393,8 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
         customerPhone,
         customerEmail: customerEmail || "",
         customerAddress: customerAddress || "",
-        roomType: selectedRoomType,
-        roomNumber: result.roomNumber,
+        roomType: primaryRoomType,
+        roomNumber: selectedRoomNumbers.join(","),
         checkInDate,
         checkOutDate,
         guestCount: Number(guestCount),
@@ -401,6 +435,8 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   })();
+
+  const visibleRooms = rooms.filter(r => roomFilterType === "all" || r.roomType === roomFilterType);
 
   return (
     <div className="modal-overlay" onClick={handleClose} role="dialog" aria-modal="true" aria-label={booking ? "Edit Booking Modal" : "Create Booking Modal"}>
@@ -509,29 +545,6 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
           </h3>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }} className="mobile-stacked-grid">
-            <div className="form-group" style={{ gridColumn: "span 3" }}>
-              <label>Room Type *</label>
-              <select 
-                className="input-control"
-                value={selectedRoomType}
-                onChange={(e) => {
-                  setSelectedRoomType(e.target.value);
-                  setSelectedRoomNumbers([]);
-                  const selectedType = roomTypes.find(rt => rt.id === e.target.value);
-                  if (selectedType) {
-                    setGuestCount(selectedType.capacity);
-                  }
-                }}
-                required
-              >
-                <option value="">Select Room Type</option>
-                {roomTypes.map(rt => (
-                  <option key={rt.id} value={rt.id}>
-                    {rt.name} - (₹{rt.price}/night)
-                  </option>
-                ))}
-              </select>
-            </div>
             <div className="form-group">
               <label>Check-in Date *</label>
               <input 
@@ -565,6 +578,110 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                 required
               />
             </div>
+          </div>
+
+          {/* Multi-Room Selection Section */}
+          <div style={{ 
+            border: "1px solid var(--card-border)", 
+            borderRadius: "var(--radius-md)", 
+            padding: "1rem", 
+            backgroundColor: "var(--bg-secondary)", 
+            marginBottom: "1.25rem" 
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+              <label style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text-primary)" }}>
+                Select Room(s) * {selectedRoomNumbers.length > 0 && `(${selectedRoomNumbers.length} selected)`}
+              </label>
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <select 
+                  className="input-control" 
+                  style={{ width: "auto", fontSize: "0.8rem", padding: "0.25rem 0.5rem", margin: 0 }}
+                  value={roomFilterType}
+                  onChange={(e) => {
+                    setRoomFilterType(e.target.value);
+                    if (e.target.value !== "all") {
+                      setSelectedRoomType(e.target.value);
+                    }
+                  }}
+                >
+                  <option value="all">All Room Types</option>
+                  {roomTypes.map(rt => (
+                    <option key={rt.id} value={rt.id}>{rt.name}</option>
+                  ))}
+                </select>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  style={{ fontSize: "0.75rem", padding: "0.3rem 0.6rem" }}
+                  onClick={() => autoAssignRooms(roomFilterType, 1)}
+                >
+                  + Auto-Select Available
+                </button>
+              </div>
+            </div>
+
+            {!checkInDate || !checkOutDate ? (
+              <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontStyle: "italic", margin: 0 }}>
+                Please choose Check-in and Check-out dates above to view available rooms.
+              </p>
+            ) : (
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", maxHeight: "180px", overflowY: "auto", padding: "0.25rem 0" }}>
+                {visibleRooms.map(room => {
+                  const availability = checkRoomAvailability(room.roomNumber, checkInDate, checkOutDate, booking?.bookingId || null);
+                  const isSelected = selectedRoomNumbers.includes(room.roomNumber);
+                  const roomTypeObj = roomTypes.find(rt => rt.id === room.roomType);
+
+                  return (
+                    <div 
+                      key={room.roomNumber}
+                      onClick={() => {
+                        if (availability.available) {
+                          toggleRoomSelection(room.roomNumber);
+                        }
+                      }}
+                      title={availability.available ? `Room ${room.roomNumber} (${roomTypeObj?.name || room.roomType}) - ₹${roomTypeObj?.price || 0}/night` : availability.reason}
+                      style={{
+                        padding: "0.5rem 0.75rem",
+                        borderRadius: "8px",
+                        border: isSelected ? "2px solid var(--primary)" : "1px solid var(--card-border)",
+                        backgroundColor: isSelected ? "rgba(59,130,246,0.12)" : availability.available ? "var(--bg-primary)" : "var(--bg-tertiary)",
+                        color: availability.available ? "var(--text-primary)" : "var(--text-muted)",
+                        cursor: availability.available ? "pointer" : "not-allowed",
+                        opacity: availability.available ? 1 : 0.6,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "2px",
+                        minWidth: "110px",
+                        transition: "all 0.15s ease",
+                        userSelect: "none"
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontWeight: 700, fontSize: "0.85rem" }}>Room {room.roomNumber}</span>
+                        {isSelected && <span style={{ color: "var(--primary)", fontWeight: "bold", fontSize: "0.8rem" }}>✓</span>}
+                      </div>
+                      <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)", textTransform: "capitalize" }}>
+                        {roomTypeObj?.name || room.roomType}
+                      </span>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 600, color: availability.available ? "var(--primary)" : "var(--danger)" }}>
+                        {availability.available ? `₹${roomTypeObj?.price || 0}/nt` : "Unavailable"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {selectedRoomNumbers.length > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.75rem", paddingTop: "0.5rem", borderTop: "1px dashed var(--card-border)", fontSize: "0.8rem" }}>
+                <span>
+                  <strong>Selected:</strong> {selectedRoomNumbers.join(", ")}
+                </span>
+                <span style={{ color: Number(guestCount) > combinedCapacity ? "var(--danger)" : "var(--text-secondary)", fontWeight: 600 }}>
+                  Capacity: {combinedCapacity} Guests {Number(guestCount) > combinedCapacity && "(Exceeded!)"}
+                </span>
+              </div>
+            )}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }} className="mobile-stacked-grid">

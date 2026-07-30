@@ -285,6 +285,7 @@ const BookingsContent: React.FC = () => {
       ) : (
         <BookingTable 
           bookings={filteredBookings} 
+          rooms={rooms}
           roomTypes={roomTypes}
           formatDate={formatDate}
           onViewClick={(b: React.SetStateAction<Booking | null>) => {
@@ -326,6 +327,7 @@ const BookingsContent: React.FC = () => {
         <BookingDetailModal 
           isOpen={isDetailOpen}
           booking={selectedBooking}
+          rooms={rooms}
           roomTypes={roomTypes}
           user={user}
           onClose={() => setIsDetailOpen(false)}

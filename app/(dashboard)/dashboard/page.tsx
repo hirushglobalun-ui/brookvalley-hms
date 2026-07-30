@@ -199,6 +199,13 @@ const Dashboard = () => {
 
   const recentBookings = sortedBookings.slice(0, 5);
 
+  const getRoomTypeForNumber = (rNum: string, fallbackTypeId: string) => {
+    const cleanRNum = rNum.trim();
+    const roomObj = rooms?.find(r => r.roomNumber === cleanRNum || r.roomNumber === cleanRNum.replace(/^0+/, '') || r.roomNumber.padStart(2, '0') === cleanRNum.padStart(2, '0'));
+    const rtObj = roomTypes?.find(rt => rt.id === roomObj?.roomType) || roomTypes?.find(rt => rt.id === fallbackTypeId);
+    return rtObj?.name || fallbackTypeId;
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {/* Welcome Banner */}
@@ -407,107 +414,145 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {recentBookings.map(b => (
-                      <tr key={b.bookingId}>
-                        <td>Room {b.roomNumber}</td>
-                        <td style={{ textTransform: "capitalize" }}>{roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType}</td>
-                        <td>{maskText(b.customerName, b)}</td>
-                        <td>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</td>
-                        <td style={{ textTransform: "capitalize" }}>{b.bookingSource || "direct"}</td>
-                        <td>{b.createdByName} ({b.createdByRole})</td>
-                        <td>
-                          {canUpdateBookingStatus(b) ? (
-                            <select 
-                              className={`badge badge-${
-                                b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
-                                b.bookingStatus === "cancelled" ? "danger" : "warning"
-                              }`}
-                              style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600 }}
-                              value={b.bookingStatus}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                handleDashboardStatusUpdate(b.bookingId, e.target.value as Booking["bookingStatus"]);
-                              }}
-                            >
-                              <option value="pending">PENDING</option>
-                              <option value="confirmed">CONFIRMED</option>
-                              <option value="checked-in">CHECKED-IN</option>
-                              <option value="checked-out">CHECKED-OUT</option>
-                              <option value="cancelled">CANCELLED</option>
-                            </select>
-                          ) : (
-                            <span 
-                              className={`badge badge-${
-                                b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
-                                b.bookingStatus === "cancelled" ? "danger" : "warning"
-                              }`}
-                              style={{ width: "fit-content", fontSize: "0.7rem", padding: "4px 10px", fontWeight: 600, textTransform: "uppercase" }}
-                            >
-                              {b.bookingStatus}
-                            </span>
-                          )}
-                        </td>
-                        <td style={{ fontWeight: 600 }}>₹{maskText(b.totalAmount, b)}</td>
-                      </tr>
-                    ))}
+                    {recentBookings.map(b => {
+                      const roomNums = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
+                      const uniqueTypes = Array.from(new Set(
+                        roomNums.length > 0 
+                          ? roomNums.map(rNum => getRoomTypeForNumber(rNum, b.roomType))
+                          : [(roomTypes?.find(rt => rt.id === b.roomType)?.name || b.roomType)]
+                      )).join(", ");
+
+                      return (
+                        <tr key={b.bookingId}>
+                          <td>
+                            <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
+                              {roomNums.map(rNum => {
+                                const typeName = getRoomTypeForNumber(rNum, b.roomType);
+                                return (
+                                  <span key={rNum} className="badge" style={{ fontSize: "0.7rem", padding: "2px 6px", backgroundColor: "rgba(59,130,246,0.1)", color: "var(--primary)", border: "1px solid var(--primary)" }}>
+                                    Room {rNum} ({typeName})
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </td>
+                          <td style={{ textTransform: "capitalize", fontWeight: 600 }}>{uniqueTypes}</td>
+                          <td>{maskText(b.customerName, b)}</td>
+                          <td>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</td>
+                          <td style={{ textTransform: "capitalize" }}>{b.bookingSource || "direct"}</td>
+                          <td>{b.createdByName} ({b.createdByRole})</td>
+                          <td>
+                            {canUpdateBookingStatus(b) ? (
+                              <select 
+                                className={`badge badge-${
+                                  b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                                  b.bookingStatus === "cancelled" ? "danger" : "warning"
+                                }`}
+                                style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600 }}
+                                value={b.bookingStatus}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleDashboardStatusUpdate(b.bookingId, e.target.value as Booking["bookingStatus"]);
+                                }}
+                              >
+                                <option value="pending">PENDING</option>
+                                <option value="confirmed">CONFIRMED</option>
+                                <option value="checked-in">CHECKED-IN</option>
+                                <option value="checked-out">CHECKED-OUT</option>
+                                <option value="cancelled">CANCELLED</option>
+                              </select>
+                            ) : (
+                              <span 
+                                className={`badge badge-${
+                                  b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                                  b.bookingStatus === "cancelled" ? "danger" : "warning"
+                                }`}
+                                style={{ width: "fit-content", fontSize: "0.7rem", padding: "4px 10px", fontWeight: 600, textTransform: "uppercase" }}
+                              >
+                                {b.bookingStatus}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ fontWeight: 600 }}>₹{maskText(b.totalAmount, b)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
 
                 {/* Mobile Card List Layout */}
                 <div className="recent-bookings-cards">
-                  {recentBookings.map(b => (
-                    <div key={b.bookingId} className="booking-mobile-card">
-                      <div className="booking-card-row">
-                        <span className="booking-card-room">Room {b.roomNumber}</span>
-                        <span style={{ fontSize: "0.8rem", color: "var(--primary)", fontWeight: 600, textTransform: "capitalize" }}>
-                          {roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType}
-                        </span>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                          {canUpdateBookingStatus(b) ? (
-                            <select 
-                              className={`badge badge-${
-                                b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
-                                b.bookingStatus === "cancelled" ? "danger" : "warning"
-                              }`}
-                              style={{ fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600, margin: 0 }}
-                              value={b.bookingStatus}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                handleDashboardStatusUpdate(b.bookingId, e.target.value as Booking["bookingStatus"]);
-                              }}
-                            >
-                              <option value="pending">PENDING</option>
-                              <option value="confirmed">CONFIRMED</option>
-                              <option value="checked-in">CHECKED-IN</option>
-                              <option value="checked-out">CHECKED-OUT</option>
-                              <option value="cancelled">CANCELLED</option>
-                            </select>
-                          ) : (
-                            <span 
-                              className={`badge badge-${
-                                b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
-                                b.bookingStatus === "cancelled" ? "danger" : "warning"
-                              }`}
-                              style={{ fontSize: "0.7rem", padding: "3px 10px", fontWeight: 600, textTransform: "uppercase", margin: 0 }}
-                            >
-                              {b.bookingStatus}
-                            </span>
-                          )}
-                          <span className="booking-card-amount">₹{maskText(b.totalAmount, b)}</span>
+                  {recentBookings.map(b => {
+                    const roomNums = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
+                    const uniqueTypes = Array.from(new Set(
+                      roomNums.length > 0 
+                        ? roomNums.map(rNum => getRoomTypeForNumber(rNum, b.roomType))
+                        : [(roomTypes?.find(rt => rt.id === b.roomType)?.name || b.roomType)]
+                    )).join(", ");
+
+                    return (
+                      <div key={b.bookingId} className="booking-mobile-card">
+                        <div className="booking-card-row">
+                          <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
+                            {roomNums.map(rNum => {
+                              const typeName = getRoomTypeForNumber(rNum, b.roomType);
+                              return (
+                                <span key={rNum} className="badge" style={{ fontSize: "0.7rem", padding: "2px 6px", backgroundColor: "rgba(59,130,246,0.1)", color: "var(--primary)", border: "1px solid var(--primary)" }}>
+                                  Room {rNum} ({typeName})
+                                </span>
+                              );
+                            })}
+                          </div>
+                          <span style={{ fontSize: "0.8rem", color: "var(--primary)", fontWeight: 600, textTransform: "capitalize" }}>
+                            {uniqueTypes}
+                          </span>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                            {canUpdateBookingStatus(b) ? (
+                              <select 
+                                className={`badge badge-${
+                                  b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                                  b.bookingStatus === "cancelled" ? "danger" : "warning"
+                                }`}
+                                style={{ fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600, margin: 0 }}
+                                value={b.bookingStatus}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleDashboardStatusUpdate(b.bookingId, e.target.value as Booking["bookingStatus"]);
+                                }}
+                              >
+                                <option value="pending">PENDING</option>
+                                <option value="confirmed">CONFIRMED</option>
+                                <option value="checked-in">CHECKED-IN</option>
+                                <option value="checked-out">CHECKED-OUT</option>
+                                <option value="cancelled">CANCELLED</option>
+                              </select>
+                            ) : (
+                              <span 
+                                className={`badge badge-${
+                                  b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                                  b.bookingStatus === "cancelled" ? "danger" : "warning"
+                                }`}
+                                style={{ fontSize: "0.7rem", padding: "3px 10px", fontWeight: 600, textTransform: "uppercase", margin: 0 }}
+                              >
+                                {b.bookingStatus}
+                              </span>
+                            )}
+                            <span className="booking-card-amount">₹{maskText(b.totalAmount, b)}</span>
+                          </div>
+                        </div>
+                        <div className="booking-card-row">
+                          <span className="booking-card-customer">{maskText(b.customerName, b)}</span>
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "capitalize" }}>{b.bookingSource || "direct"}</span>
+                        </div>
+                        <div className="booking-card-dates">
+                          <span>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</span>
+                        </div>
+                        <div className="booking-card-footer">
+                          <span>By: {b.createdByName} ({b.createdByRole})</span>
                         </div>
                       </div>
-                      <div className="booking-card-row">
-                        <span className="booking-card-customer">{maskText(b.customerName, b)}</span>
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "capitalize" }}>{b.bookingSource || "direct"}</span>
-                      </div>
-                      <div className="booking-card-dates">
-                        <span>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</span>
-                      </div>
-                      <div className="booking-card-footer">
-                        <span>By: {b.createdByName} ({b.createdByRole})</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             ) : (

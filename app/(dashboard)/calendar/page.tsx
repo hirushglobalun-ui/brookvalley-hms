@@ -248,6 +248,7 @@ const CalendarViewContent: React.FC = () => {
         <BookingDetailModal 
           isOpen={isDetailOpen}
           booking={selectedBooking}
+          rooms={rooms}
           roomTypes={roomTypes}
           user={user}
           onClose={() => setIsDetailOpen(false)}
