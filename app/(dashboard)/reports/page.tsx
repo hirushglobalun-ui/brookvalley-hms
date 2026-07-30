@@ -104,9 +104,21 @@ const ReportsContent = () => {
   if (availableYears.length === 0) availableYears.push(currentYear);
   else if (!availableYears.includes(currentYear)) availableYears.push(currentYear);
 
+  const getRoomForNumber = (rNum: string) => {
+    const cleanRNum = rNum.replace(/[^0-9]/g, "").trim();
+    return rooms.find(r => {
+      const dbNum = r.roomNumber.replace(/[^0-9]/g, "").trim();
+      return r.roomNumber === rNum || r.roomNumber === cleanRNum || dbNum === cleanRNum || (dbNum.replace(/^0+/, "") === cleanRNum.replace(/^0+/, "") && cleanRNum.length > 0);
+    });
+  };
+
   // Apply Global Filters (Date and Room Type)
   const dateFilteredBookings = bookings.filter(b => {
-    const matchRoomType = filterRoomType === "all" || b.roomType === filterRoomType;
+    const rNums = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
+    const matchRoomType = filterRoomType === "all" || b.roomType === filterRoomType || rNums.some(rNum => {
+      const roomObj = getRoomForNumber(rNum);
+      return roomObj?.roomType === filterRoomType;
+    });
     if (!matchRoomType) return false;
 
     if (filterMonth === "all" && filterYear === "all") return true;
@@ -209,30 +221,130 @@ const ReportsContent = () => {
     return matchStatus && matchEmp && matchQuery;
   });
 
-  // Calculate Revenue contribution by room type
+  // Calculate Revenue contribution by room type & per room with proportional multi-room allocation
+  const roomTypeRevenueMap: Record<string, { gross: number; revenue: number; commission: number; advance: number; count: number }> = {};
+  const roomRevenueMap: Record<string, { roomNumber: string; roomTypeId: string; roomTypeName: string; gross: number; revenue: number; commission: number; advance: number; count: number }> = {};
+
+  roomTypes.forEach(rt => {
+    roomTypeRevenueMap[rt.id] = { gross: 0, revenue: 0, commission: 0, advance: 0, count: 0 };
+  });
+
+  rooms.forEach(r => {
+    const rtObj = roomTypes.find(rt => rt.id === r.roomType);
+    roomRevenueMap[r.roomNumber] = {
+      roomNumber: r.roomNumber,
+      roomTypeId: r.roomType,
+      roomTypeName: rtObj?.name || r.roomType,
+      gross: 0,
+      revenue: 0,
+      commission: 0,
+      advance: 0,
+      count: 0
+    };
+  });
+
+  dateFilteredBookings.forEach(b => {
+    if (b.bookingStatus === "cancelled") return;
+
+    const rNums = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
+    
+    // Amount collected so far for this booking (Total amount if paid, or advance amount if unpaid/partial)
+    const amountCollected = b.paymentStatus === "paid" ? Number(b.totalAmount || 0) : Number(b.advanceAmount || 0);
+    const advancePaid = Number(b.advanceAmount || 0);
+    const totalCommission = Number(b.agencyCommission || 0);
+    const netRevenue = amountCollected - totalCommission;
+
+    if (rNums.length === 0) {
+      const rtId = b.roomType;
+      if (roomTypeRevenueMap[rtId]) {
+        roomTypeRevenueMap[rtId].gross += amountCollected;
+        roomTypeRevenueMap[rtId].revenue += netRevenue;
+        roomTypeRevenueMap[rtId].commission += totalCommission;
+        roomTypeRevenueMap[rtId].advance += advancePaid;
+        roomTypeRevenueMap[rtId].count += 1;
+      }
+      return;
+    }
+
+    // Determine weight of each room in the booking
+    const roomDetails = rNums.map(rNum => {
+      const roomObj = getRoomForNumber(rNum);
+      const rtId = roomObj?.roomType || b.roomType;
+      const rtObj = roomTypes.find(rt => rt.id === rtId);
+      const basePrice = rtObj?.price || 1;
+      return { rNum, roomObj, rtId, basePrice };
+    });
+
+    const totalBasePrice = roomDetails.reduce((sum, rd) => sum + Number(rd.basePrice || 1), 0);
+
+    roomDetails.forEach(rd => {
+      const share = totalBasePrice > 0 ? (Number(rd.basePrice || 1) / totalBasePrice) : (1 / roomDetails.length);
+      
+      const shareGross = amountCollected * share;
+      const shareNet = netRevenue * share;
+      const shareCommission = totalCommission * share;
+      const shareAdvance = advancePaid * share;
+
+      // Accumulate into Room Type map
+      if (!roomTypeRevenueMap[rd.rtId]) {
+        const rtObj = roomTypes.find(rt => rt.id === rd.rtId);
+        roomTypeRevenueMap[rd.rtId] = { gross: 0, revenue: 0, commission: 0, advance: 0, count: 0 };
+      }
+      roomTypeRevenueMap[rd.rtId].gross += shareGross;
+      roomTypeRevenueMap[rd.rtId].revenue += shareNet;
+      roomTypeRevenueMap[rd.rtId].commission += shareCommission;
+      roomTypeRevenueMap[rd.rtId].advance += shareAdvance;
+      roomTypeRevenueMap[rd.rtId].count += 1;
+
+      // Accumulate into Individual Room map
+      const matchedRoomNum = rd.roomObj?.roomNumber || rd.rNum;
+      if (!roomRevenueMap[matchedRoomNum]) {
+        const rtObj = roomTypes.find(rt => rt.id === rd.rtId);
+        roomRevenueMap[matchedRoomNum] = {
+          roomNumber: matchedRoomNum,
+          roomTypeId: rd.rtId,
+          roomTypeName: rtObj?.name || rd.rtId,
+          gross: 0,
+          revenue: 0,
+          commission: 0,
+          advance: 0,
+          count: 0
+        };
+      }
+      roomRevenueMap[matchedRoomNum].gross += shareGross;
+      roomRevenueMap[matchedRoomNum].revenue += shareNet;
+      roomRevenueMap[matchedRoomNum].commission += shareCommission;
+      roomRevenueMap[matchedRoomNum].advance += shareAdvance;
+      roomRevenueMap[matchedRoomNum].count += 1;
+    });
+  });
+
   const activeRoomTypes = filterRoomType === "all" ? roomTypes : roomTypes.filter(rt => rt.id === filterRoomType);
   const roomTypeRevenue = activeRoomTypes.map(rt => {
-    let typeCommission = 0;
-    let typeGross = 0;
-    const typeRevenue = dateFilteredBookings
-      .filter(b => b.roomType === rt.id && b.bookingStatus !== "cancelled")
-      .reduce((acc, b) => {
-        const amount = b.paymentStatus === "paid" ? b.totalAmount : (b.advanceAmount || 0);
-        const commission = b.agencyCommission || 0;
-        typeCommission += Number(commission);
-        typeGross += Number(amount);
-        return acc + (Number(amount) - Number(commission));
-      }, 0);
+    const data = roomTypeRevenueMap[rt.id] || { gross: 0, revenue: 0, commission: 0, advance: 0, count: 0 };
     return {
       typeId: rt.id,
       name: rt.name,
-      gross: typeGross,
-      revenue: typeRevenue,
-      commission: typeCommission
+      gross: Math.round(data.gross),
+      revenue: Math.round(data.revenue),
+      commission: Math.round(data.commission),
+      advance: Math.round(data.advance),
+      count: data.count
     };
   }).sort((a, b) => b.revenue - a.revenue);
 
-  const maxRevenue = roomTypeRevenue.length > 0 ? roomTypeRevenue[0].revenue : 0;
+  const roomRevenueList = Object.values(roomRevenueMap)
+    .filter(r => filterRoomType === "all" || r.roomTypeId === filterRoomType)
+    .map(r => ({
+      ...r,
+      gross: Math.round(r.gross),
+      revenue: Math.round(r.revenue),
+      commission: Math.round(r.commission),
+      advance: Math.round(r.advance)
+    }))
+    .sort((a, b) => b.revenue - a.revenue);
+
+  const maxRevenue = roomTypeRevenue.length > 0 ? Math.max(...roomTypeRevenue.map(r => r.revenue)) : 0;
 
   // Calculate Employee performance metrics
   const employeePerformance = employees.map(emp => {
@@ -403,6 +515,7 @@ const ReportsContent = () => {
           {activeTab === "revenue" && (
             <RevenueChartTab 
               roomTypeRevenue={roomTypeRevenue}
+              roomRevenueList={roomRevenueList}
               maxRevenue={maxRevenue}
             />
           )}
