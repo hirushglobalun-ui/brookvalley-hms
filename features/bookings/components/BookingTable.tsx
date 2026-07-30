@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Eye, Edit2, Trash2 } from "lucide-react";
-import { Booking, RoomType } from "../../../types";
+import { Booking, Room, RoomType } from "../../../types";
 import { useAuth } from "../../../lib/auth";
 
 /**
@@ -11,6 +11,8 @@ import { useAuth } from "../../../lib/auth";
 interface BookingTableProps {
   /** The list of bookings matching search and status criteria. */
   bookings: Booking[];
+  /** Optional array of rooms to resolve individual room types */
+  rooms?: Room[];
   /** Optional array of room types to resolve type names */
   roomTypes?: RoomType[];
   /** Formats raw database date string. */
@@ -40,6 +42,7 @@ interface BookingTableProps {
  */
 const BookingTable: React.FC<BookingTableProps> = ({
   bookings,
+  rooms,
   roomTypes,
   formatDate,
   onViewClick,
@@ -56,6 +59,16 @@ const BookingTable: React.FC<BookingTableProps> = ({
     if (!user) return false;
     if (user.role === "admin" || user.role === "developer" || user.role === "manager") return true;
     return booking.createdByUid === user.uid;
+  };
+
+  const getRoomTypeForNumber = (rNum: string, fallbackType: string) => {
+    const cleanRNum = rNum.replace(/[^0-9]/g, "").trim();
+    const roomObj = rooms?.find(r => {
+      const dbNum = r.roomNumber.replace(/[^0-9]/g, "").trim();
+      return r.roomNumber === rNum || r.roomNumber === cleanRNum || dbNum === cleanRNum || (dbNum.replace(/^0+/, "") === cleanRNum.replace(/^0+/, "") && cleanRNum.length > 0);
+    });
+    const rtObj = roomTypes?.find(rt => rt.id === roomObj?.roomType) || roomTypes?.find(rt => rt.id === fallbackType);
+    return rtObj?.name || fallbackType;
   };
 
   if (bookings.length === 0) {
@@ -82,107 +95,126 @@ const BookingTable: React.FC<BookingTableProps> = ({
               </tr>
             </thead>
             <tbody>
-              {bookings.map(b => (
-                <tr key={b.bookingId} style={{ cursor: "pointer" }}>
-                  <td onClick={() => onViewClick(b)} style={{ fontFamily: "monospace", fontWeight: 600 }}>{b.bookingId}</td>
-                  <td onClick={() => onViewClick(b)} style={{ textTransform: "capitalize" }}>
-                    {roomTypes ? (roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType) : b.roomType}
-                  </td>
-                  <td onClick={() => onViewClick(b)}>{b.customerName}</td>
-                  <td onClick={() => onViewClick(b)}>{b.customerPhone}</td>
-                  <td onClick={() => onViewClick(b)}>
-                    <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                      {formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}
-                    </span>
-                  </td>
-                  <td onClick={() => onViewClick(b)}>
-                    <span style={{ fontSize: "0.85rem", textTransform: "capitalize", fontWeight: 600 }}>
-                      {b.bookingSource || "Direct"}
-                    </span>
-                    {b.bookingSource === 'agency' && (
-                      <div style={{ fontSize: "0.75rem", color: "var(--primary)", marginTop: "2px" }}>
-                        ₹{b.agencyCommission || 0}
+              {bookings.map(b => {
+                const roomNums = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
+                const uniqueTypes = Array.from(new Set(
+                  roomNums.length > 0 
+                    ? roomNums.map(rNum => getRoomTypeForNumber(rNum, b.roomType))
+                    : [(roomTypes?.find(rt => rt.id === b.roomType)?.name || b.roomType)]
+                )).join(", ");
+
+                return (
+                  <tr key={b.bookingId} style={{ cursor: "pointer" }}>
+                    <td onClick={() => onViewClick(b)} style={{ fontFamily: "monospace", fontWeight: 600 }}>{b.bookingId}</td>
+                    <td onClick={() => onViewClick(b)} style={{ textTransform: "capitalize" }}>
+                      <span style={{ fontWeight: 600 }}>{uniqueTypes}</span>
+                      <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap", marginTop: "3px" }}>
+                        {roomNums.map(rNum => {
+                          const typeName = getRoomTypeForNumber(rNum, b.roomType);
+                          return (
+                            <span key={rNum} className="badge" style={{ fontSize: "0.65rem", padding: "1px 5px", backgroundColor: "rgba(59,130,246,0.1)", color: "var(--primary)", border: "1px solid var(--primary)" }}>
+                              Room {rNum} ({typeName})
+                            </span>
+                          );
+                        })}
                       </div>
-                    )}
-                  </td>
-                  <td onClick={() => onViewClick(b)}>
-                    <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                      {b.createdByName}
-                    </span>
-                    <br />
-                    <span className="badge" style={{ padding: "1px 4px", fontSize: "0.65rem", backgroundColor: "var(--bg-tertiary)" }}>
-                      {b.createdByRole}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                      {canUpdateStatus(b) ? (
-                        <select 
-                          className={`badge badge-${
-                            b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
-                            b.bookingStatus === "cancelled" ? "danger" : "warning"
-                          }`}
-                          style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600 }}
-                          value={b.bookingStatus}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            if (onUpdateStatus) {
-                              onUpdateStatus(b.bookingId, e.target.value as Booking["bookingStatus"]);
-                            }
-                          }}
-                        >
-                          <option value="pending">PENDING</option>
-                          <option value="confirmed">CONFIRMED</option>
-                          <option value="checked-in">CHECKED-IN</option>
-                          <option value="checked-out">CHECKED-OUT</option>
-                          <option value="cancelled">CANCELLED</option>
-                        </select>
-                      ) : (
-                        <span 
-                          className={`badge badge-${
-                            b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
-                            b.bookingStatus === "cancelled" ? "danger" : "warning"
-                          }`}
-                          style={{ width: "fit-content", fontSize: "0.7rem", padding: "4px 10px", fontWeight: 600, textTransform: "uppercase" }}
-                        >
-                          {b.bookingStatus}
-                        </span>
-                      )}
-                      <span className={`badge badge-${b.paymentStatus === "paid" ? "success" : b.paymentStatus === "partial" || b.paymentStatus === "partially-paid" ? "warning" : "danger"}`} style={{ width: "fit-content", fontSize: "0.65rem", padding: "1px 4px", border: "1px solid currentColor", background: "none" }}>
-                        {b.paymentStatus}
+                    </td>
+                    <td onClick={() => onViewClick(b)}>{b.customerName}</td>
+                    <td onClick={() => onViewClick(b)}>{b.customerPhone}</td>
+                    <td onClick={() => onViewClick(b)}>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                        {formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}
                       </span>
-                    </div>
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <div style={{ display: "inline-flex", gap: "0.5rem" }} onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className="btn btn-secondary btn-icon" 
-                        title="View Booking Details"
-                        onClick={() => onViewClick(b)}
-                      >
-                        <Eye size={14} />
-                      </button>
-                      
-                      <button 
-                        className="btn btn-secondary btn-icon" 
-                        title="Edit Booking"
-                        onClick={() => onEditClick(b)}
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      
-                      <button 
-                        className="btn btn-secondary btn-icon" 
-                        title="Delete Booking"
-                        style={{ color: "var(--danger)" }}
-                        onClick={() => onDeleteClick(b)}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td onClick={() => onViewClick(b)}>
+                      <span style={{ fontSize: "0.85rem", textTransform: "capitalize", fontWeight: 600 }}>
+                        {b.bookingSource || "Direct"}
+                      </span>
+                      {b.bookingSource === 'agency' && (
+                        <div style={{ fontSize: "0.75rem", color: "var(--primary)", marginTop: "2px" }}>
+                          ₹{b.agencyCommission || 0}
+                        </div>
+                      )}
+                    </td>
+                    <td onClick={() => onViewClick(b)}>
+                      <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                        {b.createdByName}
+                      </span>
+                      <br />
+                      <span className="badge" style={{ padding: "1px 4px", fontSize: "0.65rem", backgroundColor: "var(--bg-tertiary)" }}>
+                        {b.createdByRole}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                        {canUpdateStatus(b) ? (
+                          <select 
+                            className={`badge badge-${
+                              b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                              b.bookingStatus === "cancelled" ? "danger" : "warning"
+                            }`}
+                            style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600 }}
+                            value={b.bookingStatus}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              if (onUpdateStatus) {
+                                onUpdateStatus(b.bookingId, e.target.value as Booking["bookingStatus"]);
+                              }
+                            }}
+                          >
+                            <option value="pending">PENDING</option>
+                            <option value="confirmed">CONFIRMED</option>
+                            <option value="checked-in">CHECKED-IN</option>
+                            <option value="checked-out">CHECKED-OUT</option>
+                            <option value="cancelled">CANCELLED</option>
+                          </select>
+                        ) : (
+                          <span 
+                            className={`badge badge-${
+                              b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in" ? "success" : 
+                              b.bookingStatus === "cancelled" ? "danger" : "warning"
+                            }`}
+                            style={{ width: "fit-content", fontSize: "0.7rem", padding: "4px 10px", fontWeight: 600, textTransform: "uppercase" }}
+                          >
+                            {b.bookingStatus}
+                          </span>
+                        )}
+                        <span className={`badge badge-${b.paymentStatus === "paid" ? "success" : b.paymentStatus === "partial" || b.paymentStatus === "partially-paid" ? "warning" : "danger"}`} style={{ width: "fit-content", fontSize: "0.65rem", padding: "1px 4px", border: "1px solid currentColor", background: "none" }}>
+                          {b.paymentStatus}
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <div style={{ display: "inline-flex", gap: "0.5rem" }} onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          className="btn btn-secondary btn-icon" 
+                          title="View Booking Details"
+                          onClick={() => onViewClick(b)}
+                        >
+                          <Eye size={14} />
+                        </button>
+                        
+                        <button 
+                          className="btn btn-secondary btn-icon" 
+                          title="Edit Booking"
+                          onClick={() => onEditClick(b)}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        
+                        <button 
+                          className="btn btn-secondary btn-icon" 
+                          title="Delete Booking"
+                          style={{ color: "var(--danger)" }}
+                          onClick={() => onDeleteClick(b)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -190,15 +222,33 @@ const BookingTable: React.FC<BookingTableProps> = ({
 
       {/* Mobile Card List Layout */}
       <div className="bookings-mobile-cards">
-        {bookings.map(b => (
-          <div key={b.bookingId} className="booking-mobile-card card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <div className="booking-card-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                <span className="booking-card-room" style={{ fontFamily: "monospace", fontWeight: 700, fontSize: "0.95rem" }}>{b.bookingId}</span>
-                <span style={{ fontSize: "0.75rem", color: "var(--primary)", fontWeight: 600, textTransform: "capitalize" }}>
-                  {roomTypes ? (roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType) : b.roomType}
-                </span>
-              </div>
+        {bookings.map(b => {
+          const roomNums = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
+          const uniqueTypes = Array.from(new Set(
+            roomNums.length > 0 
+              ? roomNums.map(rNum => getRoomTypeForNumber(rNum, b.roomType))
+              : [(roomTypes?.find(rt => rt.id === b.roomType)?.name || b.roomType)]
+          )).join(", ");
+
+          return (
+            <div key={b.bookingId} className="booking-mobile-card card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <div className="booking-card-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                  <span className="booking-card-room" style={{ fontFamily: "monospace", fontWeight: 700, fontSize: "0.95rem" }}>{b.bookingId}</span>
+                  <span style={{ fontSize: "0.75rem", color: "var(--primary)", fontWeight: 600, textTransform: "capitalize" }}>
+                    {uniqueTypes}
+                  </span>
+                  <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap", marginTop: "2px" }}>
+                    {roomNums.map(rNum => {
+                      const typeName = getRoomTypeForNumber(rNum, b.roomType);
+                      return (
+                        <span key={rNum} className="badge" style={{ fontSize: "0.65rem", padding: "1px 5px", backgroundColor: "rgba(59,130,246,0.1)", color: "var(--primary)", border: "1px solid var(--primary)" }}>
+                          Room {rNum} ({typeName})
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
               <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap", justifyContent: "flex-end", flexShrink: 0 }}>
                   {canUpdateStatus(b) ? (
                     <select 
@@ -294,7 +344,8 @@ const BookingTable: React.FC<BookingTableProps> = ({
               </div>
             </div>
           </div>
-        ))}
+        );
+      })}
       </div>
 
       {/* Pagination Controls */}
