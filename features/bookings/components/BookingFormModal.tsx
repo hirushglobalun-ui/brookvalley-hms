@@ -71,7 +71,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       setCustomerEmail(booking.customerEmail);
       setCustomerAddress(booking.customerAddress || "");
       setSelectedRoomType(booking.roomType);
-      setRoomFilterType(booking.roomType || "all");
+      setRoomFilterType("all");
       const rList = booking.roomNumber ? booking.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
       setSelectedRoomNumbers(rList);
       setCheckInDate(booking.checkInDate);
@@ -250,7 +250,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     const candidateRooms = rooms.filter(r => roomTypeId === "all" || r.roomType === roomTypeId);
     const availableCandidateRooms = candidateRooms.filter(r => {
       const status = checkRoomAvailability(r.roomNumber, checkInDate, checkOutDate, booking?.bookingId || null);
-      return status.available;
+      return status.available && !selectedRoomNumbers.includes(r.roomNumber);
     });
 
     if (availableCandidateRooms.length === 0) {
@@ -259,7 +259,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     }
 
     const toSelect = availableCandidateRooms.slice(0, count).map(r => r.roomNumber);
-    setSelectedRoomNumbers(toSelect);
+    setSelectedRoomNumbers(prev => [...prev, ...toSelect]);
     setFormError("");
   };
 
@@ -436,7 +436,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     return `${year}-${month}-${day}`;
   })();
 
-  const visibleRooms = rooms.filter(r => roomFilterType === "all" || r.roomType === roomFilterType);
+  const visibleRooms = rooms.filter(r => roomFilterType === "all" || r.roomType === roomFilterType || selectedRoomNumbers.includes(r.roomNumber));
 
   return (
     <div className="modal-overlay" onClick={handleClose} role="dialog" aria-modal="true" aria-label={booking ? "Edit Booking Modal" : "Create Booking Modal"}>
@@ -635,19 +635,19 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                     <div 
                       key={room.roomNumber}
                       onClick={() => {
-                        if (availability.available) {
+                        if (availability.available || isSelected) {
                           toggleRoomSelection(room.roomNumber);
                         }
                       }}
-                      title={availability.available ? `Room ${room.roomNumber} (${roomTypeObj?.name || room.roomType}) - ₹${roomTypeObj?.price || 0}/night` : availability.reason}
+                      title={(availability.available || isSelected) ? `Room ${room.roomNumber} (${roomTypeObj?.name || room.roomType}) - ₹${roomTypeObj?.price || 0}/night` : availability.reason}
                       style={{
                         padding: "0.5rem 0.75rem",
                         borderRadius: "8px",
                         border: isSelected ? "2px solid var(--primary)" : "1px solid var(--card-border)",
                         backgroundColor: isSelected ? "rgba(59,130,246,0.12)" : availability.available ? "var(--bg-primary)" : "var(--bg-tertiary)",
-                        color: availability.available ? "var(--text-primary)" : "var(--text-muted)",
-                        cursor: availability.available ? "pointer" : "not-allowed",
-                        opacity: availability.available ? 1 : 0.6,
+                        color: (availability.available || isSelected) ? "var(--text-primary)" : "var(--text-muted)",
+                        cursor: (availability.available || isSelected) ? "pointer" : "not-allowed",
+                        opacity: (availability.available || isSelected) ? 1 : 0.6,
                         display: "flex",
                         flexDirection: "column",
                         gap: "2px",
