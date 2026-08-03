@@ -492,20 +492,19 @@ const Dashboard = () => {
 
                     return (
                       <div key={b.bookingId} className="booking-mobile-card">
+                        {/* Room badges - stacked vertically */}
+                        <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+                          {roomNums.map(rNum => {
+                            const typeName = getRoomTypeForNumber(rNum, b.roomType);
+                            return (
+                              <span key={rNum} className="badge" style={{ fontSize: "0.65rem", padding: "2px 6px", backgroundColor: "rgba(59,130,246,0.1)", color: "var(--primary)", border: "1px solid var(--primary)", whiteSpace: "nowrap" }}>
+                                Room {rNum} ({typeName})
+                              </span>
+                            );
+                          })}
+                        </div>
+                        {/* Status + Amount row */}
                         <div className="booking-card-row">
-                          <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
-                            {roomNums.map(rNum => {
-                              const typeName = getRoomTypeForNumber(rNum, b.roomType);
-                              return (
-                                <span key={rNum} className="badge" style={{ fontSize: "0.7rem", padding: "2px 6px", backgroundColor: "rgba(59,130,246,0.1)", color: "var(--primary)", border: "1px solid var(--primary)" }}>
-                                  Room {rNum} ({typeName})
-                                </span>
-                              );
-                            })}
-                          </div>
-                          <span style={{ fontSize: "0.8rem", color: "var(--primary)", fontWeight: 600, textTransform: "capitalize" }}>
-                            {uniqueTypes}
-                          </span>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
                             {canUpdateBookingStatus(b) ? (
                               <select 
@@ -537,16 +536,19 @@ const Dashboard = () => {
                                 {b.bookingStatus}
                               </span>
                             )}
-                            <span className="booking-card-amount">₹{maskText(b.totalAmount, b)}</span>
                           </div>
+                          <span className="booking-card-amount">₹{maskText(b.totalAmount, b)}</span>
                         </div>
+                        {/* Customer name + Source */}
                         <div className="booking-card-row">
                           <span className="booking-card-customer">{maskText(b.customerName, b)}</span>
                           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "capitalize" }}>{b.bookingSource || "direct"}</span>
                         </div>
+                        {/* Dates */}
                         <div className="booking-card-dates">
                           <span>{formatDate(b.checkInDate)} to {formatDate(b.checkOutDate)}</span>
                         </div>
+                        {/* Footer */}
                         <div className="booking-card-footer">
                           <span>By: {b.createdByName} ({b.createdByRole})</span>
                         </div>
