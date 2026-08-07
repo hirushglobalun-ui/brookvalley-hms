@@ -30,7 +30,7 @@ let bookingsCache: {
  * Orchestrates filtering queries, loading data, auth states, and subcomponent modals.
  */
 const BookingsContent: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   
   // Data States
@@ -78,8 +78,8 @@ const BookingsContent: React.FC = () => {
   const initialLoad = async (currentPage: number = page) => {
     try {
       if (!bookingsCache) setLoading(true);
-      const isAdminOrManager = user?.role === "admin" || user?.role === "developer" || user?.role === "manager";
-      const filterUserId = isAdminOrManager ? undefined : user?.uid;
+      const isStaffUser = user?.role === "admin" || user?.role === "developer" || user?.role === "manager" || user?.role === "employee";
+      const filterUserId = isStaffUser ? undefined : (user?.uid || user?.id);
       const [bookingsRes, rList, rtList] = await Promise.all([
         bookingsService.getBookings(currentPage, limit, filterUserId),
         settingsService.getRooms(),
@@ -105,13 +105,17 @@ const BookingsContent: React.FC = () => {
   };
 
   useEffect(() => {
-    initialLoad(page);
-  }, [page]);
+    if (!authLoading) {
+      initialLoad(page);
+    }
+  }, [page, authLoading, user?.uid, user?.id, user?.role]);
 
   const refreshData = async () => {
     try {
+      const isStaffUser = user?.role === "admin" || user?.role === "developer" || user?.role === "manager" || user?.role === "employee";
+      const filterUserId = isStaffUser ? undefined : (user?.uid || user?.id);
       const [bookingsRes, rList, rtList] = await Promise.all([
-        bookingsService.getBookings(page, limit),
+        bookingsService.getBookings(page, limit, filterUserId),
         settingsService.getRooms(),
         settingsService.getRoomTypes()
       ]);
