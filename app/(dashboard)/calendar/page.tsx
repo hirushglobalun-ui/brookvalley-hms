@@ -22,7 +22,7 @@ const settingsService = new SettingsService();
  * Manages calendar calculations and acts as a controller for extracted widgets.
  */
 const CalendarViewContent: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // Selected date context
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -59,8 +59,10 @@ const CalendarViewContent: React.FC = () => {
   };
 
   useEffect(() => {
-    initialLoad();
-  }, []);
+    if (!authLoading) {
+      initialLoad();
+    }
+  }, [authLoading, user?.uid, user?.id, user?.role]);
 
   const refreshData = async () => {
     try {
@@ -117,10 +119,12 @@ const CalendarViewContent: React.FC = () => {
     return d.toLocaleString("default", { weekday: "short" }).substring(0, 2);
   };
 
-  // Booking access masking logic (non-admins can only view their own bookings)
+  // Booking access logic (all authenticated staff members can view booking statuses and details)
   const isOwner = (booking: Booking): boolean => {
-    if (user?.role === "admin" || user?.role === "developer" || user?.role === "manager") return true;
-    return booking.createdByUid === user?.uid;
+    if (user) return true;
+    const currentUid = user?.uid || user?.id;
+    if (!currentUid || !booking.createdByUid) return false;
+    return booking.createdByUid === currentUid;
   };
 
   // Redirect to new booking screen with pre-filled inputs when clicking empty cells

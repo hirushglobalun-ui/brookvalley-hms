@@ -61,6 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             } else {
               await syncCookie(session);
               setUser({
+                id: session.user.id,
                 uid: session.user.id,
                 email: session.user.email,
                 fullName: profile.full_name,
@@ -77,6 +78,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // Profile fallback if not populated yet
             await syncCookie(session);
             setUser({
+              id: session.user.id,
               uid: session.user.id,
               email: session.user.email,
               role: session.user.email === "dev@hirush.com" ? "developer" : "employee",
@@ -119,6 +121,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             } else {
               await syncCookie(session);
               setUser({
+                id: session.user.id,
                 uid: session.user.id,
                 email: session.user.email,
                 fullName: profile.full_name,
@@ -134,6 +137,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           } else {
             await syncCookie(session);
             setUser({
+              id: session.user.id,
               uid: session.user.id,
               email: session.user.email,
               role: session.user.email === "dev@hirush.com" ? "developer" : "employee",

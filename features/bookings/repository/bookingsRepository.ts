@@ -58,6 +58,23 @@ export class BookingsRepository {
    * Prevents double bookings and atomically updates room statuses.
    */
   public async addBookingSafe(bookingId: string, dto: CreateBookingDTO, user: any): Promise<void> {
+    let activeUid = user?.uid || user?.id || (dto as any)?.createdByUid;
+    let activeName = user?.fullName || user?.email || (dto as any)?.createdByName;
+    let activeRole = user?.role || (dto as any)?.createdByRole;
+
+    if (!activeUid) {
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData?.user) {
+          activeUid = authData.user.id;
+          activeName = activeName || authData.user.email || "Employee";
+          activeRole = activeRole || "employee";
+        }
+      } catch (e) {
+        console.error("Failed to resolve active user for booking creation:", e);
+      }
+    }
+
     const { error } = await supabase.rpc("create_booking_safe", {
       p_booking_id: bookingId,
       p_customer_name: dto.customerName,
@@ -76,9 +93,9 @@ export class BookingsRepository {
       p_advance_amount: Number(dto.advanceAmount || 0),
       p_payment_proof: dto.paymentProof || "",
       p_remarks: dto.remarks || "",
-      p_created_by_uid: user.uid,
-      p_created_by_name: user.fullName || user.email,
-      p_created_by_role: user.role,
+      p_created_by_uid: activeUid || null,
+      p_created_by_name: activeName || "Staff",
+      p_created_by_role: activeRole || "employee",
       p_booking_source: dto.bookingSource || 'direct',
       p_agency_commission: Number(dto.agencyCommission || 0)
     });

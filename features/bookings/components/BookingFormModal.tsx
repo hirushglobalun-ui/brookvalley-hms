@@ -406,7 +406,10 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
         paymentProof: finalPaymentProofString,
         remarks,
         bookingSource,
-        agencyCommission: bookingSource === 'agency' ? Number(agencyCommission) : 0
+        agencyCommission: bookingSource === 'agency' ? Number(agencyCommission) : 0,
+        createdByUid: user?.uid || user?.id,
+        createdByName: user?.fullName || user?.email,
+        createdByRole: user?.role
       };
 
       sessionStorage.removeItem("bookingFormDraft");
