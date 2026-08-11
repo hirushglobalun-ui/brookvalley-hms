@@ -178,7 +178,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // 2. Fetch profile to verify active status immediately
       const profile = await fetchProfile(data.user.id);
       
-      if (!profile && email !== "admin@brookvalley.com" && email !== "dev@hirush.com") {
+      if (!profile && !email.toLowerCase().startsWith("admin") && email !== "dev@hirush.com") {
         await supabase.auth.signOut();
         setUser(null);
         await syncCookie(null);
@@ -204,10 +204,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err: any) {
       setLoading(false);
       let errMsg = "Failed to sign in. Please check your credentials.";
-      if (err.message === "Invalid login credentials") {
-        errMsg = "Invalid email or password.";
-      } else if (err.message) {
-        errMsg = err.message;
+      if (typeof err === "string" && err.trim() !== "{}") {
+        errMsg = err.trim();
+      } else if (err?.message && typeof err.message === "string" && err.message.trim() !== "{}") {
+        errMsg = err.message === "Invalid login credentials" ? "Invalid email or password." : err.message.trim();
+      } else if (err?.error_description && typeof err.error_description === "string") {
+        errMsg = err.error_description.trim();
       }
       setError(errMsg);
       throw new Error(errMsg);

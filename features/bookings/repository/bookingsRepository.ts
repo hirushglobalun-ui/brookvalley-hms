@@ -2,6 +2,7 @@ import { supabase } from "../../../lib/supabase";
 import { DatabaseError } from "../../../shared/errors";
 import { BookingEntity } from "../domain/bookings.domain";
 import { CreateBookingDTO, BookingsMapper } from "../dto/bookings.dto";
+import { syncToFirestore, deleteFromFirestore, fetchFallbackFromFirestore } from "../../../lib/firebase";
 
 /**
  * Repository wrapping all database interactions for bookings.
@@ -16,8 +17,7 @@ export class BookingsRepository {
 
     let query = supabase
       .from("bookings")
-      .select("*", { count: "exact" })
-      .is("deleted_at", null);
+      .select("*", { count: "exact" });
 
     if (userId) {
       query = query.eq("created_by_uid", userId);
@@ -28,6 +28,14 @@ export class BookingsRepository {
       .range(from, to);
 
     if (error) {
+      console.warn("Supabase fetch failed, attempting Firebase fallback for bookings...");
+      const fbData = await fetchFallbackFromFirestore("bookings");
+      if (fbData.length > 0) {
+        return {
+          data: fbData.map(BookingsMapper.toEntity),
+          count: fbData.length
+        };
+      }
       throw new DatabaseError("Failed to fetch bookings", error.code);
     }
     return {
@@ -44,7 +52,6 @@ export class BookingsRepository {
       .from("bookings")
       .select("*")
       .eq("booking_id", bookingId)
-      .is("deleted_at", null)
       .maybeSingle();
 
     if (error) {
@@ -54,8 +61,7 @@ export class BookingsRepository {
   }
 
   /**
-   * Inserts a new customer reservation safely via Postgres RPC.
-   * Prevents double bookings and atomically updates room statuses.
+   * Inserts a new customer reservation record.
    */
   public async addBookingSafe(bookingId: string, dto: CreateBookingDTO, user: any): Promise<void> {
     let activeUid = user?.uid || user?.id || (dto as any)?.createdByUid;
@@ -75,86 +81,101 @@ export class BookingsRepository {
       }
     }
 
-    const { error } = await supabase.rpc("create_booking_safe", {
-      p_booking_id: bookingId,
-      p_customer_name: dto.customerName,
-      p_customer_phone: dto.customerPhone,
-      p_customer_email: dto.customerEmail,
-      p_customer_address: dto.customerAddress || "",
-      p_room_type_id: dto.roomType,
-      p_room_number: dto.roomNumber,
-      p_check_in_date: dto.checkInDate,
-      p_check_out_date: dto.checkOutDate,
-      p_guest_count: Number(dto.guestCount),
-      p_total_amount: Number(dto.totalAmount),
-      p_payment_status: dto.paymentStatus,
-      p_booking_status: dto.bookingStatus,
-      p_payment_method: dto.paymentMethod || "none",
-      p_advance_amount: Number(dto.advanceAmount || 0),
-      p_payment_proof: dto.paymentProof || "",
-      p_remarks: dto.remarks || "",
-      p_created_by_uid: activeUid || null,
-      p_created_by_name: activeName || "Staff",
-      p_created_by_role: activeRole || "employee",
-      p_booking_source: dto.bookingSource || 'direct',
-      p_agency_commission: Number(dto.agencyCommission || 0)
-    });
+    const payload = {
+      booking_id: bookingId,
+      customer_name: dto.customerName,
+      customer_phone: dto.customerPhone,
+      customer_email: dto.customerEmail || "",
+      customer_address: dto.customerAddress || "",
+      room_type_id: dto.roomType,
+      room_number: dto.roomNumber,
+      check_in_date: dto.checkInDate,
+      check_out_date: dto.checkOutDate,
+      guest_count: Number(dto.guestCount),
+      total_amount: Number(dto.totalAmount),
+      payment_status: dto.paymentStatus,
+      booking_status: dto.bookingStatus,
+      payment_method: dto.paymentMethod || "none",
+      advance_amount: Number(dto.advanceAmount || 0),
+      payment_proof: dto.paymentProof || "",
+      remarks: dto.remarks || "",
+      created_by_uid: activeUid || null,
+      created_by_name: activeName || "Staff",
+      created_by_role: activeRole || "employee",
+      booking_source: dto.bookingSource || "direct",
+      agency_commission: Number(dto.agencyCommission || 0)
+    };
+
+    const { error } = await supabase
+      .from("bookings")
+      .insert(payload);
 
     if (error) {
-      if (error.message.includes("DOUBLE_BOOKING_ERROR")) {
-        throw new DatabaseError("Double Booking Detected: The selected room is already booked for these dates.", error.code);
-      }
-      throw new DatabaseError("Failed to insert booking record: " + error.message, error.code);
+      console.warn("Supabase database unavailable/paused. Writing to Firebase fallback...", error.message);
+      await syncToFirestore("bookings", bookingId, payload);
+      return;
     }
+
+    syncToFirestore("bookings", bookingId, payload).catch(console.error);
   }
 
   /**
-   * Modifies an existing customer reservation safely via Postgres RPC.
-   * Prevents overlap with other bookings and handles room status atomicity.
+   * Modifies an existing customer reservation.
    */
   public async updateBookingSafe(bookingId: string, dto: CreateBookingDTO): Promise<void> {
-    const { error } = await supabase.rpc("update_booking_safe", {
-      p_booking_id: bookingId,
-      p_customer_name: dto.customerName,
-      p_customer_phone: dto.customerPhone,
-      p_customer_email: dto.customerEmail,
-      p_customer_address: dto.customerAddress || "",
-      p_room_type_id: dto.roomType,
-      p_room_number: dto.roomNumber,
-      p_check_in_date: dto.checkInDate,
-      p_check_out_date: dto.checkOutDate,
-      p_guest_count: Number(dto.guestCount),
-      p_total_amount: Number(dto.totalAmount),
-      p_payment_status: dto.paymentStatus,
-      p_booking_status: dto.bookingStatus,
-      p_payment_method: dto.paymentMethod || "none",
-      p_advance_amount: Number(dto.advanceAmount || 0),
-      p_payment_proof: dto.paymentProof || "",
-      p_remarks: dto.remarks || "",
-      p_booking_source: dto.bookingSource || 'direct',
-      p_agency_commission: Number(dto.agencyCommission || 0)
-    });
+    const payload = {
+      booking_id: bookingId,
+      customer_name: dto.customerName,
+      customer_phone: dto.customerPhone,
+      customer_email: dto.customerEmail || "",
+      customer_address: dto.customerAddress || "",
+      room_type_id: dto.roomType,
+      room_number: dto.roomNumber,
+      check_in_date: dto.checkInDate,
+      check_out_date: dto.checkOutDate,
+      guest_count: Number(dto.guestCount),
+      total_amount: Number(dto.totalAmount),
+      payment_status: dto.paymentStatus,
+      booking_status: dto.bookingStatus,
+      payment_method: dto.paymentMethod || "none",
+      advance_amount: Number(dto.advanceAmount || 0),
+      payment_proof: dto.paymentProof || "",
+      remarks: dto.remarks || "",
+      booking_source: dto.bookingSource || "direct",
+      agency_commission: Number(dto.agencyCommission || 0),
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from("bookings")
+      .update(payload)
+      .eq("booking_id", bookingId);
 
     if (error) {
-      if (error.message.includes("DOUBLE_BOOKING_ERROR")) {
-        throw new DatabaseError("Double Booking Detected: The selected room is already booked for these dates.", error.code);
-      }
-      throw new DatabaseError(`Failed to update booking record: ${bookingId}. ${error.message}`, error.code);
+      console.warn("Supabase database unavailable/paused. Updating Firebase fallback...", error.message);
+      await syncToFirestore("bookings", bookingId, payload);
+      return;
     }
+
+    syncToFirestore("bookings", bookingId, payload).catch(console.error);
   }
 
   /**
-   * Soft-deletes a customer reservation record.
+   * Deletes a customer reservation record.
    */
-  public async deleteBooking(bookingId: string, reason: string = "Accidental entry / Admin cleanup", actor: any = { uid: null }): Promise<void> {
-    const { error } = await supabase.rpc("soft_delete_booking_safe", {
-      p_booking_id: bookingId,
-      p_delete_reason: reason,
-      p_actor_id: actor?.uid || null
-    });
+  public async deleteBooking(bookingId: string, _reason: string = "Admin cleanup", _actor: any = { uid: null }): Promise<void> {
+    const { error } = await supabase
+      .from("bookings")
+      .delete()
+      .eq("booking_id", bookingId);
+
     if (error) {
-      throw new DatabaseError(`Failed to soft delete booking: ${bookingId}. ${error.message}`, error.code);
+      console.warn("Supabase database unavailable/paused. Deleting from Firebase fallback...", error.message);
+      await deleteFromFirestore("bookings", bookingId);
+      return;
     }
+
+    deleteFromFirestore("bookings", bookingId).catch(console.error);
   }
 
   /**

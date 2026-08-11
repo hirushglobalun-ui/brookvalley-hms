@@ -6,12 +6,18 @@
   "scripts": {
     "dev": "next dev -p 4000",
     "build": "next build",
-    "start": "next start -p 4000"
+    "start": "next start -p 4000",
+    "db:backup": "node scripts/backupDatabase.js",
+    "db:backup:full": "node scripts/backupFullSystem.js",
+    "backup:auto": "node scripts/startBackupScheduler.js",
+    "db:restore": "node scripts/restoreDatabase.js",
+    "sync:firebase": "node scripts/syncToFirebase.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1085.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.110.2",
+    "firebase": "^12.17.1",
     "lucide-react": "^1.23.0",
     "next": "^16.2.10",
     "react": "^19.2.7",
