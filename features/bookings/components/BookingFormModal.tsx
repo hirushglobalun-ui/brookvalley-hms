@@ -554,7 +554,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                 type="date" 
                 className="input-control" 
                 value={checkInDate}
-                min={!booking ? localToday : undefined}
+                min={(!booking && !(user?.role === "admin" || user?.role === "developer" || user?.role === "manager")) ? localToday : undefined}
                 onChange={(e) => setCheckInDate(e.target.value)}
                 required
               />
@@ -565,7 +565,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                 type="date" 
                 className="input-control" 
                 value={checkOutDate}
-                min={checkInDate || (!booking ? localToday : undefined)}
+                min={checkInDate || ((!booking && !(user?.role === "admin" || user?.role === "developer" || user?.role === "manager")) ? localToday : undefined)}
                 onChange={(e) => setCheckOutDate(e.target.value)}
                 required
               />

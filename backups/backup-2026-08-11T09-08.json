@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-08-11T09:08:27.930Z",
+  "supabaseUrl": "https://jkwjmqtqattvnddpvlwe.supabase.co",
+  "tables": {
+    "profiles": [],
+    "employees": [],
+    "room_types": [],
+    "rooms": [],
+    "bookings": [],
+    "activity_logs": []
+  }
+}

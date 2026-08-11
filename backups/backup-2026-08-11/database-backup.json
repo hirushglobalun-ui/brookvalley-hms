@@ -1,0 +1,753 @@
+{
+  "timestamp": "2026-08-11T09:37:42.157Z",
+  "supabaseUrl": "https://jkwjmqtqattvnddpvlwe.supabase.co",
+  "tables": {
+    "profiles": [
+      {
+        "id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "full_name": "System User",
+        "email": "admin@brook.com",
+        "phone": null,
+        "role": "admin",
+        "status": "active",
+        "created_at": "2026-08-11T08:38:44.7097+00:00"
+      },
+      {
+        "id": "f039ebba-0f44-458d-b941-c7878a6964b8",
+        "full_name": "shamna",
+        "email": "shamna@gmail.com",
+        "phone": "8589929880",
+        "role": "manager",
+        "status": "active",
+        "created_at": "2026-08-11T08:46:41.710422+00:00"
+      },
+      {
+        "id": "d1706714-b905-48e1-b451-dfbbc5a3cb47",
+        "full_name": "reshma",
+        "email": "reshma@gmail.com",
+        "phone": "0000000000",
+        "role": "employee",
+        "status": "active",
+        "created_at": "2026-08-11T08:48:41.086933+00:00"
+      }
+    ],
+    "employees": [
+      {
+        "id": "979e6545-2911-4d80-8f77-91055b91bf1c",
+        "employee_id": "EMP777777",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "full_name": "System Admin",
+        "email": "admin@brook.com",
+        "phone": "+1 555-0199",
+        "role": "admin",
+        "status": "active",
+        "joined_date": "2026-08-11",
+        "notes": "System Administrator",
+        "created_at": "2026-08-11T08:39:44.206411+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "db8e15d1-49c1-4ddd-a287-fb55b5209cf8",
+        "employee_id": "EMP988748",
+        "user_id": "f039ebba-0f44-458d-b941-c7878a6964b8",
+        "full_name": "shamna",
+        "email": "shamna@gmail.com",
+        "phone": "8589929880",
+        "role": "manager",
+        "status": "active",
+        "joined_date": "2026-08-11",
+        "notes": "",
+        "created_at": "2026-08-11T08:46:41.710422+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "16f805e8-7bee-4d0d-aca7-3d104a20afb1",
+        "employee_id": "EMP540909",
+        "user_id": "d1706714-b905-48e1-b451-dfbbc5a3cb47",
+        "full_name": "reshma",
+        "email": "reshma@gmail.com",
+        "phone": "0000000000",
+        "role": "employee",
+        "status": "active",
+        "joined_date": "2026-08-11",
+        "notes": "",
+        "created_at": "2026-08-11T08:48:41.086933+00:00",
+        "deleted_at": null
+      }
+    ],
+    "room_types": [
+      {
+        "id": "private-property",
+        "name": "private property",
+        "price": 12000,
+        "capacity": 2,
+        "description": "",
+        "created_at": "2026-08-11T08:55:08.702308+00:00",
+        "updated_at": "2026-08-11T08:55:08.702308+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "3bh-premium-vila",
+        "name": "3bh premium vila",
+        "price": 15000,
+        "capacity": 2,
+        "description": "",
+        "created_at": "2026-08-11T08:49:52.463949+00:00",
+        "updated_at": "2026-08-11T08:56:23.501+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "3bh-villa",
+        "name": "3bh villa",
+        "price": 13500,
+        "capacity": 2,
+        "description": "",
+        "created_at": "2026-08-11T08:51:33.362006+00:00",
+        "updated_at": "2026-08-11T08:56:34.463+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "pool-delux-room",
+        "name": "pool delux room",
+        "price": 4500,
+        "capacity": 2,
+        "description": "",
+        "created_at": "2026-08-11T08:52:17.751402+00:00",
+        "updated_at": "2026-08-11T08:56:49.632+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "stream-delux-room",
+        "name": "stream delux room",
+        "price": 4500,
+        "capacity": 2,
+        "description": "",
+        "created_at": "2026-08-11T08:52:05.983333+00:00",
+        "updated_at": "2026-08-11T08:57:06.893+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "hut-room",
+        "name": "hut room",
+        "price": 5000,
+        "capacity": 2,
+        "description": "",
+        "created_at": "2026-08-11T08:51:49.575009+00:00",
+        "updated_at": "2026-08-11T08:57:18.116+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "doormetry",
+        "name": "Doormetry",
+        "price": 26000,
+        "capacity": 2,
+        "description": "",
+        "created_at": "2026-08-11T08:52:29.871861+00:00",
+        "updated_at": "2026-08-11T08:57:45.533+00:00",
+        "deleted_at": null
+      }
+    ],
+    "rooms": [
+      {
+        "id": "f51f91c2-5d8b-4044-b029-8f66c041ef3b",
+        "room_number": "1",
+        "room_type_id": "3bh-premium-vila",
+        "status": "available",
+        "created_at": "2026-08-11T08:52:49.554367+00:00",
+        "updated_at": "2026-08-11T08:52:49.554367+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "b06adc0d-aebc-4672-9549-aab2e29be611",
+        "room_number": "2",
+        "room_type_id": "3bh-villa",
+        "status": "available",
+        "created_at": "2026-08-11T08:52:59.045544+00:00",
+        "updated_at": "2026-08-11T08:52:59.045544+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "3d1674b3-1938-4438-93f8-86f00e319dce",
+        "room_number": "3",
+        "room_type_id": "stream-delux-room",
+        "status": "available",
+        "created_at": "2026-08-11T08:53:10.225811+00:00",
+        "updated_at": "2026-08-11T08:53:10.225811+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "ffa6676d-ce5c-43fb-aadb-bfdcc72f3588",
+        "room_number": "4",
+        "room_type_id": "pool-delux-room",
+        "status": "available",
+        "created_at": "2026-08-11T08:53:20.442389+00:00",
+        "updated_at": "2026-08-11T08:53:20.442389+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "d5120778-03f3-4d06-a555-ca877bf370dd",
+        "room_number": "5",
+        "room_type_id": "hut-room",
+        "status": "available",
+        "created_at": "2026-08-11T08:53:30.465483+00:00",
+        "updated_at": "2026-08-11T08:53:30.465483+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "0aa98c42-a3a2-4c88-aa7a-f8ca49f34fc1",
+        "room_number": "6",
+        "room_type_id": "doormetry",
+        "status": "available",
+        "created_at": "2026-08-11T08:53:39.77099+00:00",
+        "updated_at": "2026-08-11T08:53:39.77099+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "50b8e215-533d-45ab-9cad-eaa3a91de5c5",
+        "room_number": "p01",
+        "room_type_id": "private-property",
+        "status": "available",
+        "created_at": "2026-08-11T08:55:22.728397+00:00",
+        "updated_at": "2026-08-11T08:55:22.728397+00:00",
+        "deleted_at": null
+      }
+    ],
+    "bookings": [
+      {
+        "id": "1e39ecbf-9a2d-4359-a8bb-55a33a458fac",
+        "booking_id": "BK251302",
+        "customer_name": "Salima",
+        "customer_phone": "9539340523",
+        "customer_email": "",
+        "customer_address": "pavittapuram",
+        "room_type_id": "pool-delux-room",
+        "room_number": "4,3",
+        "check_in_date": "2026-08-08",
+        "check_out_date": "2026-08-09",
+        "guest_count": 1,
+        "total_amount": 9000,
+        "payment_status": "partial",
+        "booking_status": "confirmed",
+        "payment_method": "none",
+        "advance_amount": 0,
+        "payment_proof": "",
+        "remarks": "",
+        "booking_source": "direct",
+        "agency_commission": 0,
+        "created_by_uid": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "created_by_name": "System User",
+        "created_by_role": "admin",
+        "created_at": "2026-08-11T09:33:19.877789+00:00",
+        "updated_at": "2026-08-11T09:33:48.787+00:00",
+        "deleted_at": null
+      }
+    ],
+    "activity_logs": [
+      {
+        "id": "0769151a-adb1-4207-8335-9ae9ccd22705",
+        "action": "CREATE_EMPLOYEE",
+        "details": "Created employee shamna (manager)",
+        "user_id": null,
+        "user_name": "Administrator",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:18:55.50971+00:00"
+      },
+      {
+        "id": "c1443854-6024-497c-bb74-8c16cfcebb87",
+        "action": "CREATE_ROOM_TYPE",
+        "details": "Created room type 3 bh premium",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:41:30.735071+00:00"
+      },
+      {
+        "id": "c9670aac-5834-4088-8789-840a001fad97",
+        "action": "CREATE_ROOM_TYPE",
+        "details": "Created room type 3 bh room",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:43:08.195926+00:00"
+      },
+      {
+        "id": "9fd4c4ae-6442-4e91-b27b-516b0424ff42",
+        "action": "CREATE_ROOM_TYPE",
+        "details": "Created room type sd",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:43:22.548445+00:00"
+      },
+      {
+        "id": "2dacbc40-6d4d-47df-80e4-ef8cc887dd19",
+        "action": "CREATE_ROOM_TYPE",
+        "details": "Created room type qefqef",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:45:46.288646+00:00"
+      },
+      {
+        "id": "6ce35dab-1d1e-4361-9b51-820ec326198a",
+        "action": "CREATE_EMPLOYEE",
+        "details": "Created employee shamna (manager)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:46:41.965118+00:00"
+      },
+      {
+        "id": "0418b686-8a50-406a-8928-6059561913fc",
+        "action": "DELETE_ROOM_TYPE",
+        "details": "Soft-deleted room type qefqef. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:47:20.36112+00:00"
+      },
+      {
+        "id": "06a05dcf-af48-4c3a-88af-53fbee2cca91",
+        "action": "DELETE_ROOM_TYPE",
+        "details": "Soft-deleted room type 3 bh premium. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:47:23.408471+00:00"
+      },
+      {
+        "id": "72e5e46c-6542-4776-818d-565344fc909c",
+        "action": "DELETE_ROOM_TYPE",
+        "details": "Soft-deleted room type 3 bh premium. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:47:24.364288+00:00"
+      },
+      {
+        "id": "d0135cb5-d662-4fbc-b339-566077ab48e9",
+        "action": "DELETE_ROOM_TYPE",
+        "details": "Soft-deleted room type 3 bh premium. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:47:24.743765+00:00"
+      },
+      {
+        "id": "eaba5090-9823-46e1-a774-d22695cbdd58",
+        "action": "DELETE_ROOM_TYPE",
+        "details": "Soft-deleted room type qefqef. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:47:26.722632+00:00"
+      },
+      {
+        "id": "68780ccc-9114-4e44-9bc7-2913cc24ea64",
+        "action": "DELETE_ROOM",
+        "details": "Soft-deleted room 101. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:47:32.680713+00:00"
+      },
+      {
+        "id": "bae2f72d-a8ac-4d49-8b82-d3d58ffa466f",
+        "action": "CREATE_EMPLOYEE",
+        "details": "Created employee reshma (employee)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:48:41.290637+00:00"
+      },
+      {
+        "id": "2b125f63-7868-4d93-9dcc-f0beedf2e2ef",
+        "action": "DELETE_ROOM_TYPE",
+        "details": "Soft-deleted room type 3 bh premium. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:49:16.881507+00:00"
+      },
+      {
+        "id": "e40fa87d-5cd5-4319-8194-51007f3a14fb",
+        "action": "DELETE_ROOM_TYPE",
+        "details": "Soft-deleted room type 3 bh room. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:49:18.891944+00:00"
+      },
+      {
+        "id": "30abc9c1-7da7-4083-a126-607baa6a656f",
+        "action": "DELETE_ROOM_TYPE",
+        "details": "Soft-deleted room type sd. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:49:20.606112+00:00"
+      },
+      {
+        "id": "9bc69b46-81ad-446a-a306-50b02f5a6073",
+        "action": "DELETE_ROOM_TYPE",
+        "details": "Soft-deleted room type Deluxe Room. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:49:22.603353+00:00"
+      },
+      {
+        "id": "44946988-2398-4ae7-8c4f-eff2e0ae71a3",
+        "action": "DELETE_ROOM_TYPE",
+        "details": "Soft-deleted room type Family Cottage. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:49:24.417704+00:00"
+      },
+      {
+        "id": "c0c30f29-363e-4ed3-9295-d908eccafbda",
+        "action": "DELETE_ROOM_TYPE",
+        "details": "Soft-deleted room type Luxury Suite. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:49:25.616126+00:00"
+      },
+      {
+        "id": "edcf8851-9f5d-41d5-8a16-c77fb705f2a4",
+        "action": "DELETE_ROOM_TYPE",
+        "details": "Soft-deleted room type qefqef. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:49:26.873193+00:00"
+      },
+      {
+        "id": "38cfc914-1c12-47d2-8a70-a69fdccbac89",
+        "action": "DELETE_ROOM",
+        "details": "Soft-deleted room 101. Reason: Retired",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:49:32.63674+00:00"
+      },
+      {
+        "id": "cbb67cff-353b-4a7f-8348-94b49bb08731",
+        "action": "CREATE_ROOM_TYPE",
+        "details": "Created room type 3bh premium vila",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:49:52.627993+00:00"
+      },
+      {
+        "id": "7c3cf305-9c7d-4176-be24-a4fb9a8cfb34",
+        "action": "CREATE_ROOM_TYPE",
+        "details": "Created room type 3bh villa",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:51:33.569594+00:00"
+      },
+      {
+        "id": "861abfe6-034a-4aca-9a05-785b6655ca44",
+        "action": "CREATE_ROOM_TYPE",
+        "details": "Created room type hut room",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:51:49.774279+00:00"
+      },
+      {
+        "id": "e7819b5d-6246-4057-8ebe-27b97884f567",
+        "action": "CREATE_ROOM_TYPE",
+        "details": "Created room type stream delux room",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:52:06.26712+00:00"
+      },
+      {
+        "id": "7cc4f1c3-9255-4597-a436-d21309da581c",
+        "action": "CREATE_ROOM_TYPE",
+        "details": "Created room type pool delux room",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:52:17.920149+00:00"
+      },
+      {
+        "id": "5ca0e635-6ade-4bc4-9ee8-065b160902a2",
+        "action": "CREATE_ROOM_TYPE",
+        "details": "Created room type Doormetry",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:52:30.05208+00:00"
+      },
+      {
+        "id": "8ea57dbc-cd8f-4692-972d-843acbd0f73b",
+        "action": "CREATE_ROOM",
+        "details": "Added room 1 (3bh-premium-vila)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:52:49.736369+00:00"
+      },
+      {
+        "id": "88582a82-f0a1-45b9-802f-91f509be1204",
+        "action": "CREATE_ROOM",
+        "details": "Added room 2 (3bh-villa)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:52:59.301956+00:00"
+      },
+      {
+        "id": "71062b11-ec85-414c-8873-016861f11c67",
+        "action": "CREATE_ROOM",
+        "details": "Added room 3 (stream-delux-room)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:53:10.400465+00:00"
+      },
+      {
+        "id": "9a7cb343-9dbd-4bbc-b613-1d879e48cce9",
+        "action": "CREATE_ROOM",
+        "details": "Added room 4 (pool-delux-room)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:53:20.641512+00:00"
+      },
+      {
+        "id": "aa7d54f8-c3f6-4f16-acc8-224f1e58ef9f",
+        "action": "CREATE_ROOM",
+        "details": "Added room 5 (hut-room)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:53:30.631471+00:00"
+      },
+      {
+        "id": "4a9d6cd7-a9a3-4a23-a552-40451e7eadd5",
+        "action": "CREATE_ROOM",
+        "details": "Added room 6 (doormetry)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:53:39.942173+00:00"
+      },
+      {
+        "id": "9d19bf4a-60ff-48a7-a892-187d8849afad",
+        "action": "CREATE_ROOM_TYPE",
+        "details": "Created room type private property",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:55:08.872499+00:00"
+      },
+      {
+        "id": "d6781a04-594f-4d98-8d4a-e4f477d21b17",
+        "action": "CREATE_ROOM",
+        "details": "Added room p01 (private-property)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:55:22.908561+00:00"
+      },
+      {
+        "id": "8187b6d8-6f6f-4015-9ba6-2be300822397",
+        "action": "UPDATE_ROOM_TYPE",
+        "details": "Updated room type 3bh premium vila",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:56:22.925075+00:00"
+      },
+      {
+        "id": "1473dabc-7050-4013-a838-166a87ed28f7",
+        "action": "UPDATE_ROOM_TYPE",
+        "details": "Updated room type 3bh villa",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:56:33.523632+00:00"
+      },
+      {
+        "id": "8002c18c-ba6e-438b-af81-6e9c8d571052",
+        "action": "UPDATE_ROOM_TYPE",
+        "details": "Updated room type pool delux room",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:56:48.725975+00:00"
+      },
+      {
+        "id": "1f433782-baa1-449f-b325-5b629cc6c3a4",
+        "action": "UPDATE_ROOM_TYPE",
+        "details": "Updated room type stream delux room",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:57:05.981417+00:00"
+      },
+      {
+        "id": "57397208-6bea-4889-ac38-b62dbd32d64b",
+        "action": "UPDATE_ROOM_TYPE",
+        "details": "Updated room type hut room",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:57:17.256334+00:00"
+      },
+      {
+        "id": "dae09947-471a-4f98-a1c9-fc368f23bd81",
+        "action": "UPDATE_ROOM_TYPE",
+        "details": "Updated room type Doormetry",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T08:57:44.61722+00:00"
+      },
+      {
+        "id": "46d8febe-fd36-494e-9a8b-fc3b62e83bee",
+        "action": "CREATE_BOOKING",
+        "details": "Created booking BK142994 for Room(s) 2,3,4 (Salima)",
+        "user_id": "f039ebba-0f44-458d-b941-c7878a6964b8",
+        "user_name": "shamna",
+        "user_role": "manager",
+        "created_at": "2026-08-11T09:26:45.239654+00:00"
+      },
+      {
+        "id": "a317a6f2-2dd3-4fa5-8c9b-22430e8c4a6e",
+        "action": "CREATE_BOOKING",
+        "details": "Created booking BK448543 for Room(s) 2 (Salima)",
+        "user_id": "f039ebba-0f44-458d-b941-c7878a6964b8",
+        "user_name": "shamna",
+        "user_role": "manager",
+        "created_at": "2026-08-11T09:27:47.774925+00:00"
+      },
+      {
+        "id": "3b978310-20b4-4f09-bf16-ad85b511650b",
+        "action": "CREATE_EMPLOYEE",
+        "details": "Created employee test (manager)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T09:29:26.484544+00:00"
+      },
+      {
+        "id": "114ac040-d32e-457f-821c-eed22da7e20e",
+        "action": "UPDATE_EMPLOYEE",
+        "details": "Updated employee test details",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T09:29:54.534647+00:00"
+      },
+      {
+        "id": "36d95612-8775-440a-a08f-b2faa057f5d0",
+        "action": "UPDATE_EMPLOYEE_STATUS",
+        "details": "Updated status of employee EMP524489 to inactive",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T09:30:00.014293+00:00"
+      },
+      {
+        "id": "688f962d-f144-42af-bcaf-306db53f77d2",
+        "action": "UPDATE_EMPLOYEE_STATUS",
+        "details": "Updated status of employee EMP524489 to active",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T09:30:29.495482+00:00"
+      },
+      {
+        "id": "9128a686-0484-4bc5-8217-3122d6ae6e92",
+        "action": "DELETE_EMPLOYEE",
+        "details": "Deleted employee account EMP524489",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T09:30:32.697601+00:00"
+      },
+      {
+        "id": "62691684-89b9-4b77-b9af-9d4d5143f9cb",
+        "action": "UPDATE_BOOKING",
+        "details": "Updated booking BK448543 (Room(s) 2,3,4)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T09:31:20.459476+00:00"
+      },
+      {
+        "id": "0968b917-e013-4e3b-9ed2-cfa7314f2749",
+        "action": "UPDATE_BOOKING",
+        "details": "Updated booking BK448543 (Room(s) 2,3,4)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T09:31:36.104448+00:00"
+      },
+      {
+        "id": "2482d11a-5b12-4d9c-a13e-509f15557cf4",
+        "action": "DELETE_BOOKING",
+        "details": "Soft-deleted booking BK448543. Reason: test",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T09:31:47.665998+00:00"
+      },
+      {
+        "id": "248d212f-f8f6-4438-835a-25041dc8f6b2",
+        "action": "DELETE_BOOKING",
+        "details": "Soft-deleted booking BK142994. Reason: test",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T09:31:54.649525+00:00"
+      },
+      {
+        "id": "0bf86ecc-9a77-4f70-91a8-2ae47639996c",
+        "action": "CREATE_BOOKING",
+        "details": "Created booking BK784752 for Room(s) 2 (Salima)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T09:32:06.945454+00:00"
+      },
+      {
+        "id": "41edd4a9-a2b9-44b5-8d21-cacdeba08332",
+        "action": "DELETE_BOOKING",
+        "details": "Soft-deleted booking BK784752. Reason: s",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T09:32:18.587477+00:00"
+      },
+      {
+        "id": "72edfd1a-f193-4e3d-ac60-1b2dadd8de4c",
+        "action": "CREATE_BOOKING",
+        "details": "Created booking BK251302 for Room(s) 4,3 (Salima)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T09:33:20.045896+00:00"
+      },
+      {
+        "id": "1e853974-431a-478c-b549-bc0b98d46663",
+        "action": "UPDATE_BOOKING",
+        "details": "Updated booking BK251302 (Room(s) 4,3)",
+        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
+        "user_name": "System User",
+        "user_role": "admin",
+        "created_at": "2026-08-11T09:33:47.868526+00:00"
+      }
+    ]
+  },
+  "downloadedImagesCount": 0
+}

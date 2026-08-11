@@ -47,99 +47,28 @@ const Login = () => {
       await login(email, password);
       router.push("/dashboard");
     } catch (err: any) {
-      const errMsg = err.message || "";
-      
-      // If rate limited by Supabase, show friendly message and stop
-      if (errMsg.includes("Too many") || errMsg.includes("rate limit")) {
-        setLocalError("Too many attempts. Please wait a moment and try again.");
-        setLoading(false);
-        return;
-      }
-
-      // Auto-initialize when logging in with admin credentials for the first time
-      if (email === "admin@brookvalley.com" && password === "admin123") {
-        try {
-          const { data, error: signUpErr } = await supabase.auth.signUp({
-            email: "admin@brookvalley.com",
-            password: "admin123",
-            options: {
-              data: {
-                full_name: "System Admin"
-              }
-            }
-          });
-          
-          let uid = data?.user?.id;
-          
-          if (signUpErr) {
-            if (signUpErr.message.includes("already registered") || signUpErr.message.includes("already exists")) {
-              // User exists — just need to login, will be handled below
-            } else {
-              throw signUpErr;
-            }
-          }
-          
-          if (uid) {
-            await createFirstAdminUser(uid, "admin@brookvalley.com", "System Admin");
-          }
-          
-          // Log in now that user exists in database
-          await login(email, password);
-          try {
-            await seedInitialData(true);
-          } catch (seedErr: any) {
-            console.warn("Seeding initial room configurations failed:", seedErr);
-          }
-          router.push("/dashboard");
-          return;
-        } catch (initErr: any) {
-          console.error("Auto-initialization fallback failed:", initErr);
-          setLocalError(initErr.message || "Setup failed. Please try again.");
-        }
-      } else if (email === "dev@hirush.com" && password === "Qweask@11") {
-        try {
-          const { data, error: signUpErr } = await supabase.auth.signUp({
-            email: "dev@hirush.com",
-            password: "Qweask@11",
-            options: {
-              data: {
-                full_name: "Developer User"
-              }
-            }
-          });
-          
-          let uid = data?.user?.id;
-          
-          if (signUpErr) {
-            if (signUpErr.message.includes("already registered") || signUpErr.message.includes("already exists")) {
-              // User exists — just need to login
-            } else {
-              throw signUpErr;
-            }
-          }
-          
-          if (uid) {
-            await createFirstAdminUser(uid, "dev@hirush.com", "Developer User");
-          }
-          
-          // Log in now that user exists in database
-          await login(email, password);
-          router.push("/dashboard");
-          return;
-        } catch (initErr: any) {
-          console.error("Developer auto-initialization fallback failed:", initErr);
-          setLocalError(initErr.message || "Developer setup failed. Please try again.");
-        }
-      } else {
-        console.error("Login failed error:", err);
-        setLocalError(errMsg || "Failed to sign in.");
-      }
+      console.error("Login failed error:", err);
+      const errMsg = typeof err === "string" ? err : err?.message || "Invalid email or password.";
+      setLocalError(errMsg);
     } finally {
       setLoading(false);
     }
   };
 
-  const activeError = localError || authError;
+  const getErrorMessage = (err: any): string => {
+    if (!err) return "";
+    let str = "";
+    if (typeof err === "string") {
+      str = err.trim();
+    } else if (typeof err === "object" && err !== null) {
+      if (typeof err.message === "string") str = err.message.trim();
+      else if (typeof err.error_description === "string") str = err.error_description.trim();
+    }
+    if (!str || str === "{}" || str === "[object Object]") return "";
+    return str;
+  };
+
+  const activeError = getErrorMessage(localError) || getErrorMessage(authError);
 
   return (
     <div className="auth-page">

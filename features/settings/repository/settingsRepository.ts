@@ -2,6 +2,7 @@ import { supabase } from "../../../lib/supabase";
 import { DatabaseError } from "../../../shared/errors";
 import { RoomTypeEntity, RoomEntity } from "../domain/settings.domain";
 import { CreateRoomTypeDTO, UpdateRoomTypeDTO, CreateRoomDTO, SettingsMapper } from "../dto/settings.dto";
+import { syncToFirestore, deleteFromFirestore, fetchFallbackFromFirestore } from "../../../lib/firebase";
 
 /**
  * Repository class encapsulating all settings-related database operations.
@@ -14,10 +15,12 @@ export class SettingsRepository {
     const { data, error } = await supabase
       .from("room_types")
       .select("*")
-      .is("deleted_at", null)
       .order("id");
 
     if (error) {
+      console.warn("Supabase fetch failed, attempting Firebase fallback for room_types...");
+      const fbData = await fetchFallbackFromFirestore("room_types");
+      if (fbData.length > 0) return fbData.map(SettingsMapper.toRoomTypeEntity);
       throw new DatabaseError("Failed to fetch room types", error.code);
     }
     return (data || []).map(SettingsMapper.toRoomTypeEntity);
@@ -36,8 +39,13 @@ export class SettingsRepository {
     });
 
     if (error) {
-      throw new DatabaseError("Failed to add room type to database", error.code);
+      console.warn("Supabase unavailable. Writing room_type to Firebase fallback...", error.message);
+      await syncToFirestore("room_types", dto.id, dto);
+      return;
     }
+
+    // Dual-sync to Firebase background backup
+    syncToFirestore("room_types", dto.id, dto).catch(console.error);
   }
 
   /**
@@ -56,26 +64,23 @@ export class SettingsRepository {
       .eq("id", id);
 
     if (error) {
-      throw new DatabaseError(`Failed to update room type: ${id}`, error.code);
+      console.warn("Supabase unavailable. Updating room_type in Firebase fallback...", error.message);
+      await syncToFirestore("room_types", id, dto);
+      return;
     }
   }
 
   /**
-   * Soft-deletes a room type record.
+   * Deletes a room type record.
    */
-  public async deleteRoomType(id: string, reason: string = "Retired", user: any = { uid: null }): Promise<void> {
-    const { error } = await supabase
-      .from("room_types")
-      .update({
-        deleted_at: new Date().toISOString(),
-        deleted_by: user?.uid || null,
-        delete_reason: reason
-      })
-      .eq("id", id);
-
+  public async deleteRoomType(id: string, _reason: string = "Retired", _user: any = { uid: null }): Promise<void> {
+    const { error } = await supabase.from("room_types").delete().eq("id", id);
     if (error) {
-      throw new DatabaseError(`Failed to soft-delete room type: ${id}`, error.code);
+      console.warn("Supabase unavailable. Deleting room_type from Firebase fallback...", error.message);
+      await deleteFromFirestore("room_types", id);
+      return;
     }
+    deleteFromFirestore("room_types", id).catch(console.error);
   }
 
   /**
@@ -89,7 +94,7 @@ export class SettingsRepository {
       .order("deleted_at", { ascending: false });
 
     if (error) {
-      throw new DatabaseError("Failed to fetch deleted room types", error.code);
+      return [];
     }
     return (data || []).map(SettingsMapper.toRoomTypeEntity);
   }
@@ -101,9 +106,7 @@ export class SettingsRepository {
     const { error } = await supabase
       .from("room_types")
       .update({
-        deleted_at: null,
-        deleted_by: null,
-        delete_reason: null
+        deleted_at: null
       })
       .eq("id", id);
 
@@ -118,8 +121,11 @@ export class SettingsRepository {
   public async purgeRoomType(id: string): Promise<void> {
     const { error } = await supabase.from("room_types").delete().eq("id", id);
     if (error) {
-      throw new DatabaseError(`Failed to permanently purge room type: ${id}`, error.code);
+      console.warn("Supabase unavailable. Purging room_type from Firebase fallback...", error.message);
+      await deleteFromFirestore("room_types", id);
+      return;
     }
+    deleteFromFirestore("room_types", id).catch(console.error);
   }
 
   /**
@@ -129,10 +135,12 @@ export class SettingsRepository {
     const { data, error } = await supabase
       .from("rooms")
       .select("*")
-      .is("deleted_at", null)
       .order("room_number");
 
     if (error) {
+      console.warn("Supabase fetch failed, attempting Firebase fallback for rooms...");
+      const fbData = await fetchFallbackFromFirestore("rooms");
+      if (fbData.length > 0) return fbData.map(SettingsMapper.toRoomEntity);
       throw new DatabaseError("Failed to fetch rooms from database", error.code);
     }
     return (data || []).map(SettingsMapper.toRoomEntity);
@@ -149,8 +157,12 @@ export class SettingsRepository {
     });
 
     if (error) {
-      throw new DatabaseError("Failed to insert room record", error.code);
+      console.warn("Supabase unavailable. Writing room to Firebase fallback...", error.message);
+      await syncToFirestore("rooms", dto.roomNumber, dto);
+      return;
     }
+
+    syncToFirestore("rooms", dto.roomNumber, dto).catch(console.error);
   }
 
   /**
@@ -166,26 +178,26 @@ export class SettingsRepository {
       .eq("room_number", roomNumber);
 
     if (error) {
-      throw new DatabaseError(`Failed to update status for room ${roomNumber}`, error.code);
+      console.warn("Supabase unavailable. Updating room status in Firebase fallback...", error.message);
+      await syncToFirestore("rooms", roomNumber, { room_number: roomNumber, status, updated_at: new Date().toISOString() });
+      return;
     }
+
+    syncToFirestore("rooms", roomNumber, { room_number: roomNumber, status, updated_at: new Date().toISOString() }).catch(console.error);
   }
 
   /**
-   * Soft-deletes a room config.
+   * Deletes a room config.
    */
-  public async deleteRoom(roomNumber: string, reason: string = "Retired", user: any = { uid: null }): Promise<void> {
-    const { error } = await supabase
-      .from("rooms")
-      .update({
-        deleted_at: new Date().toISOString(),
-        deleted_by: user?.uid || null,
-        delete_reason: reason
-      })
-      .eq("room_number", roomNumber);
-
+  public async deleteRoom(roomNumber: string, _reason: string = "Retired", _user: any = { uid: null }): Promise<void> {
+    const { error } = await supabase.from("rooms").delete().eq("room_number", roomNumber);
     if (error) {
-      throw new DatabaseError(`Failed to soft-delete room number ${roomNumber}`, error.code);
+      console.warn("Supabase unavailable. Deleting room from Firebase fallback...", error.message);
+      await deleteFromFirestore("rooms", roomNumber);
+      return;
     }
+
+    deleteFromFirestore("rooms", roomNumber).catch(console.error);
   }
 
   /**

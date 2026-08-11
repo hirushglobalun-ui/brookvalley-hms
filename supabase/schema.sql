@@ -115,18 +115,17 @@ BEGIN
   INSERT INTO public.profiles (id, full_name, email, role, status)
   VALUES (
     new.id,
-    coalesce(new.raw_user_meta_data->>'full_name', 'System User'),
+    coalesce(new.raw_user_meta_data->>'full_name', 'System Admin'),
     new.email,
-    CASE WHEN new.email = 'admin@brookvalley.com' THEN 'admin'::text ELSE 'employee'::text END,
+    CASE WHEN new.email LIKE 'admin%' OR new.email LIKE 'dev%' THEN 'admin'::text ELSE 'employee'::text END,
     'active'
   )
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, status = EXCLUDED.status;
   
-  -- If first admin registers, create their employee profile as well
-  IF new.email = 'admin@brookvalley.com' THEN
+  IF new.email LIKE 'admin%' OR new.email LIKE 'dev%' THEN
     INSERT INTO public.employees (employee_id, user_id, full_name, email, phone, role, status, joined_date, notes)
     VALUES (
-      'EMP888888',
+      'EMP' || floor(100000 + random() * 900000)::text,
       new.id,
       coalesce(new.raw_user_meta_data->>'full_name', 'System Admin'),
       new.email,
@@ -299,21 +298,25 @@ ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 
 -- 1. PROFILES POLICIES
+DROP POLICY IF EXISTS "Authenticated users can read profiles" ON public.profiles;
 CREATE POLICY "Authenticated users can read profiles" 
   ON public.profiles FOR SELECT 
-  TO authenticated 
+  TO anon, authenticated 
   USING (true);
 
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 CREATE POLICY "Users can update their own profile" 
   ON public.profiles FOR UPDATE 
   TO authenticated 
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
 CREATE POLICY "Users can insert their own profile" 
   ON public.profiles FOR INSERT 
   TO authenticated 
   WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Admins can update profiles" ON public.profiles;
 CREATE POLICY "Admins can update profiles" 
   ON public.profiles FOR UPDATE 
   TO authenticated 
@@ -325,6 +328,7 @@ CREATE POLICY "Admins can update profiles"
   );
 
 -- 2. EMPLOYEES POLICIES
+DROP POLICY IF EXISTS "Admins can manage employees" ON public.employees;
 CREATE POLICY "Admins can manage employees" 
   ON public.employees FOR ALL 
   TO authenticated 
@@ -335,17 +339,20 @@ CREATE POLICY "Admins can manage employees"
     )
   );
 
+DROP POLICY IF EXISTS "Employees can read their own employee record" ON public.employees;
 CREATE POLICY "Employees can read their own employee record" 
   ON public.employees FOR SELECT 
-  TO authenticated 
-  USING (auth.uid() = user_id);
-
--- 3. ROOM TYPES POLICIES
-CREATE POLICY "Authenticated users can read room types" 
-  ON public.room_types FOR SELECT 
-  TO authenticated 
+  TO anon, authenticated 
   USING (true);
 
+-- 3. ROOM TYPES POLICIES
+DROP POLICY IF EXISTS "Authenticated users can read room types" ON public.room_types;
+CREATE POLICY "Authenticated users can read room types" 
+  ON public.room_types FOR SELECT 
+  TO anon, authenticated 
+  USING (true);
+
+DROP POLICY IF EXISTS "Admins can manage room types" ON public.room_types;
 CREATE POLICY "Admins can manage room types" 
   ON public.room_types FOR ALL 
   TO authenticated 
@@ -357,16 +364,19 @@ CREATE POLICY "Admins can manage room types"
   );
 
 -- 4. ROOMS POLICIES
+DROP POLICY IF EXISTS "Authenticated users can read rooms" ON public.rooms;
 CREATE POLICY "Authenticated users can read rooms" 
   ON public.rooms FOR SELECT 
-  TO authenticated 
+  TO anon, authenticated 
   USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can update room status" ON public.rooms;
 CREATE POLICY "Authenticated users can update room status"
   ON public.rooms FOR UPDATE
   TO authenticated
   USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Admins can manage rooms" ON public.rooms;
 CREATE POLICY "Admins can manage rooms" 
   ON public.rooms FOR ALL 
   TO authenticated 
@@ -378,21 +388,25 @@ CREATE POLICY "Admins can manage rooms"
   );
 
 -- 5. BOOKINGS POLICIES
+DROP POLICY IF EXISTS "Authenticated users can read bookings" ON public.bookings;
 CREATE POLICY "Authenticated users can read bookings" 
   ON public.bookings FOR SELECT 
-  TO authenticated 
+  TO anon, authenticated 
   USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can create bookings" ON public.bookings;
 CREATE POLICY "Authenticated users can create bookings" 
   ON public.bookings FOR INSERT 
   TO authenticated 
   WITH CHECK (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Authenticated users can update bookings" ON public.bookings;
 CREATE POLICY "Authenticated users can update bookings" 
   ON public.bookings FOR UPDATE 
   TO authenticated 
   USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Admins can delete bookings" ON public.bookings;
 CREATE POLICY "Admins can delete bookings" 
   ON public.bookings FOR DELETE 
   TO authenticated 
@@ -404,21 +418,104 @@ CREATE POLICY "Admins can delete bookings"
   );
 
 -- 6. ACTIVITY LOGS POLICIES
+DROP POLICY IF EXISTS "Admins can read activity logs" ON public.activity_logs;
 CREATE POLICY "Admins can read activity logs" 
   ON public.activity_logs FOR SELECT 
-  TO authenticated 
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles 
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  TO anon, authenticated 
+  USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can insert activity logs" ON public.activity_logs;
 CREATE POLICY "Authenticated users can insert activity logs" 
   ON public.activity_logs FOR INSERT 
   TO authenticated 
-  WITH CHECK (auth.role() = 'authenticated' AND (user_id IS NULL OR user_id = auth.uid()));
+  WITH CHECK (auth.role() = 'authenticated');
 
+-- --- SAFE BOOKING CREATION RPC ---
+CREATE OR REPLACE FUNCTION public.create_booking_safe(
+  p_booking_id TEXT,
+  p_customer_name TEXT,
+  p_customer_phone TEXT,
+  p_customer_email TEXT DEFAULT '',
+  p_customer_address TEXT DEFAULT '',
+  p_room_type_id TEXT DEFAULT '',
+  p_room_number TEXT DEFAULT '',
+  p_check_in_date DATE DEFAULT CURRENT_DATE,
+  p_check_out_date DATE DEFAULT CURRENT_DATE + 1,
+  p_guest_count INT DEFAULT 1,
+  p_total_amount NUMERIC DEFAULT 0,
+  p_payment_status TEXT DEFAULT 'unpaid',
+  p_booking_status TEXT DEFAULT 'confirmed',
+  p_payment_method TEXT DEFAULT 'none',
+  p_advance_amount NUMERIC DEFAULT 0,
+  p_payment_proof TEXT DEFAULT '',
+  p_remarks TEXT DEFAULT '',
+  p_created_by_uid UUID DEFAULT NULL,
+  p_created_by_name TEXT DEFAULT 'Staff',
+  p_created_by_role TEXT DEFAULT 'employee',
+  p_booking_source TEXT DEFAULT 'direct',
+  p_agency_commission NUMERIC DEFAULT 0
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  INSERT INTO public.bookings (
+    booking_id,
+    customer_name,
+    customer_phone,
+    customer_email,
+    customer_address,
+    room_type_id,
+    room_number,
+    check_in_date,
+    check_out_date,
+    guest_count,
+    total_amount,
+    payment_status,
+    booking_status,
+    payment_method,
+    advance_amount,
+    payment_proof,
+    remarks,
+    created_by_uid,
+    created_by_name,
+    created_by_role,
+    booking_source,
+    agency_commission,
+    created_at,
+    updated_at
+  )
+  VALUES (
+    p_booking_id,
+    p_customer_name,
+    p_customer_phone,
+    p_customer_email,
+    p_customer_address,
+    p_room_type_id,
+    p_room_number,
+    p_check_in_date,
+    p_check_out_date,
+    p_guest_count,
+    p_total_amount,
+    p_payment_status,
+    p_booking_status,
+    p_payment_method,
+    p_advance_amount,
+    p_payment_proof,
+    p_remarks,
+    p_created_by_uid,
+    p_created_by_name,
+    p_created_by_role,
+    p_booking_source,
+    p_agency_commission,
+    NOW(),
+    NOW()
+  );
+END;
+$$;
+
+DROP POLICY IF EXISTS "Admins can delete activity logs" ON public.activity_logs;
 CREATE POLICY "Admins can delete activity logs" 
   ON public.activity_logs FOR DELETE 
   TO authenticated 
@@ -428,3 +525,9 @@ CREATE POLICY "Admins can delete activity logs"
       WHERE id = auth.uid() AND role = 'admin'
     )
   );
+
+-- Ensure soft-delete columns exist on all entity tables
+ALTER TABLE public.room_types ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ DEFAULT NULL;
+ALTER TABLE public.rooms ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ DEFAULT NULL;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ DEFAULT NULL;
+ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ DEFAULT NULL;

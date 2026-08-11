@@ -100,6 +100,9 @@ const RoomTypesTab: React.FC<RoomTypesTabProps> = ({
   };
 
   const handleDelete = async (rt: RoomType) => {
+    if (!window.confirm(`Are you sure you want to delete room type "${rt.name}" (${rt.id})? This action cannot be undone.`)) {
+      return;
+    }
     setDeletingId(rt.id);
     try {
       await onDeleteRoomType(rt);

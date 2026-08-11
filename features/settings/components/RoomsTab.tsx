@@ -95,10 +95,10 @@ const RoomsTab: React.FC<RoomsTabProps> = ({
         <div className="card" style={{ padding: "1.5rem" }}>
           <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1.25rem" }}>Configure New Room Number</h3>
           
-          <form onSubmit={handleAddSubmit} style={{ display: "flex", gap: "1rem", alignItems: "flex-end" }} className="mobile-stacked-grid">
-            {roomError && <div className="badge badge-danger" style={{ padding: "0.5rem 0.75rem", borderRadius: "4px", width: "100%" }}>{roomError}</div>}
-            {roomSuccess && <div className="badge badge-success" style={{ padding: "0.5rem 0.75rem", borderRadius: "4px", width: "100%" }}>{roomSuccess}</div>}
+          {roomError && <div className="badge badge-danger" style={{ padding: "0.5rem 0.75rem", borderRadius: "4px", marginBottom: "1rem" }}>{roomError}</div>}
+          {roomSuccess && <div className="badge badge-success" style={{ padding: "0.5rem 0.75rem", borderRadius: "4px", marginBottom: "1rem" }}>{roomSuccess}</div>}
 
+          <form onSubmit={handleAddSubmit} style={{ display: "flex", gap: "1rem", alignItems: "flex-end" }} className="mobile-stacked-grid">
             <div className="form-group" style={{ flex: 1, margin: 0 }}>
               <label>Room Number *</label>
               <input type="text" className="input-control" value={newRoomNumber} onChange={e => setNewRoomNumber(e.target.value)} placeholder="e.g. 104" required />
