@@ -407,14 +407,17 @@ CREATE POLICY "Authenticated users can update bookings"
   USING (auth.role() = 'authenticated');
 
 DROP POLICY IF EXISTS "Admins can delete bookings" ON public.bookings;
-CREATE POLICY "Admins can delete bookings" 
+DROP POLICY IF EXISTS "Authenticated users can delete bookings" ON public.bookings;
+CREATE POLICY "Authenticated users can delete bookings" 
   ON public.bookings FOR DELETE 
   TO authenticated 
   USING (
     EXISTS (
       SELECT 1 FROM public.profiles 
-      WHERE id = auth.uid() AND role = 'admin'
+      WHERE id = auth.uid() AND role IN ('admin', 'developer', 'manager')
     )
+    OR
+    created_by_uid = auth.uid()
   );
 
 -- 6. ACTIVITY LOGS POLICIES
