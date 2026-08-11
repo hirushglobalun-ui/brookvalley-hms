@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-// Read .env.local manually to get Supabase credentials
+// Read .env.local manually to get Supabase and Cloudflare R2 credentials
 const envPath = path.resolve(process.cwd(), '.env.local');
 if (!fs.existsSync(envPath)) {
   console.error('❌ .env.local file not found!');
@@ -51,16 +52,54 @@ async function fetchTable(table) {
   }
 }
 
+async function uploadToCloudflareR2(key, body, contentType) {
+  const accountId = envVars['R2_ACCOUNT_ID'];
+  const accessKeyId = envVars['R2_ACCESS_KEY_ID'];
+  const secretAccessKey = envVars['R2_SECRET_ACCESS_KEY'];
+  const bucketName = envVars['R2_BUCKET_NAME'] || 'brookvalley-hms';
+
+  if (!accountId || !accessKeyId || !secretAccessKey) {
+    console.warn('⚠️ Cloudflare R2 credentials missing. Skipping R2 cloud backup upload.');
+    return null;
+  }
+
+  try {
+    const s3 = new S3Client({
+      region: 'auto',
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId,
+        secretAccessKey
+      }
+    });
+
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+        CacheControl: 'public, max-age=31536000'
+      })
+    );
+
+    const publicUrl = envVars['R2_PUBLIC_URL'] ? `${envVars['R2_PUBLIC_URL']}/${key}` : key;
+    console.log(`   └─ ☁️ Uploaded to Cloudflare R2: ${publicUrl}`);
+    return publicUrl;
+  } catch (err) {
+    console.warn(`   └─ ⚠️ Notice uploading ${key} to Cloudflare R2:`, err.message);
+    return null;
+  }
+}
+
 async function downloadOrSaveImage(imageUrl, targetPath) {
   try {
     if (imageUrl.startsWith('data:image/')) {
-      // Handle Data URL (Base64)
       const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
       fs.writeFileSync(targetPath, buffer);
       return true;
     } else if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      // Handle Remote HTTP/HTTPS URL
       const res = await fetch(imageUrl);
       if (!res.ok) return false;
       const arrayBuffer = await res.arrayBuffer();
@@ -69,7 +108,7 @@ async function downloadOrSaveImage(imageUrl, targetPath) {
       return true;
     }
   } catch (err) {
-    console.warn(`⚠️ Warning saving image from ${imageUrl.slice(0, 30)}...:`, err.message);
+    console.warn(`⚠️ Warning saving image:`, err.message);
   }
   return false;
 }
@@ -90,7 +129,7 @@ async function runFullBackup() {
     fs.mkdirSync(imagesDir, { recursive: true });
   }
 
-  console.log('\n📦 Starting Full System Backup (Database + Photos & Media)...\n');
+  console.log('\n📦 Starting Full System Backup (Database + Cloudflare R2 Uploads + Photos)...\n');
 
   for (const table of tables) {
     console.log(`📄 Fetching table: ${table}...`);
@@ -121,14 +160,15 @@ async function runFullBackup() {
   }
 
   backupData.downloadedImagesCount = imageCounter;
-  console.log(`   └─ ✅ Downloaded & saved ${imageCounter} payment proof images into backups.`);
+  console.log(`   └─ ✅ Downloaded & saved ${imageCounter} payment proof images locally.`);
 
-  // Save latest & timestamped JSON backups
+  // Save JSON backups
   const latestJsonPath = path.resolve(process.cwd(), 'backups', 'latest-backup.json');
   const timestampJsonPath = path.join(backupDir, 'database-backup.json');
 
-  fs.writeFileSync(latestJsonPath, JSON.stringify(backupData, null, 2));
-  fs.writeFileSync(timestampJsonPath, JSON.stringify(backupData, null, 2));
+  const jsonStr = JSON.stringify(backupData, null, 2);
+  fs.writeFileSync(latestJsonPath, jsonStr);
+  fs.writeFileSync(timestampJsonPath, jsonStr);
 
   // Generate SQL Restore Script
   let sqlContent = `-- AUTOMATIC FULL BACKUP RESTORE SCRIPT\n-- Generated: ${backupData.timestamp}\n\n`;
@@ -154,10 +194,14 @@ async function runFullBackup() {
   const sqlPath = path.join(backupDir, 'restore-data.sql');
   fs.writeFileSync(sqlPath, sqlContent);
 
+  // Upload Database JSON & SQL Restore file directly to Cloudflare R2
+  console.log('\n☁️ Uploading Database Snapshot & SQL to Cloudflare R2...');
+  await uploadToCloudflareR2(`backups/database-backup-${dateStr}.json`, Buffer.from(jsonStr), 'application/json');
+  await uploadToCloudflareR2(`backups/restore-data-${dateStr}.sql`, Buffer.from(sqlContent), 'text/plain');
+
   console.log('\n🎉 FULL BACKUP COMPLETED SUCCESSFULLY!');
-  console.log(`📁 Backup Folder: file:///${backupDir.replace(/\\/g, '/')}`);
-  console.log(`🖼️ Saved ${imageCounter} Photos to: file:///${imagesDir.replace(/\\/g, '/')}`);
-  console.log(`📄 Database SQL: file:///${sqlPath.replace(/\\/g, '/')}`);
+  console.log(`📁 Local Backup Folder: file:///${backupDir.replace(/\\/g, '/')}`);
+  console.log(`📄 Database JSON & SQL: Saved locally AND uploaded to Cloudflare R2!`);
 }
 
 runFullBackup();

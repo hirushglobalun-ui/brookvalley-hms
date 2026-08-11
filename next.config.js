@@ -1,7 +1,17 @@
+import { fork } from 'child_process';
+import path from 'path';
+
+// Automatically trigger daily background backup scheduler on server launch
+try {
+  const schedulerPath = path.resolve(process.cwd(), 'scripts', 'startBackupScheduler.js');
+  fork(schedulerPath, [], { detached: true, stdio: 'ignore' }).unref();
+} catch (e) {
+  // Silent catch
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Omit custom dev server redirect since Next.js takes over routing
 };
 
 export default nextConfig;
