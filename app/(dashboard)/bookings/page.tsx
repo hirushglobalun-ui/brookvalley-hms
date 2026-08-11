@@ -74,26 +74,35 @@ const BookingsContent: React.FC = () => {
   // Cache for calendar prefill redirects
   const [prefillParams, setPrefillParams] = useState<{ checkInDate?: string; checkOutDate?: string; roomNumber?: string } | null>(null);
 
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
+
   // Initial Data loading sequence
   const initialLoad = async (currentPage: number = page) => {
     try {
       if (!bookingsCache) setLoading(true);
-      const isFullAccess = user?.role === "admin" || user?.role === "developer" || user?.role === "manager";
-      const filterUserId = isFullAccess ? undefined : (user?.uid || user?.id);
+      // Fetch all hotel bookings so BookingFormModal evaluates room availability against all manager and staff reservations
       const [bookingsRes, rList, rtList] = await Promise.all([
-        bookingsService.getBookings(currentPage, limit, filterUserId),
+        bookingsService.getBookings(currentPage, 1000, undefined),
         settingsService.getRooms(),
         settingsService.getRoomTypes()
       ]);
       
+      const allList = bookingsRes.data;
+      setAllBookings(allList);
+
+      const isFullAccess = user?.role === "admin" || user?.role === "developer" || user?.role === "manager";
+      const userTableBookings = isFullAccess 
+        ? allList 
+        : allList.filter(b => b.createdByUid === user?.uid || b.createdByUid === user?.id);
+
       bookingsCache = {
-        bookings: bookingsRes.data,
+        bookings: userTableBookings,
         rooms: rList,
         roomTypes: rtList,
-        totalPages: Math.ceil(bookingsRes.count / limit)
+        totalPages: Math.ceil(userTableBookings.length / limit) || 1
       };
       
-      setBookings(bookingsCache.bookings);
+      setBookings(userTableBookings);
       setTotalPages(bookingsCache.totalPages);
       setRooms(bookingsCache.rooms);
       setRoomTypes(bookingsCache.roomTypes);
@@ -113,15 +122,21 @@ const BookingsContent: React.FC = () => {
 
   const refreshData = async () => {
     try {
-      const isFullAccess = user?.role === "admin" || user?.role === "developer" || user?.role === "manager";
-      const filterUserId = isFullAccess ? undefined : (user?.uid || user?.id);
       const [bookingsRes, rList, rtList] = await Promise.all([
-        bookingsService.getBookings(page, limit, filterUserId),
+        bookingsService.getBookings(page, 1000, undefined),
         settingsService.getRooms(),
         settingsService.getRoomTypes()
       ]);
-      setBookings(bookingsRes.data);
-      setTotalPages(Math.ceil(bookingsRes.count / limit));
+      const allList = bookingsRes.data;
+      setAllBookings(allList);
+
+      const isFullAccess = user?.role === "admin" || user?.role === "developer" || user?.role === "manager";
+      const userTableBookings = isFullAccess 
+        ? allList 
+        : allList.filter(b => b.createdByUid === user?.uid || b.createdByUid === user?.id);
+
+      setBookings(userTableBookings);
+      setTotalPages(Math.ceil(userTableBookings.length / limit) || 1);
       setRooms(rList);
       setRoomTypes(rtList);
     } catch (err) {
@@ -316,7 +331,7 @@ const BookingsContent: React.FC = () => {
           isOpen={isFormOpen}
           booking={selectedBooking}
           rooms={rooms}
-          bookings={bookings}
+          bookings={allBookings}
           roomTypes={roomTypes}
           initialPrefill={prefillParams}
           onClose={() => {
