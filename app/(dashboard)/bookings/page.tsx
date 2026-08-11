@@ -78,8 +78,8 @@ const BookingsContent: React.FC = () => {
   const initialLoad = async (currentPage: number = page) => {
     try {
       if (!bookingsCache) setLoading(true);
-      const isStaffUser = user?.role === "admin" || user?.role === "developer" || user?.role === "manager" || user?.role === "employee";
-      const filterUserId = isStaffUser ? undefined : (user?.uid || user?.id);
+      const isFullAccess = user?.role === "admin" || user?.role === "developer" || user?.role === "manager";
+      const filterUserId = isFullAccess ? undefined : (user?.uid || user?.id);
       const [bookingsRes, rList, rtList] = await Promise.all([
         bookingsService.getBookings(currentPage, limit, filterUserId),
         settingsService.getRooms(),
@@ -106,14 +106,15 @@ const BookingsContent: React.FC = () => {
 
   useEffect(() => {
     if (!authLoading) {
+      bookingsCache = null;
       initialLoad(page);
     }
   }, [page, authLoading, user?.uid, user?.id, user?.role]);
 
   const refreshData = async () => {
     try {
-      const isStaffUser = user?.role === "admin" || user?.role === "developer" || user?.role === "manager" || user?.role === "employee";
-      const filterUserId = isStaffUser ? undefined : (user?.uid || user?.id);
+      const isFullAccess = user?.role === "admin" || user?.role === "developer" || user?.role === "manager";
+      const filterUserId = isFullAccess ? undefined : (user?.uid || user?.id);
       const [bookingsRes, rList, rtList] = await Promise.all([
         bookingsService.getBookings(page, limit, filterUserId),
         settingsService.getRooms(),
