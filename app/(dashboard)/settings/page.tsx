@@ -238,7 +238,7 @@ const SettingsContent = () => {
 
 export default function SettingsPage() {
   return (
-    <ProtectedRoute allowedRoles={["admin", "employee", "manager"]}>
+    <ProtectedRoute allowedRoles={["admin", "employee", "manager", "marketing"]}>
       <SettingsContent />
     </ProtectedRoute>
   );
