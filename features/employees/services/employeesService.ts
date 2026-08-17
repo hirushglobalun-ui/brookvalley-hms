@@ -72,6 +72,10 @@ export class EmployeesService {
    * Toggles employment active status status.
    */
   public async updateEmployeeStatus(employeeId: string, uid: string, status: "active" | "inactive", adminUser: any): Promise<void> {
+    const isSelf = adminUser && (adminUser.uid === uid || adminUser.id === uid);
+    if (isSelf && status === "inactive") {
+      throw new ValidationError("Safety restriction: You cannot deactivate your own account.");
+    }
     Logger.warn("Changing employee account activation status", { employeeId, uid, status, actor: adminUser?.email });
     await repo.updateEmployeeStatus(employeeId, uid, status);
     await logActivity("UPDATE_EMPLOYEE_STATUS", `Updated status of employee ${employeeId} to ${status}`, adminUser);

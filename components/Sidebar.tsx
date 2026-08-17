@@ -87,12 +87,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   if (!user) return null;
 
   const menuItems: MenuItem[] = [
-    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard, roles: ["admin", "employee", "manager"] },
-    { name: "Bookings", path: "/bookings", icon: BookOpen, roles: ["admin", "employee", "manager"] },
-    { name: "Calendar", path: "/calendar", icon: Calendar, roles: ["admin", "employee", "manager"] },
+    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard, roles: ["admin", "employee", "manager", "marketing"] },
+    { name: "Bookings", path: "/bookings", icon: BookOpen, roles: ["admin", "employee", "manager", "marketing"] },
+    { name: "Calendar", path: "/calendar", icon: Calendar, roles: ["admin", "employee", "manager", "marketing"] },
     { name: "Employees", path: "/employees", icon: Users, roles: ["admin"] },
     { name: "Reports", path: "/reports", icon: BarChart3, roles: ["admin", "manager"] },
-    { name: "Settings", path: "/settings", icon: Settings, roles: ["admin", "employee", "manager"] },
+    { name: "Settings", path: "/settings", icon: Settings, roles: ["admin", "employee", "manager", "marketing"] },
   ];
 
   const filteredMenu = menuItems.filter(item => 

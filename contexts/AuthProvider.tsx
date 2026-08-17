@@ -43,117 +43,75 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    // Fetch initial session state
-    const getInitialSession = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          const profile = await fetchProfile(session.user.id);
-          if (profile) {
-            if (profile.status === "inactive") {
-              await supabase.auth.signOut();
-              setUser(null);
-              await syncCookie(null);
-              setError("Your account has been deactivated. Please contact the administrator.");
-            } else {
-              await syncCookie(session);
-              setUser({
-                id: session.user.id,
-                uid: session.user.id,
-                email: session.user.email,
-                fullName: profile.full_name,
-                phone: profile.phone,
-                role: session.user.email === "dev@hirush.com" ? "developer" : profile.role,
-                status: profile.status,
-                createdAt: {
-                  seconds: Math.floor(new Date(profile.created_at).getTime() / 1000),
-                  toDate: () => new Date(profile.created_at)
-                }
-              });
-            }
-          } else {
-            // Profile fallback if not populated yet
-            await syncCookie(session);
-            setUser({
-              id: session.user.id,
-              uid: session.user.id,
-              email: session.user.email,
-              role: session.user.email === "dev@hirush.com" ? "developer" : "employee",
-              status: "active"
-            });
-          }
-        } else {
-          await syncCookie(null);
-          setUser(null);
-        }
-      } catch (err) {
-        console.error("Session fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    let isMounted = true;
 
-    getInitialSession();
-
-    // Listen for authentication changes
+    // Listen for authentication changes (handles INITIAL_SESSION, SIGNED_IN, SIGNED_OUT)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Prevent full app reload just for a background token refresh
+      // Background token refresh - sync cookie without setting full page loading state
       if (event === "TOKEN_REFRESHED") {
-        await syncCookie(session);
+        if (session) await syncCookie(session);
         return;
       }
-      
-      setLoading(true);
-      setError("");
       
       if (session?.user) {
         try {
           const profile = await fetchProfile(session.user.id);
+          if (!isMounted) return;
+
           if (profile) {
             if (profile.status === "inactive") {
               await supabase.auth.signOut();
-              setUser(null);
-              await syncCookie(null);
-              setError("Your account has been deactivated. Please contact the administrator.");
+              if (isMounted) {
+                setUser(null);
+                await syncCookie(null);
+                setError("Your account has been deactivated. Please contact the administrator.");
+              }
             } else {
               await syncCookie(session);
+              if (isMounted) {
+                setUser({
+                  id: session.user.id,
+                  uid: session.user.id,
+                  email: session.user.email,
+                  fullName: profile.full_name,
+                  phone: profile.phone,
+                  role: session.user.email === "dev@hirush.com" ? "developer" : profile.role,
+                  status: profile.status,
+                  createdAt: {
+                    seconds: Math.floor(new Date(profile.created_at).getTime() / 1000),
+                    toDate: () => new Date(profile.created_at)
+                  }
+                });
+              }
+            }
+          } else {
+            await syncCookie(session);
+            if (isMounted) {
               setUser({
                 id: session.user.id,
                 uid: session.user.id,
                 email: session.user.email,
-                fullName: profile.full_name,
-                phone: profile.phone,
-                role: session.user.email === "dev@hirush.com" ? "developer" : profile.role,
-                status: profile.status,
-                createdAt: {
-                  seconds: Math.floor(new Date(profile.created_at).getTime() / 1000),
-                  toDate: () => new Date(profile.created_at)
-                }
+                role: session.user.email === "dev@hirush.com" ? "developer" : "employee",
+                status: "active"
               });
             }
-          } else {
-            await syncCookie(session);
-            setUser({
-              id: session.user.id,
-              uid: session.user.id,
-              email: session.user.email,
-              role: session.user.email === "dev@hirush.com" ? "developer" : "employee",
-              status: "active"
-            });
           }
         } catch (err) {
           console.error("Auth state change error:", err);
+        } finally {
+          if (isMounted) setLoading(false);
         }
       } else {
-        setUser(null);
+        await syncCookie(null);
+        if (isMounted) {
+          setUser(null);
+          setLoading(false);
+        }
       }
-      setLoading(false);
     });
 
     return () => {
+      isMounted = false;
       subscription?.unsubscribe();
     };
   }, []);
@@ -175,30 +133,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (signInError) throw signInError;
 
-      // 2. Fetch profile to verify active status immediately
-      const profile = await fetchProfile(data.user.id);
-      
-      if (!profile && !email.toLowerCase().startsWith("admin") && email !== "dev@hirush.com") {
-        await supabase.auth.signOut();
-        setUser(null);
-        await syncCookie(null);
-        const deactiveMsg = "Your account has been deactivated or profile not found.";
-        setError(deactiveMsg);
-        throw new Error(deactiveMsg);
-      }
-
-      if (profile && profile.status === "inactive") {
-        await supabase.auth.signOut();
-        setUser(null);
-        await syncCookie(null);
-        const deactiveMsg = "Your account has been deactivated. Please contact the administrator.";
-        setError(deactiveMsg);
-        throw new Error(deactiveMsg);
-      }
-
-      // 3. Reset rate limit non-blocking, and sync cookie before proceeding
+      // 2. Reset rate limit non-blocking
       resetLoginRateLimit(email).catch(console.error);
-      await syncCookie(data.session);
 
       return data.user;
     } catch (err: any) {

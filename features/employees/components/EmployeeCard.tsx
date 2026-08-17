@@ -28,7 +28,13 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({
     ? employee.fullName.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2)
     : "U";
 
+  const isSelf = (user?.uid && user.uid === employee.uid) || (user?.id && user.id === employee.uid);
+
   const handleStatusToggle = async () => {
+    if (isSelf && employee.status === "active") {
+      alert("Safety restriction: You cannot deactivate your own account. Please ask another administrator to manage your account status.");
+      return;
+    }
     const nextStatus = employee.status === "active" ? "inactive" : "active";
     if (window.confirm(`Are you sure you want to set employee status to ${nextStatus}?`)) {
       await onToggleStatus(employee.employeeId, employee.uid, nextStatus);

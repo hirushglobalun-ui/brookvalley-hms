@@ -7,7 +7,7 @@ export interface CreateEmployeeDTO {
   fullName: string;
   email: string;
   phone: string;
-  role: "admin" | "employee" | "manager";
+  role: "admin" | "employee" | "manager" | "marketing";
   status: "active" | "inactive";
   joinedDate: string;
   notes?: string;
@@ -19,7 +19,7 @@ export interface CreateEmployeeDTO {
 export interface UpdateEmployeeDTO {
   fullName: string;
   phone: string;
-  role: "admin" | "employee" | "manager";
+  role: "admin" | "employee" | "manager" | "marketing";
   notes?: string;
 }
 

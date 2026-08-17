@@ -3,7 +3,7 @@ export interface Profile {
   fullName: string;
   email: string;
   phone?: string | null;
-  role: 'admin' | 'employee' | 'manager' | 'developer';
+  role: 'admin' | 'employee' | 'manager' | 'developer' | 'marketing';
   status: 'active' | 'inactive';
   createdAt: {
     seconds: number;
@@ -18,7 +18,7 @@ export interface Employee {
   fullName: string;
   email: string;
   phone?: string | null;
-  role: 'admin' | 'employee' | 'manager' | 'developer';
+  role: 'admin' | 'employee' | 'manager' | 'developer' | 'marketing';
   status: 'active' | 'inactive';
   joinedDate: string;
   notes: string;
