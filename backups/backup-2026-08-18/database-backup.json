@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-20T09:48:50.279Z",
+  "timestamp": "2026-08-18T16:09:28.805Z",
   "supabaseUrl": "https://jkwjmqtqattvnddpvlwe.supabase.co",
   "tables": {
     "profiles": [
@@ -523,62 +523,6 @@
         "created_at": "2026-08-18T12:47:13.31195+00:00",
         "updated_at": "2026-08-18T12:47:13.31195+00:00",
         "deleted_at": null
-      },
-      {
-        "id": "e58414b6-acdc-4ff8-a7ac-44e0b9bc58d9",
-        "booking_id": "BK336021",
-        "customer_name": "Vijesh tp",
-        "customer_phone": "9947987664",
-        "customer_email": "",
-        "customer_address": "Villyapally",
-        "room_type_id": "stream-delux-room",
-        "room_number": "3",
-        "check_in_date": "2026-08-20",
-        "check_out_date": "2026-08-21",
-        "guest_count": 4,
-        "total_amount": 4000,
-        "payment_status": "partial",
-        "booking_status": "confirmed",
-        "payment_method": "online",
-        "advance_amount": 2000,
-        "payment_proof": "https://pub-c201b259a4b84d819aaa163980484f3b.r2.dev/payments/proof_1787138574712_8917.jpg",
-        "remarks": "",
-        "booking_source": "direct",
-        "agency_commission": 0,
-        "created_by_uid": "f039ebba-0f44-458d-b941-c7878a6964b8",
-        "created_by_name": "shamna",
-        "created_by_role": "manager",
-        "created_at": "2026-08-19T11:22:57.054288+00:00",
-        "updated_at": "2026-08-19T11:22:57.054288+00:00",
-        "deleted_at": null
-      },
-      {
-        "id": "d3269b32-7521-483b-b678-5ec040eec313",
-        "booking_id": "BK230905",
-        "customer_name": "Shemin kc",
-        "customer_phone": "9562917112",
-        "customer_email": "",
-        "customer_address": "",
-        "room_type_id": "3bh-premium-vila",
-        "room_number": "1,3,4,6,p01,5,2",
-        "check_in_date": "2026-08-29",
-        "check_out_date": "2026-08-30",
-        "guest_count": 47,
-        "total_amount": 47000,
-        "payment_status": "partial",
-        "booking_status": "confirmed",
-        "payment_method": "none",
-        "advance_amount": 10000,
-        "payment_proof": "https://pub-c201b259a4b84d819aaa163980484f3b.r2.dev/payments/proof_1787159349928_2222.jpg",
-        "remarks": "",
-        "booking_source": "agency",
-        "agency_commission": 7000,
-        "created_by_uid": "f039ebba-0f44-458d-b941-c7878a6964b8",
-        "created_by_name": "shamna",
-        "created_by_role": "manager",
-        "created_at": "2026-08-19T17:09:11.812439+00:00",
-        "updated_at": "2026-08-19T17:09:11.812439+00:00",
-        "deleted_at": null
       }
     ],
     "activity_logs": [
@@ -790,24 +734,6 @@
         "created_at": "2026-08-18T12:47:13.729283+00:00"
       },
       {
-        "id": "3634b640-0e2a-4296-b84b-40b767f2dd21",
-        "action": "CREATE_BOOKING",
-        "details": "Created booking BK230905 for Room(s) 1,3,4,6,p01,5,2 (Shemin kc)",
-        "user_id": "f039ebba-0f44-458d-b941-c7878a6964b8",
-        "user_name": "shamna",
-        "user_role": "manager",
-        "created_at": "2026-08-19T17:09:12.463948+00:00"
-      },
-      {
-        "id": "c6f98964-a416-44ec-8bff-d55f6f0d21f0",
-        "action": "CREATE_BOOKING",
-        "details": "Created booking BK542408 for Room(s) 4,3 (sample)",
-        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
-        "user_name": "System Admin",
-        "user_role": "admin",
-        "created_at": "2026-08-20T09:08:31.148315+00:00"
-      },
-      {
         "id": "830ff7a5-1a1b-4abe-83b8-db69798f7b02",
         "action": "CREATE_BOOKING",
         "details": "Created booking BK477178 for Room(s) 2,p01,3,4 (Hirush Globalun)",
@@ -995,44 +921,8 @@
         "user_name": "shamna",
         "user_role": "manager",
         "created_at": "2026-08-18T12:41:20.366555+00:00"
-      },
-      {
-        "id": "3b4c249c-bd57-4ec8-8b36-4fcf13205c37",
-        "action": "CREATE_BOOKING",
-        "details": "Created booking BK336021 for Room(s) 3 (Vijesh tp)",
-        "user_id": "f039ebba-0f44-458d-b941-c7878a6964b8",
-        "user_name": "shamna",
-        "user_role": "manager",
-        "created_at": "2026-08-19T11:22:57.719395+00:00"
-      },
-      {
-        "id": "7d7fad19-4f5d-4b19-a698-4cb79eb0eef6",
-        "action": "CREATE_BOOKING",
-        "details": "Created booking BK992153 for Room(s) 3,p01 (wrv)",
-        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
-        "user_name": "System Admin",
-        "user_role": "admin",
-        "created_at": "2026-08-20T09:06:54.557759+00:00"
-      },
-      {
-        "id": "cf735d73-27f9-49ee-94f3-cea9037b6f1f",
-        "action": "CREATE_BOOKING",
-        "details": "Created booking BK518574 for Room(s) p01,2 (sample)",
-        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
-        "user_name": "System Admin",
-        "user_role": "admin",
-        "created_at": "2026-08-20T09:14:31.582916+00:00"
-      },
-      {
-        "id": "347383f0-f2cd-4032-9f05-2f9f3b653a57",
-        "action": "DELETE_BOOKING",
-        "details": "Soft-deleted booking BK518574. Reason: test",
-        "user_id": "9dca1b27-0941-4045-a7b5-a179912cba1f",
-        "user_name": "System Admin",
-        "user_role": "admin",
-        "created_at": "2026-08-20T09:14:53.403053+00:00"
       }
     ]
   },
-  "downloadedImagesCount": 7
+  "downloadedImagesCount": 5
 }

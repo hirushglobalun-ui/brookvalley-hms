@@ -96,13 +96,19 @@ const ReportsContent = () => {
   // Date Filter States
   const currentYear = new Date().getFullYear().toString();
   const [filterMonth, setFilterMonth] = useState("all");
-  const [filterYear, setFilterYear] = useState(currentYear);
+  const [filterYear, setFilterYear] = useState("all");
   const [filterRoomType, setFilterRoomType] = useState("all");
 
-  // Dynamic available years based on bookings
-  const availableYears = Array.from(new Set(bookings.map(b => new Date(b.checkInDate).getFullYear().toString()))).sort((a,b)=>b.localeCompare(a));
-  if (availableYears.length === 0) availableYears.push(currentYear);
-  else if (!availableYears.includes(currentYear)) availableYears.push(currentYear);
+  // Dynamic available years based on bookings and multi-year range
+  const availableYears = Array.from(
+    new Set([
+      "2024", "2025", "2026", "2027", "2028", "2029", "2030",
+      ...bookings.map(b => {
+        const y = new Date(b.checkInDate).getFullYear();
+        return isNaN(y) ? "" : y.toString();
+      }).filter(Boolean)
+    ])
+  ).sort((a, b) => b.localeCompare(a));
 
   const getRoomForNumber = (rNum: string) => {
     const cleanRNum = rNum.replace(/[^0-9]/g, "").trim();
@@ -172,24 +178,57 @@ const ReportsContent = () => {
       return;
     }
     
-    const headers = ["Booking ID", "Customer Name", "Phone", "Email", "Room Type", "Room Number", "Check In", "Check Out", "Total Price", "Advance Paid", "Status", "Payment", "Source", "Commission", "Created By"];
-    const rows = dateFilteredBookings.map(b => [
-      b.bookingId,
-      b.customerName,
-      b.customerPhone,
-      b.customerEmail,
-      b.roomType,
-      b.roomNumber,
-      b.checkInDate,
-      b.checkOutDate,
-      b.totalAmount,
-      b.advanceAmount,
-      b.bookingStatus,
-      b.paymentStatus,
-      b.bookingSource === "agency" ? "Agency" : "Direct",
-      b.agencyCommission || 0,
-      b.createdByName || "System"
-    ]);
+    const headers = [
+      "Booking ID", "Customer Name", "Phone", "Email", 
+      "Room Type", "Room Number", "Check In", "Check Out", 
+      "Status", "Payment", "Source", "Agent Name", 
+      "Agency / Company", "Agent Phone", "Agent Address", 
+      "Gross Booking Price (₹)", "Agency Commission (₹)", "Net Hotel Revenue (₹)", 
+      "Advance Paid (₹)", "Balance Due (₹)", "Created By"
+    ];
+
+    const rows = dateFilteredBookings.map(b => {
+      const roomNums = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
+      const resolvedRoomTypes = Array.from(new Set(
+        roomNums.length > 0 
+          ? roomNums.map(rNum => {
+              const roomObj = getRoomForNumber(rNum);
+              const rtObj = roomTypes.find(rt => rt.id === roomObj?.roomType) || roomTypes.find(rt => rt.id === b.roomType);
+              return rtObj?.name || b.roomType;
+            })
+          : [(roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType)]
+      )).join(", ");
+
+      const gross = Number(b.totalAmount || 0);
+      const commission = Number(b.agencyCommission || 0);
+      const netRevenue = gross - commission;
+      const advance = Number(b.advanceAmount || 0);
+      const balanceDue = Math.max(0, gross - advance);
+
+      return [
+        b.bookingId,
+        b.customerName,
+        b.customerPhone,
+        b.customerEmail || "—",
+        resolvedRoomTypes,
+        b.roomNumber,
+        b.checkInDate,
+        b.checkOutDate,
+        b.bookingStatus,
+        b.paymentStatus,
+        b.bookingSource === "agency" ? "Agency" : "Direct",
+        b.agentName || "—",
+        b.agentCompany || "—",
+        b.agentPhone || "—",
+        b.agentAddress || "—",
+        gross,
+        commission,
+        netRevenue,
+        advance,
+        balanceDue,
+        b.createdByName || "System"
+      ];
+    });
 
     const csvContent = "data:text/csv;charset=utf-8," 
       + [headers.join(","), ...rows.map(e => e.map(val => `"${val}"`).join(","))].join("\n");

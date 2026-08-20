@@ -148,8 +148,10 @@ const BookingDetailsTab: React.FC<BookingDetailsTabProps> = ({
                           {b.bookingSource || "Direct"}
                         </span>
                         {b.bookingSource === 'agency' && (
-                          <div style={{ fontSize: "0.75rem", color: "var(--primary)", marginTop: "2px" }}>
-                            ₹{b.agencyCommission || 0}
+                          <div style={{ fontSize: "0.75rem", marginTop: "2px" }}>
+                            {b.agentName && <span style={{ fontWeight: 600, display: "block" }}>{b.agentName}</span>}
+                            {b.agentCompany && <span style={{ color: "var(--text-secondary)", display: "block", fontSize: "0.7rem" }}>{b.agentCompany}</span>}
+                            <span style={{ color: "var(--primary)", fontWeight: 600 }}>Comm: ₹{b.agencyCommission || 0}</span>
                           </div>
                         )}
                       </td>

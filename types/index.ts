@@ -73,6 +73,10 @@ export interface Booking {
   createdByRole?: string | null;
   bookingSource?: 'direct' | 'agency';
   agencyCommission?: number;
+  agentName?: string;
+  agentCompany?: string;
+  agentAddress?: string;
+  agentPhone?: string;
   createdAt: {
     seconds: number;
     toDate: () => Date;
@@ -85,6 +89,17 @@ export interface Booking {
   deletedBy?: string | null;
   deleteReason?: string | null;
 }
+
+export interface Agent {
+  id: string;
+  name: string;
+  companyName: string;
+  address: string;
+  phone: string;
+  defaultCommission?: number;
+  createdAt?: string;
+}
+
 
 export interface ActivityLog {
   id: string;

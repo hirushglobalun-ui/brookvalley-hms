@@ -52,6 +52,10 @@ export class BookingsService {
         createdByRole: e.createdByRole || null,
         bookingSource: e.bookingSource || 'direct',
         agencyCommission: e.agencyCommission || 0,
+        agentName: e.agentName || "",
+        agentCompany: e.agentCompany || "",
+        agentAddress: e.agentAddress || "",
+        agentPhone: e.agentPhone || "",
         createdAt: null,
         updatedAt: null
       })),

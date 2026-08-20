@@ -1,7 +1,7 @@
 import { supabase } from "../../../lib/supabase";
 import { DatabaseError } from "../../../shared/errors";
 import { BookingEntity } from "../domain/bookings.domain";
-import { CreateBookingDTO, BookingsMapper } from "../dto/bookings.dto";
+import { CreateBookingDTO, BookingsMapper, encodeAgentIntoRemarks } from "../dto/bookings.dto";
 import { syncToFirestore, deleteFromFirestore, fetchFallbackFromFirestore } from "../../../lib/firebase";
 
 /**
@@ -81,6 +81,13 @@ export class BookingsRepository {
       }
     }
 
+    const formattedRemarks = encodeAgentIntoRemarks(dto.remarks || "", {
+      name: dto.agentName,
+      company: dto.agentCompany,
+      address: dto.agentAddress,
+      phone: dto.agentPhone
+    });
+
     const payload = {
       booking_id: bookingId,
       customer_name: dto.customerName,
@@ -98,7 +105,7 @@ export class BookingsRepository {
       payment_method: dto.paymentMethod || "none",
       advance_amount: Number(dto.advanceAmount || 0),
       payment_proof: dto.paymentProof || "",
-      remarks: dto.remarks || "",
+      remarks: formattedRemarks,
       created_by_uid: activeUid || null,
       created_by_name: activeName || "Staff",
       created_by_role: activeRole || "employee",
@@ -123,6 +130,13 @@ export class BookingsRepository {
    * Modifies an existing customer reservation.
    */
   public async updateBookingSafe(bookingId: string, dto: CreateBookingDTO): Promise<void> {
+    const formattedRemarks = encodeAgentIntoRemarks(dto.remarks || "", {
+      name: dto.agentName,
+      company: dto.agentCompany,
+      address: dto.agentAddress,
+      phone: dto.agentPhone
+    });
+
     const payload = {
       booking_id: bookingId,
       customer_name: dto.customerName,
@@ -140,7 +154,7 @@ export class BookingsRepository {
       payment_method: dto.paymentMethod || "none",
       advance_amount: Number(dto.advanceAmount || 0),
       payment_proof: dto.paymentProof || "",
-      remarks: dto.remarks || "",
+      remarks: formattedRemarks,
       booking_source: dto.bookingSource || "direct",
       agency_commission: Number(dto.agencyCommission || 0),
       updated_at: new Date().toISOString()

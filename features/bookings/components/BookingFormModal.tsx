@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { X, AlertCircle } from "lucide-react";
-import { Booking, Room, RoomType } from "../../../types";
+import { Booking, Room, RoomType, Agent } from "../../../types";
 import { uploadPaymentProof } from "../../../lib/storage";
 import { useAuth } from "../../../lib/auth";
+import { AgentService } from "../../../services/agentService";
 
 interface BookingFormModalProps {
   isOpen: boolean;
@@ -51,10 +52,19 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
   const [bookingSource, setBookingSource] = useState<Booking["bookingSource"]>("direct");
   const [agencyCommission, setAgencyCommission] = useState<number | "">(0);
 
+  // Agent States
+  const [registeredAgents, setRegisteredAgents] = useState<Agent[]>([]);
+  const [selectedAgentId, setSelectedAgentId] = useState<string>("new");
+  const [agentName, setAgentName] = useState("");
+  const [agentCompany, setAgentCompany] = useState("");
+  const [agentAddress, setAgentAddress] = useState("");
+  const [agentPhone, setAgentPhone] = useState("");
+
   const [formError, setFormError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
 
   const hasInitialized = React.useRef(false);
+
 
   // Prefill or Load Existing Booking data
   useEffect(() => {
@@ -64,6 +74,10 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     }
 
     if (hasInitialized.current) return;
+
+    // Load registered agents
+    const loadedAgents = AgentService.getRegisteredAgents();
+    setRegisteredAgents(loadedAgents);
 
     if (booking) {
       setCustomerName(booking.customerName);
@@ -86,6 +100,18 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       setRemarks(booking.remarks || "");
       setBookingSource(booking.bookingSource || "direct");
       setAgencyCommission(booking.agencyCommission || 0);
+
+      // Agent details
+      setAgentName(booking.agentName || "");
+      setAgentCompany(booking.agentCompany || "");
+      setAgentAddress(booking.agentAddress || "");
+      setAgentPhone(booking.agentPhone || "");
+      const matchedAgent = loadedAgents.find(
+        a => (booking.agentName && a.name.toLowerCase() === booking.agentName.toLowerCase()) ||
+             (booking.agentPhone && a.phone === booking.agentPhone)
+      );
+      setSelectedAgentId(matchedAgent ? matchedAgent.id : "new");
+
       setFormError("");
     } else {
       setCustomerName("");
@@ -137,6 +163,11 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
             setRemarks(draft.remarks || "");
             setBookingSource(draft.bookingSource || "direct");
             setAgencyCommission(draft.agencyCommission || 0);
+            setAgentName(draft.agentName || "");
+            setAgentCompany(draft.agentCompany || "");
+            setAgentAddress(draft.agentAddress || "");
+            setAgentPhone(draft.agentPhone || "");
+            setSelectedAgentId(draft.selectedAgentId || "new");
             hasInitialized.current = true;
             return;
           }
@@ -158,11 +189,38 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       setRemarks("");
       setBookingSource("direct");
       setAgencyCommission(0);
+      setAgentName("");
+      setAgentCompany("");
+      setAgentAddress("");
+      setAgentPhone("");
+      setSelectedAgentId("new");
       setFormError("");
     }
     
     hasInitialized.current = true;
   }, [isOpen, booking, initialPrefill, rooms, roomTypes]);
+
+  // Handle Registered Agent Selection
+  const handleAgentSelect = (agentId: string) => {
+    setSelectedAgentId(agentId);
+    if (agentId === "new") {
+      setAgentName("");
+      setAgentCompany("");
+      setAgentAddress("");
+      setAgentPhone("");
+    } else {
+      const selected = registeredAgents.find(a => a.id === agentId);
+      if (selected) {
+        setAgentName(selected.name);
+        setAgentCompany(selected.companyName);
+        setAgentAddress(selected.address);
+        setAgentPhone(selected.phone);
+        if (selected.defaultCommission !== undefined) {
+          setAgencyCommission(selected.defaultCommission);
+        }
+      }
+    }
+  };
 
   // Save to draft on change
   useEffect(() => {
@@ -172,15 +230,18 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       selectedRoomType, selectedRoomNumbers, checkInDate, checkOutDate,
       guestCount, totalAmount, paymentStatus, bookingStatus,
       paymentMethod, advanceAmount, paymentProofs, remarks,
-      bookingSource, agencyCommission
+      bookingSource, agencyCommission, agentName, agentCompany,
+      agentAddress, agentPhone, selectedAgentId
     };
     sessionStorage.setItem("bookingFormDraft", JSON.stringify(draft));
   }, [
     isOpen, booking, customerName, customerPhone, customerEmail, customerAddress,
     selectedRoomType, selectedRoomNumbers, checkInDate, checkOutDate,
     guestCount, totalAmount, paymentStatus, bookingStatus,
-    paymentMethod, advanceAmount, paymentProofs, remarks, bookingSource, agencyCommission
+    paymentMethod, advanceAmount, paymentProofs, remarks, bookingSource, agencyCommission,
+    agentName, agentCompany, agentAddress, agentPhone, selectedAgentId
   ]);
+
 
   // Date Formatting for messages
   const formatMsgDate = (dateStr: string): string => {
@@ -357,6 +418,24 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       return;
     }
 
+    const isAdmin = user?.role === "admin" || user?.role === "developer";
+    if (!isAdmin && checkInDate < localToday) {
+      setFormError("Only Admins can create or modify bookings for past dates.");
+      return;
+    }
+
+    if (bookingSource === 'agency') {
+      if (!agentName.trim()) {
+        setFormError("Agent Name is required for agency bookings.");
+        return;
+      }
+      const cleanAgentPhone = agentPhone.replace(/[^0-9]/g, "");
+      if (cleanAgentPhone.length !== 10) {
+        setFormError("Agent Phone Number must be exactly 10 digits.");
+        return;
+      }
+    }
+
     if (selectedRoomNumbers.length === 0) {
       setFormError("Please select at least one room for this booking.");
       return;
@@ -388,6 +467,16 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       }
       const finalPaymentProofString = finalPaymentProofs.join(",");
 
+      if (bookingSource === 'agency' && agentName.trim()) {
+        AgentService.saveAgent({
+          name: agentName.trim(),
+          companyName: agentCompany.trim(),
+          address: agentAddress.trim(),
+          phone: agentPhone.trim(),
+          defaultCommission: Number(agencyCommission || 0)
+        });
+      }
+
       const payload = {
         customerName,
         customerPhone,
@@ -407,6 +496,10 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
         remarks,
         bookingSource,
         agencyCommission: bookingSource === 'agency' ? Number(agencyCommission) : 0,
+        agentName: bookingSource === 'agency' ? agentName : "",
+        agentCompany: bookingSource === 'agency' ? agentCompany : "",
+        agentAddress: bookingSource === 'agency' ? agentAddress : "",
+        agentPhone: bookingSource === 'agency' ? agentPhone : "",
         createdByUid: user?.uid || user?.id,
         createdByName: user?.fullName || user?.email,
         createdByRole: user?.role
@@ -525,23 +618,117 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                 onChange={(e) => setBookingSource(e.target.value as Booking["bookingSource"])}
               >
                 <option value="direct">Direct</option>
-                <option value="agency">Agency / Third-Party</option>
+                <option value="agency">Agency / Third-Party Agent</option>
               </select>
             </div>
-            {bookingSource === 'agency' && (
-              <div className="form-group">
-                <label>Agency Commission (₹)</label>
-                <input 
-                  type="number" 
-                  className="input-control" 
-                  min="0"
-                  value={agencyCommission}
-                  onChange={(e) => setAgencyCommission(e.target.value === "" ? "" : Number(e.target.value))}
-                  placeholder="e.g. 500"
-                />
-              </div>
-            )}
           </div>
+
+          {bookingSource === 'agency' && (
+            <div style={{
+              border: "1px solid var(--card-border)",
+              borderRadius: "var(--radius-md)",
+              padding: "1rem",
+              backgroundColor: "var(--bg-secondary)",
+              marginBottom: "1.25rem"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                <h4 style={{ fontSize: "0.85rem", color: "var(--primary)", fontWeight: 600, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Agent & Agency Details
+                </h4>
+                <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                  Select registered agent or enter new details
+                </span>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }} className="mobile-stacked-grid">
+                <div className="form-group" style={{ gridColumn: "span 2" }}>
+                  <label style={{ fontWeight: 600 }}>Select Registered Agent / Agency</label>
+                  <select
+                    className="input-control"
+                    value={selectedAgentId}
+                    onChange={(e) => handleAgentSelect(e.target.value)}
+                  >
+                    <option value="new">+ Register New Agent / Custom Entry</option>
+                    {registeredAgents.map(agt => (
+                      <option key={agt.id} value={agt.id}>
+                        {agt.name} ({agt.companyName}) - {agt.phone}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Agent Name *</label>
+                  <input 
+                    type="text" 
+                    className="input-control" 
+                    value={agentName}
+                    onChange={(e) => {
+                      setAgentName(e.target.value);
+                      if (selectedAgentId !== "new") setSelectedAgentId("new");
+                    }}
+                    placeholder="e.g. Rajesh Sharma"
+                    required={bookingSource === 'agency'}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Agency / Company Name</label>
+                  <input 
+                    type="text" 
+                    className="input-control" 
+                    value={agentCompany}
+                    onChange={(e) => {
+                      setAgentCompany(e.target.value);
+                      if (selectedAgentId !== "new") setSelectedAgentId("new");
+                    }}
+                    placeholder="e.g. MakeMyTrip Partner"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Agent Phone Number * (10 Digits)</label>
+                  <input 
+                    type="tel" 
+                    className="input-control" 
+                    value={agentPhone}
+                    onChange={(e) => {
+                      setAgentPhone(e.target.value.replace(/[^0-9]/g, "").substring(0, 10));
+                      if (selectedAgentId !== "new") setSelectedAgentId("new");
+                    }}
+                    placeholder="e.g. 9845012345"
+                    required={bookingSource === 'agency'}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Agency Commission (₹)</label>
+                  <input 
+                    type="number" 
+                    className="input-control" 
+                    min="0"
+                    value={agencyCommission}
+                    onChange={(e) => setAgencyCommission(e.target.value === "" ? "" : Number(e.target.value))}
+                    placeholder="e.g. 500"
+                  />
+                </div>
+
+                <div className="form-group" style={{ gridColumn: "span 2" }}>
+                  <label>Agent / Agency Address</label>
+                  <input 
+                    type="text" 
+                    className="input-control" 
+                    value={agentAddress}
+                    onChange={(e) => {
+                      setAgentAddress(e.target.value);
+                      if (selectedAgentId !== "new") setSelectedAgentId("new");
+                    }}
+                    placeholder="e.g. Suite 402, Express Towers, MG Road, Bangalore"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <h3 style={{ fontSize: "0.9rem", color: "var(--primary)", textTransform: "uppercase", marginTop: "1.5rem", marginBottom: "1rem", letterSpacing: "0.05em" }}>
             2. Stay & Room Details
@@ -554,7 +741,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                 type="date" 
                 className="input-control" 
                 value={checkInDate}
-                min={(!booking && !(user?.role === "admin" || user?.role === "developer" || user?.role === "manager")) ? localToday : undefined}
+                min={!(user?.role === "admin" || user?.role === "developer") ? localToday : undefined}
                 onChange={(e) => setCheckInDate(e.target.value)}
                 required
               />
@@ -565,7 +752,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
                 type="date" 
                 className="input-control" 
                 value={checkOutDate}
-                min={checkInDate || ((!booking && !(user?.role === "admin" || user?.role === "developer" || user?.role === "manager")) ? localToday : undefined)}
+                min={checkInDate || (!(user?.role === "admin" || user?.role === "developer") ? localToday : undefined)}
                 onChange={(e) => setCheckOutDate(e.target.value)}
                 required
               />
