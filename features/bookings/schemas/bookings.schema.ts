@@ -21,5 +21,10 @@ export const createBookingSchema = z.object({
   paymentProof: z.string().optional(),
   remarks: z.string().optional(),
   bookingSource: z.enum(["direct", "agency"]).optional(),
-  agencyCommission: z.number().nonnegative().optional()
+  agencyCommission: z.number().nonnegative().optional(),
+  agentName: z.string().optional(),
+  agentCompany: z.string().optional(),
+  agentAddress: z.string().optional(),
+  agentPhone: z.string().optional()
 });
+

@@ -150,10 +150,36 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           </div>
 
           {booking.bookingSource === 'agency' && (
-            <div className="info-detail-item">
-              <span className="info-detail-label">Agency Commission</span>
-              <span className="info-detail-value">₹{booking.agencyCommission || 0}</span>
-            </div>
+            <>
+              {booking.agentName && (
+                <div className="info-detail-item">
+                  <span className="info-detail-label">Agent Name</span>
+                  <span className="info-detail-value" style={{ fontWeight: 600 }}>{booking.agentName}</span>
+                </div>
+              )}
+              {booking.agentCompany && (
+                <div className="info-detail-item">
+                  <span className="info-detail-label">Agency / Company</span>
+                  <span className="info-detail-value">{booking.agentCompany}</span>
+                </div>
+              )}
+              {booking.agentPhone && (
+                <div className="info-detail-item">
+                  <span className="info-detail-label">Agent Phone</span>
+                  <span className="info-detail-value">{booking.agentPhone}</span>
+                </div>
+              )}
+              {booking.agentAddress && (
+                <div className="info-detail-item">
+                  <span className="info-detail-label">Agent Address</span>
+                  <span className="info-detail-value">{booking.agentAddress}</span>
+                </div>
+              )}
+              <div className="info-detail-item">
+                <span className="info-detail-label">Agency Commission</span>
+                <span className="info-detail-value" style={{ fontWeight: 600, color: "var(--primary)" }}>₹{booking.agencyCommission || 0}</span>
+              </div>
+            </>
           )}
 
           {/* Stay / Room Details Section */}
