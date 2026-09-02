@@ -21,6 +21,7 @@ import {
 import ProtectedRoute from "../../../components/ProtectedRoute";
 import { Booking, Room, RoomType, Employee } from "../../../types";
 import { Skeleton, SkeletonTable } from "../../../components/ui/Skeleton";
+import { matchRoomNumber } from "../../../lib/roomUtils";
 
 const bookingsService = new BookingsService();
 const settingsService = new SettingsService();
@@ -111,11 +112,7 @@ const ReportsContent = () => {
   ).sort((a, b) => b.localeCompare(a));
 
   const getRoomForNumber = (rNum: string) => {
-    const cleanRNum = rNum.replace(/[^0-9]/g, "").trim();
-    return rooms.find(r => {
-      const dbNum = r.roomNumber.replace(/[^0-9]/g, "").trim();
-      return r.roomNumber === rNum || r.roomNumber === cleanRNum || dbNum === cleanRNum || (dbNum.replace(/^0+/, "") === cleanRNum.replace(/^0+/, "") && cleanRNum.length > 0);
-    });
+    return rooms.find(r => matchRoomNumber(rNum, r.roomNumber));
   };
 
   // Apply Global Filters (Date and Room Type)

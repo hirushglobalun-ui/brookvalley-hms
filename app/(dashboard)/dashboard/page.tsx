@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Booking, Room, Employee, RoomType } from "../../../types";
 import { Skeleton } from "../../../components/ui/Skeleton";
+import { getRoomTypeForNumber } from "../../../lib/roomUtils";
 
 const bookingsService = new BookingsService();
 const settingsService = new SettingsService();
@@ -199,11 +200,8 @@ const Dashboard = () => {
 
   const recentBookings = sortedBookings.slice(0, 5);
 
-  const getRoomTypeForNumber = (rNum: string, fallbackTypeId: string) => {
-    const cleanRNum = rNum.trim();
-    const roomObj = rooms?.find(r => r.roomNumber === cleanRNum || r.roomNumber === cleanRNum.replace(/^0+/, '') || r.roomNumber.padStart(2, '0') === cleanRNum.padStart(2, '0'));
-    const rtObj = roomTypes?.find(rt => rt.id === roomObj?.roomType) || roomTypes?.find(rt => rt.id === fallbackTypeId);
-    return rtObj?.name || fallbackTypeId;
+  const resolveRoomType = (rNum: string, fallbackTypeId: string) => {
+    return getRoomTypeForNumber(rNum, rooms, roomTypes, fallbackTypeId);
   };
 
   return (
@@ -418,7 +416,7 @@ const Dashboard = () => {
                       const roomNums = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
                       const uniqueTypes = Array.from(new Set(
                         roomNums.length > 0 
-                          ? roomNums.map(rNum => getRoomTypeForNumber(rNum, b.roomType))
+                          ? roomNums.map(rNum => resolveRoomType(rNum, b.roomType))
                           : [(roomTypes?.find(rt => rt.id === b.roomType)?.name || b.roomType)]
                       )).join(", ");
 
@@ -427,7 +425,7 @@ const Dashboard = () => {
                           <td>
                             <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
                               {roomNums.map(rNum => {
-                                const typeName = getRoomTypeForNumber(rNum, b.roomType);
+                                const typeName = resolveRoomType(rNum, b.roomType);
                                 return (
                                   <span key={rNum} className="badge" style={{ fontSize: "0.7rem", padding: "2px 6px", backgroundColor: "rgba(59,130,246,0.1)", color: "var(--primary)", border: "1px solid var(--primary)" }}>
                                     Room {rNum} ({typeName})
@@ -486,7 +484,7 @@ const Dashboard = () => {
                     const roomNums = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
                     const uniqueTypes = Array.from(new Set(
                       roomNums.length > 0 
-                        ? roomNums.map(rNum => getRoomTypeForNumber(rNum, b.roomType))
+                        ? roomNums.map(rNum => resolveRoomType(rNum, b.roomType))
                         : [(roomTypes?.find(rt => rt.id === b.roomType)?.name || b.roomType)]
                     )).join(", ");
 
@@ -495,7 +493,7 @@ const Dashboard = () => {
                         {/* Room badges - stacked vertically */}
                         <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
                           {roomNums.map(rNum => {
-                            const typeName = getRoomTypeForNumber(rNum, b.roomType);
+                            const typeName = resolveRoomType(rNum, b.roomType);
                             return (
                               <span key={rNum} className="badge" style={{ fontSize: "0.65rem", padding: "2px 6px", backgroundColor: "rgba(59,130,246,0.1)", color: "var(--primary)", border: "1px solid var(--primary)", whiteSpace: "nowrap" }}>
                                 Room {rNum} ({typeName})

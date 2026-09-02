@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Room, RoomType, Booking } from "../../../types";
+import { matchRoomNumber } from "../../../lib/roomUtils";
 
 interface CalendarGridProps {
   rooms: Room[];
@@ -89,13 +90,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                 // Find booking that intersects this specific day for this specific room
                 const activeBooking = monthBookings.find(b => {
                   const bookedRoomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
-                  const isRoomMatched = bookedRoomNumbers.some(brn => {
-                    const cleanBooked = brn.replace(/[^0-9]/g, "").trim();
-                    const cleanGrid = room.roomNumber.replace(/[^0-9]/g, "").trim();
-                    return brn === room.roomNumber || 
-                           cleanBooked === cleanGrid || 
-                           (cleanBooked.replace(/^0+/, "") === cleanGrid.replace(/^0+/, "") && cleanGrid.length > 0);
-                  });
+                  const isRoomMatched = bookedRoomNumbers.some(brn => matchRoomNumber(brn, room.roomNumber));
                   if (!isRoomMatched) return false;
                   return (b.checkInDate <= cellDateStr && b.checkOutDate > cellDateStr);
                 });

@@ -6,6 +6,7 @@ import { Booking, Room, RoomType, Agent } from "../../../types";
 import { uploadPaymentProof } from "../../../lib/storage";
 import { useAuth } from "../../../lib/auth";
 import { AgentService } from "../../../services/agentService";
+import { matchRoomNumber } from "../../../lib/roomUtils";
 
 interface BookingFormModalProps {
   isOpen: boolean;
@@ -128,7 +129,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
         if (initialPrefill.roomNumber) {
           const prefillRooms = initialPrefill.roomNumber.split(",").map(r => r.trim()).filter(Boolean);
           setSelectedRoomNumbers(prefillRooms);
-          const matchedRoom = rooms.find(r => r.roomNumber === prefillRooms[0]);
+          const matchedRoom = rooms.find(r => matchRoomNumber(prefillRooms[0], r.roomNumber));
           if (matchedRoom) {
             setSelectedRoomType(matchedRoom.roomType);
             setRoomFilterType(matchedRoom.roomType);
@@ -253,7 +254,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
 
   // Helper to check room availability for selected date range
   const checkRoomAvailability = useCallback((roomNumber: string, checkIn: string, checkOut: string, currentBookingId: string | null = null) => {
-    const room = rooms.find(r => r.roomNumber === roomNumber);
+    const room = rooms.find(r => matchRoomNumber(roomNumber, r.roomNumber));
     if (!room) return { available: false, reason: "Room not found" };
 
     if (room.status && room.status !== "available") {
@@ -272,7 +273,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       if (currentBookingId && b.bookingId === currentBookingId) return false;
 
       const bookedRoomNumbers = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()) : [];
-      if (!bookedRoomNumbers.includes(roomNumber)) return false;
+      if (!bookedRoomNumbers.some(brn => matchRoomNumber(brn, roomNumber))) return false;
 
       const bStart = new Date(b.checkInDate);
       const bEnd = new Date(b.checkOutDate);
@@ -327,7 +328,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
   // Calculate total combined capacity of selected rooms
   const combinedCapacity = React.useMemo(() => {
     return selectedRoomNumbers.reduce((sum, rNum) => {
-      const room = rooms.find(r => r.roomNumber === rNum);
+      const room = rooms.find(r => matchRoomNumber(rNum, r.roomNumber));
       if (!room) return sum;
       const rt = roomTypes.find(t => t.id === room.roomType);
       return sum + (rt?.capacity || 0);
@@ -349,7 +350,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
           if (selectedRoomNumbers.length > 0) {
             let sumPerNight = 0;
             selectedRoomNumbers.forEach(rNum => {
-              const room = rooms.find(r => r.roomNumber === rNum);
+              const room = rooms.find(r => matchRoomNumber(rNum, r.roomNumber));
               const rt = roomTypes.find(t => t.id === room?.roomType) || roomTypes.find(t => t.id === selectedRoomType);
               sumPerNight += (rt ? rt.price : 0);
             });
@@ -450,7 +451,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       }
     }
 
-    const primaryRoomType = selectedRoomType || (selectedRoomNumbers.length > 0 ? (rooms.find(r => r.roomNumber === selectedRoomNumbers[0])?.roomType || "") : "");
+    const primaryRoomType = selectedRoomType || (selectedRoomNumbers.length > 0 ? (rooms.find(r => matchRoomNumber(selectedRoomNumbers[0], r.roomNumber))?.roomType || "") : "");
 
     setFormLoading(true);
     try {
