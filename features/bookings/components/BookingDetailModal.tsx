@@ -3,6 +3,7 @@
 import React from "react";
 import { X, Edit2, Trash2 } from "lucide-react";
 import { Booking, Room, RoomType } from "../../../types";
+import { getRoomTypeForNumber } from "../../../lib/roomUtils";
 
 interface BookingDetailModalProps {
   isOpen: boolean;
@@ -43,20 +44,14 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
 
   const roomNums = booking.roomNumber ? booking.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
 
-  const getRoomTypeForNumber = (rNum: string) => {
-    const cleanRNum = rNum.replace(/[^0-9]/g, "").trim();
-    const roomObj = rooms?.find(r => {
-      const dbNum = r.roomNumber.replace(/[^0-9]/g, "").trim();
-      return r.roomNumber === rNum || r.roomNumber === cleanRNum || dbNum === cleanRNum || (dbNum.replace(/^0+/, "") === cleanRNum.replace(/^0+/, "") && cleanRNum.length > 0);
-    });
-    const rtObj = roomTypes?.find(rt => rt.id === roomObj?.roomType) || roomTypes?.find(rt => rt.id === booking.roomType);
-    return rtObj?.name || booking.roomType;
+  const resolveRoomType = (rNum: string) => {
+    return getRoomTypeForNumber(rNum, rooms, roomTypes, booking.roomType);
   };
 
   const uniqueRoomTypeNames = Array.from(
     new Set(
       roomNums.length > 0 
-        ? roomNums.map(rNum => getRoomTypeForNumber(rNum))
+        ? roomNums.map(rNum => resolveRoomType(rNum))
         : [(roomTypes?.find(rt => rt.id === booking.roomType)?.name || booking.roomType)]
     )
   ).join(", ");

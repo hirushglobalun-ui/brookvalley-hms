@@ -4,6 +4,7 @@ import React from "react";
 import { Eye, Edit2, Trash2 } from "lucide-react";
 import { Booking, Room, RoomType } from "../../../types";
 import { useAuth } from "../../../lib/auth";
+import { getRoomTypeForNumber } from "../../../lib/roomUtils";
 
 /**
  * Props expected by the BookingTable component.
@@ -61,14 +62,8 @@ const BookingTable: React.FC<BookingTableProps> = ({
     return booking.createdByUid === user.uid;
   };
 
-  const getRoomTypeForNumber = (rNum: string, fallbackType: string) => {
-    const cleanRNum = rNum.replace(/[^0-9]/g, "").trim();
-    const roomObj = rooms?.find(r => {
-      const dbNum = r.roomNumber.replace(/[^0-9]/g, "").trim();
-      return r.roomNumber === rNum || r.roomNumber === cleanRNum || dbNum === cleanRNum || (dbNum.replace(/^0+/, "") === cleanRNum.replace(/^0+/, "") && cleanRNum.length > 0);
-    });
-    const rtObj = roomTypes?.find(rt => rt.id === roomObj?.roomType) || roomTypes?.find(rt => rt.id === fallbackType);
-    return rtObj?.name || fallbackType;
+  const resolveRoomType = (rNum: string, fallbackType: string) => {
+    return getRoomTypeForNumber(rNum, rooms, roomTypes, fallbackType);
   };
 
   if (bookings.length === 0) {
@@ -99,7 +94,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
                 const roomNums = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
                 const uniqueTypes = Array.from(new Set(
                   roomNums.length > 0 
-                    ? roomNums.map(rNum => getRoomTypeForNumber(rNum, b.roomType))
+                    ? roomNums.map(rNum => resolveRoomType(rNum, b.roomType))
                     : [(roomTypes?.find(rt => rt.id === b.roomType)?.name || b.roomType)]
                 )).join(", ");
 
@@ -110,7 +105,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
                       <span style={{ fontWeight: 600 }}>{uniqueTypes}</span>
                       <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap", marginTop: "3px" }}>
                         {roomNums.map(rNum => {
-                          const typeName = getRoomTypeForNumber(rNum, b.roomType);
+                          const typeName = resolveRoomType(rNum, b.roomType);
                           return (
                             <span key={rNum} className="badge" style={{ fontSize: "0.65rem", padding: "1px 5px", backgroundColor: "rgba(59,130,246,0.1)", color: "var(--primary)", border: "1px solid var(--primary)" }}>
                               Room {rNum} ({typeName})
@@ -228,7 +223,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
           const roomNums = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
           const uniqueTypes = Array.from(new Set(
             roomNums.length > 0 
-              ? roomNums.map(rNum => getRoomTypeForNumber(rNum, b.roomType))
+              ? roomNums.map(rNum => resolveRoomType(rNum, b.roomType))
               : [(roomTypes?.find(rt => rt.id === b.roomType)?.name || b.roomType)]
           )).join(", ");
 
@@ -242,7 +237,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
                   </span>
                   <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap", marginTop: "2px" }}>
                     {roomNums.map(rNum => {
-                      const typeName = getRoomTypeForNumber(rNum, b.roomType);
+                      const typeName = resolveRoomType(rNum, b.roomType);
                       return (
                         <span key={rNum} className="badge" style={{ fontSize: "0.65rem", padding: "1px 5px", backgroundColor: "rgba(59,130,246,0.1)", color: "var(--primary)", border: "1px solid var(--primary)" }}>
                           Room {rNum} ({typeName})

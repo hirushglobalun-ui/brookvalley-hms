@@ -11,9 +11,10 @@ import {
 } from "../../../features/bookings";
 import { SettingsService } from "../../../features/settings";
 import { formatDate } from "../../../lib/db";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Calendar, RotateCcw } from "lucide-react";
 import { Booking, Room, RoomType } from "../../../types";
 import { SkeletonTable } from "../../../components/ui/Skeleton";
+import { matchRoomNumber, sortBookingsBySmartDate } from "../../../lib/roomUtils";
 
 const bookingsService = new BookingsService();
 const settingsService = new SettingsService();
@@ -49,6 +50,7 @@ const BookingsContent: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [roomTypeFilter, setRoomTypeFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("");
 
   // Modal Overlay States
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -209,24 +211,38 @@ const BookingsContent: React.FC = () => {
     refreshData();
   };
 
-  // Apply filters
-  const filteredBookings = bookings.filter(b => {
-    const matchStatus = statusFilter === "all" || b.bookingStatus === statusFilter;
-    const matchRoomType = roomTypeFilter === "all" || b.roomType === roomTypeFilter;
-    const matchSource = sourceFilter === "all" || (b.bookingSource || "direct") === sourceFilter;
-    
-    const query = searchQuery.toLowerCase().trim();
-    if (!query) return matchStatus && matchRoomType && matchSource;
+  // Apply filters and smart date sorting (upcoming/current first by check-in ASC, past dates at bottom)
+  const filteredBookings = sortBookingsBySmartDate(
+    bookings.filter(b => {
+      const matchStatus = statusFilter === "all" || b.bookingStatus === statusFilter;
+      
+      // Room Type Filter (Check primary roomType as well as any assigned room numbers in multi-room bookings)
+      const roomNums = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
+      const matchRoomType = roomTypeFilter === "all" || b.roomType === roomTypeFilter || roomNums.some(rNum => {
+        const roomObj = rooms.find(r => matchRoomNumber(rNum, r.roomNumber));
+        return roomObj?.roomType === roomTypeFilter;
+      });
 
-    const matchQuery = 
-      b.bookingId.toLowerCase().includes(query) ||
-      b.customerName.toLowerCase().includes(query) ||
-      b.customerPhone.includes(query) ||
-      b.customerEmail.toLowerCase().includes(query) ||
-      (b.roomNumber && b.roomNumber.toLowerCase().includes(query));
+      const matchSource = sourceFilter === "all" || (b.bookingSource || "direct") === sourceFilter;
+      
+      // Single Date Filter (Check if booking checks in or is active on selected date)
+      const matchDate = !dateFilter || b.checkInDate === dateFilter || (b.checkInDate <= dateFilter && b.checkOutDate > dateFilter);
 
-    return matchStatus && matchRoomType && matchSource && matchQuery;
-  });
+      const query = searchQuery.toLowerCase().trim();
+      if (!query) return matchStatus && matchRoomType && matchSource && matchDate;
+
+      const matchQuery = 
+        b.bookingId.toLowerCase().includes(query) ||
+        b.customerName.toLowerCase().includes(query) ||
+        b.customerPhone.includes(query) ||
+        b.customerEmail.toLowerCase().includes(query) ||
+        (b.roomNumber && b.roomNumber.toLowerCase().includes(query));
+
+      return matchStatus && matchRoomType && matchSource && matchDate && matchQuery;
+    })
+  );
+
+  const hasActiveFilters = searchQuery || statusFilter !== "all" || roomTypeFilter !== "all" || sourceFilter !== "all" || dateFilter;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -252,8 +268,8 @@ const BookingsContent: React.FC = () => {
       </div>
 
       {/* Filters card */}
-      <div className="card" style={{ padding: "1rem 1.25rem", display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
-        <div style={{ position: "relative", flex: 1, minWidth: 260 }}>
+      <div className="card" style={{ padding: "1rem 1.25rem", display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ position: "relative", flex: 1, minWidth: 220 }}>
           <Search size={15} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
           <input
             className="input-control"
@@ -263,9 +279,23 @@ const BookingsContent: React.FC = () => {
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
+
+        {/* Single Date Filter Input */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+          <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>Date:</span>
+          <input
+            type="date"
+            className="input-control"
+            style={{ width: "auto", margin: 0, padding: "0.35rem 0.5rem", fontSize: "0.85rem" }}
+            value={dateFilter}
+            onChange={e => setDateFilter(e.target.value)}
+            title="Filter bookings by date"
+          />
+        </div>
+
         <select 
           className="input-control" 
-          style={{ width: "auto", minWidth: 160, margin: 0 }}
+          style={{ width: "auto", minWidth: 140, margin: 0 }}
           value={roomTypeFilter}
           onChange={e => setRoomTypeFilter(e.target.value)}
         >
@@ -276,7 +306,7 @@ const BookingsContent: React.FC = () => {
         </select>
         <select 
           className="input-control" 
-          style={{ width: "auto", minWidth: 160, margin: 0 }}
+          style={{ width: "auto", minWidth: 130, margin: 0 }}
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
         >
@@ -289,7 +319,7 @@ const BookingsContent: React.FC = () => {
         </select>
         <select 
           className="input-control" 
-          style={{ width: "auto", minWidth: 160, margin: 0 }}
+          style={{ width: "auto", minWidth: 130, margin: 0 }}
           value={sourceFilter}
           onChange={e => setSourceFilter(e.target.value)}
         >
@@ -297,6 +327,23 @@ const BookingsContent: React.FC = () => {
           <option value="direct">Direct</option>
           <option value="agency">Agency / Third-Party</option>
         </select>
+
+        {hasActiveFilters && (
+          <button
+            className="btn btn-secondary"
+            style={{ padding: "0.4rem 0.75rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}
+            onClick={() => {
+              setSearchQuery("");
+              setStatusFilter("all");
+              setRoomTypeFilter("all");
+              setSourceFilter("all");
+              setDateFilter("");
+            }}
+            title="Reset all search and date filters"
+          >
+            <RotateCcw size={13} /> Reset
+          </button>
+        )}
       </div>
 
       {/* Main Records Table view */}
