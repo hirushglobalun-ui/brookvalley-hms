@@ -24,8 +24,8 @@ interface BookingTableProps {
   onEditClick: (booking: Booking) => void;
   /** Triggered when the delete action is clicked. */
   onDeleteClick: (booking: Booking) => void;
-  /** Triggered when status is changed from the dropdown */
-  onUpdateStatus?: (bookingId: string, newStatus: Booking["bookingStatus"]) => void;
+  /** Triggered when status is changed from the dropdown. Return false if action was cancelled. */
+  onUpdateStatus?: (bookingId: string, newStatus: Booking["bookingStatus"]) => Promise<boolean | void> | boolean | void;
   /** Current page number */
   page?: number;
   /** Total number of pages */
@@ -64,6 +64,29 @@ const BookingTable: React.FC<BookingTableProps> = ({
 
   const resolveRoomType = (rNum: string, fallbackType: string) => {
     return getRoomTypeForNumber(rNum, rooms, roomTypes, fallbackType);
+  };
+
+  const handleStatusChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>,
+    booking: Booking
+  ) => {
+    e.stopPropagation();
+    const select = e.target;
+    const oldStatus = booking.bookingStatus;
+    const newStatus = select.value as Booking["bookingStatus"];
+
+    if (newStatus === oldStatus) return;
+
+    if (onUpdateStatus) {
+      try {
+        const result = await onUpdateStatus(booking.bookingId, newStatus);
+        if (result === false) {
+          select.value = oldStatus;
+        }
+      } catch {
+        select.value = oldStatus;
+      }
+    }
   };
 
   if (bookings.length === 0) {
@@ -152,12 +175,8 @@ const BookingTable: React.FC<BookingTableProps> = ({
                             }`}
                             style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600 }}
                             value={b.bookingStatus}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              if (onUpdateStatus) {
-                                onUpdateStatus(b.bookingId, e.target.value as Booking["bookingStatus"]);
-                              }
-                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => handleStatusChange(e, b)}
                           >
                             <option value="pending">PENDING</option>
                             <option value="confirmed">CONFIRMED</option>
@@ -255,12 +274,8 @@ const BookingTable: React.FC<BookingTableProps> = ({
                       }`}
                       style={{ fontSize: "0.75rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600, margin: 0 }}
                       value={b.bookingStatus}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        if (onUpdateStatus) {
-                          onUpdateStatus(b.bookingId, e.target.value as Booking["bookingStatus"]);
-                        }
-                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => handleStatusChange(e, b)}
                     >
                       <option value="pending">PENDING</option>
                       <option value="confirmed">CONFIRMED</option>
