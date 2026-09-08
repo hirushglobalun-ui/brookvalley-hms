@@ -72,28 +72,69 @@ const Dashboard = () => {
   }, [fetchData]);
 
   // Quick status update handler for dashboard recent bookings
-  const handleDashboardStatusUpdate = async (bookingId: string, newStatus: Booking["bookingStatus"]) => {
+  const handleDashboardStatusUpdate = async (bookingId: string, newStatus: Booking["bookingStatus"]): Promise<boolean> => {
     const booking = bookings.find(b => b.bookingId === bookingId);
-    if (!booking) return;
+    if (!booking || booking.bookingStatus === newStatus) return false;
 
     let updatedBooking = { ...booking };
 
-    if (newStatus === "checked-out" && booking.paymentStatus !== "paid") {
-      const balance = (booking.totalAmount || 0) - (booking.advanceAmount || 0);
-      if (balance > 0) {
-        const confirmPay = window.confirm(`This booking has a pending balance of ₹${balance}.\nHas the customer paid this amount?\n\nClick OK to automatically mark the payment as PAID.`);
-        if (confirmPay) {
-          updatedBooking.paymentStatus = "paid";
-          updatedBooking.advanceAmount = booking.totalAmount;
+    if (newStatus === "checked-out") {
+      const confirmCheckout = window.confirm(
+        `Are you sure you want to CHECK-OUT booking ${booking.bookingId} (${booking.customerName})?`
+      );
+      if (!confirmCheckout) {
+        return false;
+      }
+
+      if (booking.paymentStatus !== "paid") {
+        const balance = (booking.totalAmount || 0) - (booking.advanceAmount || 0);
+        if (balance > 0) {
+          const confirmPay = window.confirm(
+            `This booking has a pending balance of ₹${balance.toLocaleString()}.\n\n` +
+            `Has the customer paid this remaining amount?\n\n` +
+            `• Click OK to mark payment as PAID\n` +
+            `• Click Cancel to leave payment status as ${booking.paymentStatus.toUpperCase()}`
+          );
+          if (confirmPay) {
+            updatedBooking.paymentStatus = "paid";
+            updatedBooking.advanceAmount = booking.totalAmount;
+          }
         }
+      }
+    } else if (newStatus === "cancelled") {
+      const confirmCancel = window.confirm(
+        `Are you sure you want to CANCEL booking ${booking.bookingId} (${booking.customerName})?`
+      );
+      if (!confirmCancel) {
+        return false;
       }
     }
 
     try {
       await bookingsService.updateBookingStatus(bookingId, booking.bookingStatus, newStatus, updatedBooking, user);
       await fetchData();
+      return true;
     } catch (err: any) {
       alert("Failed to update status: " + err.message);
+      return false;
+    }
+  };
+
+  const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>, booking: Booking) => {
+    e.stopPropagation();
+    const select = e.target;
+    const oldStatus = booking.bookingStatus;
+    const newStatus = select.value as Booking["bookingStatus"];
+
+    if (newStatus === oldStatus) return;
+
+    try {
+      const success = await handleDashboardStatusUpdate(booking.bookingId, newStatus);
+      if (success === false) {
+        select.value = oldStatus;
+      }
+    } catch {
+      select.value = oldStatus;
     }
   };
 
@@ -448,10 +489,8 @@ const Dashboard = () => {
                                 }`}
                                 style={{ width: "fit-content", fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600 }}
                                 value={b.bookingStatus}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  handleDashboardStatusUpdate(b.bookingId, e.target.value as Booking["bookingStatus"]);
-                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => handleStatusChange(e, b)}
                               >
                                 <option value="pending">PENDING</option>
                                 <option value="confirmed">CONFIRMED</option>
@@ -512,10 +551,8 @@ const Dashboard = () => {
                                 }`}
                                 style={{ fontSize: "0.7rem", padding: "2px 16px 2px 6px", border: "none", cursor: "pointer", fontWeight: 600, margin: 0 }}
                                 value={b.bookingStatus}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  handleDashboardStatusUpdate(b.bookingId, e.target.value as Booking["bookingStatus"]);
-                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => handleStatusChange(e, b)}
                               >
                                 <option value="pending">PENDING</option>
                                 <option value="confirmed">CONFIRMED</option>

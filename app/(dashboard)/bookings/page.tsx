@@ -176,28 +176,51 @@ const BookingsContent: React.FC = () => {
   };
 
   // Quick status update from table row
-  const handleQuickUpdateStatus = async (bId: string, newStatus: Booking["bookingStatus"]) => {
+  const handleQuickUpdateStatus = async (bId: string, newStatus: Booking["bookingStatus"]): Promise<boolean> => {
     const booking = bookings.find(b => b.bookingId === bId);
-    if (!booking) return;
+    if (!booking || booking.bookingStatus === newStatus) return false;
 
     let updatedBooking = { ...booking };
 
-    if (newStatus === "checked-out" && booking.paymentStatus !== "paid") {
-      const balance = (booking.totalAmount || 0) - (booking.advanceAmount || 0);
-      if (balance > 0) {
-        const confirmPay = window.confirm(`This booking has a pending balance of ₹${balance}.\nHas the customer paid this amount?\n\nClick OK to automatically mark the payment as PAID.`);
-        if (confirmPay) {
-          updatedBooking.paymentStatus = "paid";
-          updatedBooking.advanceAmount = booking.totalAmount;
+    if (newStatus === "checked-out") {
+      const confirmCheckout = window.confirm(
+        `Are you sure you want to CHECK-OUT booking ${booking.bookingId} (${booking.customerName})?`
+      );
+      if (!confirmCheckout) {
+        return false;
+      }
+
+      if (booking.paymentStatus !== "paid") {
+        const balance = (booking.totalAmount || 0) - (booking.advanceAmount || 0);
+        if (balance > 0) {
+          const confirmPay = window.confirm(
+            `This booking has a pending balance of ₹${balance.toLocaleString()}.\n\n` +
+            `Has the customer paid this remaining amount?\n\n` +
+            `• Click OK to mark payment as PAID\n` +
+            `• Click Cancel to leave payment status as ${booking.paymentStatus.toUpperCase()}`
+          );
+          if (confirmPay) {
+            updatedBooking.paymentStatus = "paid";
+            updatedBooking.advanceAmount = booking.totalAmount;
+          }
         }
+      }
+    } else if (newStatus === "cancelled") {
+      const confirmCancel = window.confirm(
+        `Are you sure you want to CANCEL booking ${booking.bookingId} (${booking.customerName})?`
+      );
+      if (!confirmCancel) {
+        return false;
       }
     }
 
     try {
       await bookingsService.updateBookingStatus(bId, booking.bookingStatus, newStatus, updatedBooking, user);
-      refreshData();
+      await refreshData();
+      return true;
     } catch (err: any) {
       alert("Failed to update status: " + err.message);
+      return false;
     }
   };
 
