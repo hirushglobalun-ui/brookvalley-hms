@@ -16,7 +16,10 @@ import {
   Download,
   BarChart3,
   Users,
-  FileText
+  FileText,
+  Calendar,
+  X,
+  Wallet
 } from "lucide-react";
 import ProtectedRoute from "../../../components/ProtectedRoute";
 import { Booking, Room, RoomType, Employee } from "../../../types";
@@ -98,7 +101,11 @@ const ReportsContent = () => {
   const currentYear = new Date().getFullYear().toString();
   const [filterMonth, setFilterMonth] = useState("all");
   const [filterYear, setFilterYear] = useState("all");
+  const [filterDate, setFilterDate] = useState("");
+  const [dateFilterType, setDateFilterType] = useState<"stay" | "checkin">("stay");
   const [filterRoomType, setFilterRoomType] = useState("all");
+  const [filterSource, setFilterSource] = useState("all");
+  const [onlyPending, setOnlyPending] = useState(false);
 
   // Dynamic available years based on bookings and multi-year range
   const availableYears = Array.from(
@@ -124,49 +131,64 @@ const ReportsContent = () => {
     });
     if (!matchRoomType) return false;
 
-    if (filterMonth === "all" && filterYear === "all") return true;
-    const checkIn = new Date(b.checkInDate);
-    const m = (checkIn.getMonth() + 1).toString().padStart(2, "0");
-    const y = checkIn.getFullYear().toString();
-    if (filterMonth !== "all" && m !== filterMonth) return false;
-    if (filterYear !== "all" && y !== filterYear) return false;
+    // Specific Date Filter (e.g. 8th of a month)
+    if (filterDate) {
+      if (dateFilterType === "stay") {
+        // Active staying on that date: check-in on or before, check-out on or after
+        const isStaying = b.checkInDate <= filterDate && b.checkOutDate >= filterDate;
+        if (!isStaying) return false;
+      } else {
+        if (b.checkInDate !== filterDate) return false;
+      }
+    } else {
+      if (filterMonth === "all" && filterYear === "all") return true;
+      const checkIn = new Date(b.checkInDate);
+      const m = (checkIn.getMonth() + 1).toString().padStart(2, "0");
+      const y = checkIn.getFullYear().toString();
+      if (filterMonth !== "all" && m !== filterMonth) return false;
+      if (filterYear !== "all" && y !== filterYear) return false;
+    }
     return true;
   });
 
-  // Summary Metrics calculations
+  // Summary Metrics calculations (matching user's exact requested 5 metrics)
   const totalBookings = dateFilteredBookings.length;
   const confirmedCount = dateFilteredBookings.filter(b => b.bookingStatus === "confirmed" || b.bookingStatus === "checked-in").length;
   const cancelledCount = dateFilteredBookings.filter(b => b.bookingStatus === "cancelled").length;
   
-  // Calculate total revenue from active (paid/partial) transactions
-  const totalRevenue = dateFilteredBookings
-    .filter(b => b.bookingStatus !== "cancelled")
-    .reduce((acc, b) => {
-      const amount = b.paymentStatus === "paid" ? b.totalAmount : (b.advanceAmount || 0);
-      const commission = b.agencyCommission || 0;
-      return acc + (Number(amount) - Number(commission));
-    }, 0);
-
-  // Calculate total pending balance for active bookings
-  const totalPendingBalance = dateFilteredBookings
-    .filter(b => b.bookingStatus !== "cancelled")
-    .reduce((acc, b) => {
-      const balance = b.paymentStatus === "paid" ? 0 : (Number(b.totalAmount || 0) - Number(b.advanceAmount || 0));
-      return acc + (balance > 0 ? balance : 0);
-    }, 0);
-
-  // Calculate total gross revenue (before commission)
+  // 1. Total Booking Amount (Gross total value)
   const totalGrossRevenue = dateFilteredBookings
     .filter(b => b.bookingStatus !== "cancelled")
-    .reduce((acc, b) => {
-      const amount = b.paymentStatus === "paid" ? b.totalAmount : (b.advanceAmount || 0);
-      return acc + Number(amount);
-    }, 0);
+    .reduce((acc, b) => acc + Number(b.totalAmount || 0), 0);
 
-  // Calculate total agency commission
+  // 2. Agency Commission (Total given to agencies)
   const totalAgencyCommission = dateFilteredBookings
     .filter(b => b.bookingStatus !== "cancelled" && b.bookingSource === "agency")
     .reduce((acc, b) => acc + Number(b.agencyCommission || 0), 0);
+
+  // 3. Net Hotel Total (Total - Agency Commission)
+  const totalNetRevenue = totalGrossRevenue - totalAgencyCommission;
+
+  // 4. Advance Received (Collected amount so far for the hotel)
+  const totalAdvanceReceived = dateFilteredBookings
+    .filter(b => b.bookingStatus !== "cancelled")
+    .reduce((acc, b) => {
+      const comm = b.bookingSource === "agency" ? Number(b.agencyCommission || 0) : 0;
+      const net = Number(b.totalAmount || 0) - comm;
+      const collected = b.paymentStatus === "paid" ? net : Number(b.advanceAmount || 0);
+      return acc + collected;
+    }, 0);
+
+  // 5. Total Pending Balance Due (Remaining to be collected based on Net Hotel Revenue)
+  const totalPendingBalance = dateFilteredBookings
+    .filter(b => b.bookingStatus !== "cancelled")
+    .reduce((acc, b) => {
+      const comm = b.bookingSource === "agency" ? Number(b.agencyCommission || 0) : 0;
+      const net = Number(b.totalAmount || 0) - comm;
+      const collected = b.paymentStatus === "paid" ? net : Number(b.advanceAmount || 0);
+      const balance = b.paymentStatus === "paid" ? 0 : Math.max(0, net - collected);
+      return acc + balance;
+    }, 0);
 
   // CSV Exporter Action helper
   const handleExportCSV = () => {
@@ -197,10 +219,10 @@ const ReportsContent = () => {
       )).join(", ");
 
       const gross = Number(b.totalAmount || 0);
-      const commission = Number(b.agencyCommission || 0);
+      const commission = b.bookingSource === "agency" ? Number(b.agencyCommission || 0) : 0;
       const netRevenue = gross - commission;
-      const advance = Number(b.advanceAmount || 0);
-      const balanceDue = Math.max(0, gross - advance);
+      const advance = b.paymentStatus === "paid" ? netRevenue : Number(b.advanceAmount || 0);
+      const balanceDue = b.paymentStatus === "paid" ? 0 : Math.max(0, netRevenue - advance);
 
       return [
         b.bookingId,
@@ -227,13 +249,116 @@ const ReportsContent = () => {
       ];
     });
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(","), ...rows.map(e => e.map(val => `"${val}"`).join(","))].join("\n");
+    const totalRow = [
+      `TOTAL (${dateFilteredBookings.length} Bookings)`,
+      "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+      totalGrossRevenue,
+      -totalAgencyCommission,
+      totalNetRevenue,
+      totalAdvanceReceived,
+      totalPendingBalance,
+      ""
+    ];
+
+    // Separate Pending Dues Section in the exported Google Sheet / CSV
+    const pendingBookings = dateFilteredBookings.filter(b => {
+      if (b.bookingStatus === "cancelled" || b.paymentStatus === "paid") return false;
+      const comm = b.bookingSource === "agency" ? Number(b.agencyCommission || 0) : 0;
+      const net = Number(b.totalAmount || 0) - comm;
+      const advance = Number(b.advanceAmount || 0);
+      return (net - advance) > 0;
+    });
+
+    const pendingSectionHeader: (string | number)[][] = [
+      [],
+      [],
+      ["PENDING BALANCE DUE BREAKDOWN "],
+      [`Total Pending Amount (₹): ${totalPendingBalance}`, `Pending Bookings Count: ${pendingBookings.length}`],
+      []
+    ];
+
+    const pendingHeaders = [
+      "Booking ID", "Customer Name", "Phone", "Email", 
+      "Room Type", "Room Number", "Check In", "Check Out", 
+      "Status", "Payment", "Source", "Agent Name", 
+      "Agency / Company", "Agent Phone", "Agent Address", 
+      "Gross Booking Price (₹)", "Agency Commission (₹)", "Net Hotel Revenue (₹)", 
+      "Advance Paid (₹)", "Balance Due (₹)", "Created By"
+    ];
+
+    const pendingRows = pendingBookings.map(b => {
+      const roomNums = b.roomNumber ? b.roomNumber.split(",").map(r => r.trim()).filter(Boolean) : [];
+      const resolvedRoomTypes = Array.from(new Set(
+        roomNums.length > 0 
+          ? roomNums.map(rNum => {
+              const roomObj = getRoomForNumber(rNum);
+              const rtObj = roomTypes.find(rt => rt.id === roomObj?.roomType) || roomTypes.find(rt => rt.id === b.roomType);
+              return rtObj?.name || b.roomType;
+            })
+          : [(roomTypes.find(rt => rt.id === b.roomType)?.name || b.roomType)]
+      )).join(", ");
+
+      const gross = Number(b.totalAmount || 0);
+      const commission = b.bookingSource === "agency" ? Number(b.agencyCommission || 0) : 0;
+      const netRevenue = gross - commission;
+      const advance = Number(b.advanceAmount || 0);
+      const balanceDue = Math.max(0, netRevenue - advance);
+
+      return [
+        b.bookingId,
+        b.customerName,
+        b.customerPhone,
+        b.customerEmail || "—",
+        resolvedRoomTypes,
+        b.roomNumber,
+        b.checkInDate,
+        b.checkOutDate,
+        b.bookingStatus,
+        b.paymentStatus,
+        b.bookingSource === "agency" ? "Agency" : "Direct",
+        b.agentName || "—",
+        b.agentCompany || "—",
+        b.agentPhone || "—",
+        b.agentAddress || "—",
+        gross,
+        commission,
+        netRevenue,
+        advance,
+        balanceDue,
+        b.createdByName || "System"
+      ];
+    });
+
+    const pendingTotalRow = [
+      `TOTAL PENDING (${pendingBookings.length} Bookings)`,
+      "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+      pendingBookings.reduce((s, b) => s + Number(b.totalAmount || 0), 0),
+      -pendingBookings.reduce((s, b) => s + (b.bookingSource === "agency" ? Number(b.agencyCommission || 0) : 0), 0),
+      pendingBookings.reduce((s, b) => s + (Number(b.totalAmount || 0) - (b.bookingSource === "agency" ? Number(b.agencyCommission || 0) : 0)), 0),
+      pendingBookings.reduce((s, b) => s + Number(b.advanceAmount || 0), 0),
+      totalPendingBalance,
+      ""
+    ];
+
+    const allCsvData: (string | number)[][] = [
+      headers,
+      ...rows,
+      totalRow,
+      ...pendingSectionHeader,
+      pendingHeaders,
+      ...pendingRows,
+      pendingTotalRow
+    ];
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+      + allCsvData.map(e => e.map(val => `"${String(val !== undefined && val !== null ? val : "").replace(/"/g, '""')}"`).join(",")).join("\n");
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    const timeFrame = `${filterMonth !== "all" ? filterMonth + "-" : ""}${filterYear !== "all" ? filterYear : "all-time"}`;
+    const timeFrame = filterDate 
+      ? `day_${filterDate}` 
+      : `${filterMonth !== "all" ? filterMonth + "-" : ""}${filterYear !== "all" ? filterYear : "all-time"}`;
     link.setAttribute("download", `brookvalley_hms_report_${timeFrame}.csv`);
     document.body.appendChild(link);
     link.click();
@@ -244,17 +369,27 @@ const ReportsContent = () => {
   const filteredBookings = dateFilteredBookings.filter(b => {
     const matchStatus = filterStatus === "all" || b.bookingStatus === filterStatus;
     const matchEmp = filterEmployee === "all" || b.createdByUid === filterEmployee;
+    const matchSource = filterSource === "all" || (filterSource === "agency" ? b.bookingSource === "agency" : b.bookingSource !== "agency");
+
+    const gross = Number(b.totalAmount || 0);
+    const comm = b.bookingSource === "agency" ? Number(b.agencyCommission || 0) : 0;
+    const net = gross - comm;
+    const advance = b.paymentStatus === "paid" ? net : Number(b.advanceAmount || 0);
+    const pendingBalance = b.paymentStatus === "paid" ? 0 : Math.max(0, net - advance);
+    if (onlyPending && pendingBalance <= 0) return false;
     
     const query = searchQuery.toLowerCase().trim();
-    if (!query) return matchStatus && matchEmp;
+    if (!query) return matchStatus && matchEmp && matchSource;
 
     const matchQuery = 
       b.bookingId.toLowerCase().includes(query) ||
       b.customerName.toLowerCase().includes(query) ||
       b.customerPhone.includes(query) ||
+      (b.agentName && b.agentName.toLowerCase().includes(query)) ||
+      (b.agentCompany && b.agentCompany.toLowerCase().includes(query)) ||
       (b.roomNumber && b.roomNumber.toLowerCase().includes(query));
 
-    return matchStatus && matchEmp && matchQuery;
+    return matchStatus && matchEmp && matchSource && matchQuery;
   });
 
   // Calculate Revenue contribution by room type & per room with proportional multi-room allocation
@@ -408,8 +543,16 @@ const ReportsContent = () => {
     };
   }).sort((a, b) => b.totalRevenueValue - a.totalRevenueValue);
 
+  const pendingCount = dateFilteredBookings.filter(b => {
+    if (b.bookingStatus === "cancelled" || b.paymentStatus === "paid") return false;
+    const comm = b.bookingSource === "agency" ? Number(b.agencyCommission || 0) : 0;
+    const net = Number(b.totalAmount || 0) - comm;
+    return (net - Number(b.advanceAmount || 0)) > 0;
+  }).length;
+
   const tabs = [
     { id: "bookings", label: "Booking Records", icon: <FileText size={16} /> },
+    { id: "pending",  label: `Pending Dues (${pendingCount})`, icon: <Wallet size={16} /> },
     { id: "revenue",  label: "Revenue Contribution", icon: <BarChart3 size={16} /> }
   ];
 
@@ -428,39 +571,83 @@ const ReportsContent = () => {
           </p>
         </div>
 
-        <div className="header-actions">
-          <select 
-            className="input-control" 
-            style={{ width: "auto", margin: 0, padding: "0.5rem 1rem", minHeight: "auto", borderRadius: "999px" }} 
-            value={filterMonth} 
-            onChange={e => setFilterMonth(e.target.value)}
-          >
-            <option value="all">All Months</option>
-            <option value="01">January</option>
-            <option value="02">February</option>
-            <option value="03">March</option>
-            <option value="04">April</option>
-            <option value="05">May</option>
-            <option value="06">June</option>
-            <option value="07">July</option>
-            <option value="08">August</option>
-            <option value="09">September</option>
-            <option value="10">October</option>
-            <option value="11">November</option>
-            <option value="12">December</option>
-          </select>
+        <div className="header-actions" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+          {/* Specific Day / Stay Date Filter */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", background: "var(--bg-secondary)", padding: "0.3rem 0.65rem", borderRadius: "999px", border: "1px solid var(--card-border)" }}>
+            <Calendar size={14} style={{ color: "var(--text-secondary)" }} />
+            <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-secondary)" }}>Day:</span>
+            <input 
+              type="date" 
+              className="input-control" 
+              style={{ width: "auto", margin: 0, padding: "0.15rem 0.4rem", minHeight: "auto", border: "none", background: "transparent", fontSize: "0.82rem", outline: "none" }}
+              value={filterDate}
+              onChange={e => {
+                setFilterDate(e.target.value);
+                if (e.target.value) {
+                  setFilterMonth("all");
+                  setFilterYear("all");
+                }
+              }}
+            />
+            {filterDate && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setFilterDate("")}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", display: "flex", alignItems: "center", padding: "2px" }}
+                  title="Clear Day Filter"
+                >
+                  <X size={14} />
+                </button>
+                <select
+                  className="input-control"
+                  style={{ width: "auto", margin: 0, padding: "0.15rem 0.5rem", minHeight: "auto", borderRadius: "6px", fontSize: "0.75rem", border: "1px solid var(--card-border)" }}
+                  value={dateFilterType}
+                  onChange={e => setDateFilterType(e.target.value as "stay" | "checkin")}
+                >
+                  <option value="stay">Staying on Date</option>
+                  <option value="checkin">Check-In on Date</option>
+                </select>
+              </>
+            )}
+          </div>
 
-          <select 
-            className="input-control" 
-            style={{ width: "auto", margin: 0, padding: "0.5rem 1rem", minHeight: "auto", borderRadius: "999px" }} 
-            value={filterYear} 
-            onChange={e => setFilterYear(e.target.value)}
-          >
-            <option value="all">All Years</option>
-            {availableYears.map(yr => (
-              <option key={yr} value={yr}>{yr}</option>
-            ))}
-          </select>
+          {!filterDate && (
+            <>
+              <select 
+                className="input-control" 
+                style={{ width: "auto", margin: 0, padding: "0.5rem 1rem", minHeight: "auto", borderRadius: "999px" }} 
+                value={filterMonth} 
+                onChange={e => setFilterMonth(e.target.value)}
+              >
+                <option value="all">All Months</option>
+                <option value="01">January</option>
+                <option value="02">February</option>
+                <option value="03">March</option>
+                <option value="04">April</option>
+                <option value="05">May</option>
+                <option value="06">June</option>
+                <option value="07">July</option>
+                <option value="08">August</option>
+                <option value="09">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+
+              <select 
+                className="input-control" 
+                style={{ width: "auto", margin: 0, padding: "0.5rem 1rem", minHeight: "auto", borderRadius: "999px" }} 
+                value={filterYear} 
+                onChange={e => setFilterYear(e.target.value)}
+              >
+                <option value="all">All Years</option>
+                {availableYears.map(yr => (
+                  <option key={yr} value={yr}>{yr}</option>
+                ))}
+              </select>
+            </>
+          )}
 
           <select 
             className="input-control" 
@@ -503,9 +690,10 @@ const ReportsContent = () => {
             confirmedCount={confirmedCount}
             cancelledCount={cancelledCount}
             totalGrossRevenue={totalGrossRevenue}
-            totalRevenue={totalRevenue}
-            totalPendingBalance={totalPendingBalance}
             totalAgencyCommission={totalAgencyCommission}
+            totalNetRevenue={totalNetRevenue}
+            totalAdvanceReceived={totalAdvanceReceived}
+            totalPendingBalance={totalPendingBalance}
           />
 
           {/* Sub Navigation Tabs */}
@@ -537,6 +725,58 @@ const ReportsContent = () => {
               setFilterStatus={setFilterStatus}
               filterEmployee={filterEmployee}
               setFilterEmployee={setFilterEmployee}
+              filterSource={filterSource}
+              setFilterSource={setFilterSource}
+              onlyPending={onlyPending}
+              setOnlyPending={setOnlyPending}
+              isAdmin={user?.role === "admin" || user?.role === "developer" || user?.role === "manager"}
+              formatDate={formatDate}
+              statusColor={statusColor}
+              payColor={payColor}
+              onBookingClick={(booking) => {
+                setSelectedBooking(booking);
+                setIsBookingDetailOpen(true);
+              }}
+            />
+          )}
+
+          {activeTab === "pending" && (
+            <BookingDetailsTab 
+              bookings={dateFilteredBookings.filter(b => {
+                if (b.bookingStatus === "cancelled" || b.paymentStatus === "paid") return false;
+                const comm = b.bookingSource === "agency" ? Number(b.agencyCommission || 0) : 0;
+                const net = Number(b.totalAmount || 0) - comm;
+                const balance = Math.max(0, net - Number(b.advanceAmount || 0));
+                if (balance <= 0) return false;
+
+                const matchStatus = filterStatus === "all" || b.bookingStatus === filterStatus;
+                const matchEmp = filterEmployee === "all" || b.createdByUid === filterEmployee;
+                const matchSource = filterSource === "all" || (filterSource === "agency" ? b.bookingSource === "agency" : b.bookingSource !== "agency");
+
+                const query = searchQuery.toLowerCase().trim();
+                if (!query) return matchStatus && matchEmp && matchSource;
+
+                const matchQuery = 
+                  b.bookingId.toLowerCase().includes(query) ||
+                  b.customerName.toLowerCase().includes(query) ||
+                  b.customerPhone.includes(query) ||
+                  (b.agentName && b.agentName.toLowerCase().includes(query)) ||
+                  (b.agentCompany && b.agentCompany.toLowerCase().includes(query)) ||
+                  (b.roomNumber && b.roomNumber.toLowerCase().includes(query));
+
+                return matchStatus && matchEmp && matchSource && matchQuery;
+              })}
+              employees={employees}
+              rooms={rooms}
+              roomTypes={roomTypes}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
+              filterEmployee={filterEmployee}
+              setFilterEmployee={setFilterEmployee}
+              filterSource={filterSource}
+              setFilterSource={setFilterSource}
               isAdmin={user?.role === "admin" || user?.role === "developer" || user?.role === "manager"}
               formatDate={formatDate}
               statusColor={statusColor}

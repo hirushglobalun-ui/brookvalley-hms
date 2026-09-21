@@ -8,9 +8,9 @@ import {
   BookingFormModal
 } from "../../../features/bookings";
 import { SettingsService } from "../../../features/settings";
-import { CalendarGrid } from "../../../features/calendar";
+import { CalendarGrid, DayFinancialSheetModal } from "../../../features/calendar";
 import { formatDate } from "../../../lib/db";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileSpreadsheet } from "lucide-react";
 import { Booking, Room, RoomType } from "../../../types";
 import { Skeleton } from "../../../components/ui/Skeleton";
 
@@ -38,6 +38,8 @@ const CalendarViewContent: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [prefillParams, setPrefillParams] = useState<{ checkInDate?: string; checkOutDate?: string; roomNumber?: string } | null>(null);
+  const [selectedDayForSheet, setSelectedDayForSheet] = useState<number | null>(null);
+  const [isDaySheetOpen, setIsDaySheetOpen] = useState(false);
 
   // Load initial dataset
   const initialLoad = async () => {
@@ -177,17 +179,36 @@ const CalendarViewContent: React.FC = () => {
           </p>
         </div>
 
-        {/* Month Selector widget */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "var(--bg-secondary)", border: "1px solid var(--card-border)", borderRadius: "8px", padding: "0.25rem" }}>
-          <button className="btn btn-icon" style={{ padding: "0.4rem", background: "none" }} onClick={handlePrevMonth}>
-            <ChevronLeft size={16} />
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+          {/* Day Financial Sheet Shortcut Button */}
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+              const today = new Date();
+              const dayToUse = (today.getFullYear() === year && today.getMonth() === month) ? today.getDate() : 1;
+              setSelectedDayForSheet(dayToUse);
+              setIsDaySheetOpen(true);
+            }}
+            style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.85rem", fontWeight: 600, padding: "0.5rem 0.85rem", borderRadius: "8px" }}
+            title="Open Google Sheet-style summary for a day"
+          >
+            <FileSpreadsheet size={16} color="var(--primary)" />
+            <span>Day Financial Sheet</span>
           </button>
-          <span style={{ minWidth: 140, textAlign: "center", fontWeight: 700, fontSize: "0.9rem" }}>
-            {monthName} {year}
-          </span>
-          <button className="btn btn-icon" style={{ padding: "0.4rem", background: "none" }} onClick={handleNextMonth}>
-            <ChevronRight size={16} />
-          </button>
+
+          {/* Month Selector widget */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "var(--bg-secondary)", border: "1px solid var(--card-border)", borderRadius: "8px", padding: "0.25rem" }}>
+            <button className="btn btn-icon" style={{ padding: "0.4rem", background: "none" }} onClick={handlePrevMonth}>
+              <ChevronLeft size={16} />
+            </button>
+            <span style={{ minWidth: 140, textAlign: "center", fontWeight: 700, fontSize: "0.9rem" }}>
+              {monthName} {year}
+            </span>
+            <button className="btn btn-icon" style={{ padding: "0.4rem", background: "none" }} onClick={handleNextMonth}>
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -227,6 +248,10 @@ const CalendarViewContent: React.FC = () => {
             setSelectedBooking(b);
             setIsDetailOpen(true);
           }}
+          onDayClick={(dayNum) => {
+            setSelectedDayForSheet(dayNum);
+            setIsDaySheetOpen(true);
+          }}
         />
       )}
 
@@ -262,6 +287,28 @@ const CalendarViewContent: React.FC = () => {
             setSelectedBooking(b);
             setPrefillParams(null);
             setIsModalOpen(true);
+          }}
+          formatDate={formatDate}
+        />
+      )}
+
+      {/* Day Financial Sheet Modal overlay */}
+      {isDaySheetOpen && selectedDayForSheet !== null && (
+        <DayFinancialSheetModal
+          isOpen={isDaySheetOpen}
+          dateStr={`${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDayForSheet).padStart(2, "0")}`}
+          displayDate={`${monthName} ${selectedDayForSheet}, ${year}`}
+          bookings={bookings}
+          rooms={rooms}
+          roomTypes={roomTypes}
+          user={user}
+          onClose={() => {
+            setIsDaySheetOpen(false);
+            setSelectedDayForSheet(null);
+          }}
+          onViewBooking={(b) => {
+            setSelectedBooking(b);
+            setIsDetailOpen(true);
           }}
           formatDate={formatDate}
         />

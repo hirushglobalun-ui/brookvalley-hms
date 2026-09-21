@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-21T07:29:13.368Z",
+  "timestamp": "2026-09-21T07:46:59.099Z",
   "supabaseUrl": "https://jkwjmqtqattvnddpvlwe.supabase.co",
   "tables": {
     "profiles": [
@@ -522,34 +522,6 @@
         "deleted_at": null
       },
       {
-        "id": "98bd763d-d7bb-4219-ae42-c371120ec007",
-        "booking_id": "BK684194",
-        "customer_name": "Zahid",
-        "customer_phone": "9048486066",
-        "customer_email": "",
-        "customer_address": "",
-        "room_type_id": "3bh-premium-vila",
-        "room_number": "2,3,4,5",
-        "check_in_date": "2026-09-01",
-        "check_out_date": "2026-09-02",
-        "guest_count": 26,
-        "total_amount": 27500,
-        "payment_status": "partial",
-        "booking_status": "checked-out",
-        "payment_method": "online",
-        "advance_amount": 5000,
-        "payment_proof": "https://pub-c201b259a4b84d819aaa163980484f3b.r2.dev/payments/proof_1787823202135_1115.jpg,https://pub-c201b259a4b84d819aaa163980484f3b.r2.dev/payments/proof_1787823206180_9333.jpg,https://pub-c201b259a4b84d819aaa163980484f3b.r2.dev/payments/proof_1788074020958_7378.jpg",
-        "remarks": "[AGENT_META:{\"name\":\"Farhan\",\"company\":\"https://SaathChalo.in\",\"address\":\"\",\"phone\":\"9061539447\"}]",
-        "booking_source": "agency",
-        "agency_commission": 3000,
-        "created_by_uid": "f039ebba-0f44-458d-b941-c7878a6964b8",
-        "created_by_name": "shamna",
-        "created_by_role": "manager",
-        "created_at": "2026-08-27T09:33:27.414005+00:00",
-        "updated_at": "2026-09-14T13:04:38.13+00:00",
-        "deleted_at": null
-      },
-      {
         "id": "2810e013-fe48-4b84-a027-44ba03757468",
         "booking_id": "BK393732",
         "customer_name": "Manu",
@@ -967,6 +939,34 @@
         "created_by_role": "manager",
         "created_at": "2026-09-17T05:48:35.529505+00:00",
         "updated_at": "2026-09-21T07:20:17.513+00:00",
+        "deleted_at": null
+      },
+      {
+        "id": "98bd763d-d7bb-4219-ae42-c371120ec007",
+        "booking_id": "BK684194",
+        "customer_name": "Zahid",
+        "customer_phone": "9048486066",
+        "customer_email": "",
+        "customer_address": "",
+        "room_type_id": "3bh-premium-vila",
+        "room_number": "2,3,4,5",
+        "check_in_date": "2026-09-01",
+        "check_out_date": "2026-09-02",
+        "guest_count": 26,
+        "total_amount": 27500,
+        "payment_status": "paid",
+        "booking_status": "checked-out",
+        "payment_method": "online",
+        "advance_amount": 27500,
+        "payment_proof": "https://pub-c201b259a4b84d819aaa163980484f3b.r2.dev/payments/proof_1787823202135_1115.jpg,https://pub-c201b259a4b84d819aaa163980484f3b.r2.dev/payments/proof_1787823206180_9333.jpg,https://pub-c201b259a4b84d819aaa163980484f3b.r2.dev/payments/proof_1788074020958_7378.jpg",
+        "remarks": "[AGENT_META:{\"name\":\"Farhan\",\"company\":\"https://SaathChalo.in\",\"address\":\"\",\"phone\":\"9061539447\"}]",
+        "booking_source": "agency",
+        "agency_commission": 3000,
+        "created_by_uid": "f039ebba-0f44-458d-b941-c7878a6964b8",
+        "created_by_name": "shamna",
+        "created_by_role": "manager",
+        "created_at": "2026-08-27T09:33:27.414005+00:00",
+        "updated_at": "2026-09-21T07:35:57.135+00:00",
         "deleted_at": null
       },
       {
@@ -2714,6 +2714,24 @@
         "user_name": "System Admin",
         "user_role": "admin",
         "created_at": "2026-09-21T07:20:19.127124+00:00"
+      },
+      {
+        "id": "6f1abf79-2bb2-4afc-9fad-be2ada0ceed0",
+        "action": "UPDATE_BOOKING_STATUS",
+        "details": "Changed booking BK684194 status: checked-out → confirmed (Room 2,3,4,5, Zahid)",
+        "user_id": "fe68ae4d-ce94-4721-836d-e878e97e0c93",
+        "user_name": "LIDIYA",
+        "user_role": "manager",
+        "created_at": "2026-09-21T07:35:48.296569+00:00"
+      },
+      {
+        "id": "8aa92503-a83b-4381-a50d-ce8b423a2962",
+        "action": "UPDATE_BOOKING_STATUS",
+        "details": "Changed booking BK684194 status: confirmed → checked-out (Room 2,3,4,5, Zahid)",
+        "user_id": "fe68ae4d-ce94-4721-836d-e878e97e0c93",
+        "user_name": "LIDIYA",
+        "user_role": "manager",
+        "created_at": "2026-09-21T07:35:52.561348+00:00"
       }
     ]
   },
