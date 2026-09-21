@@ -18,6 +18,7 @@ interface CalendarGridProps {
   isOwner: (booking: Booking) => boolean;
   onEmptyCellClick: (roomNumber: string, dayNum: number) => void;
   onBookingClick: (booking: Booking) => void;
+  onDayClick?: (dayNum: number) => void;
 }
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({
@@ -33,7 +34,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   getDayOfWeekLabel,
   isOwner,
   onEmptyCellClick,
-  onBookingClick
+  onBookingClick,
+  onDayClick
 }) => {
   const localTodayStr = (() => {
     const d = new Date();
@@ -64,8 +66,18 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             const day = idx + 1;
             const isDayToday = isToday(day);
             return (
-              <div key={day} className={`timeline-cell ${isDayToday ? "today" : ""}`}>
-                <div style={{ fontWeight: 600 }}>{day}</div>
+              <div 
+                key={day} 
+                className={`timeline-cell ${isDayToday ? "today" : ""}`}
+                onClick={() => onDayClick?.(day)}
+                title={`Click to view Day ${day} Financial Sheet (Gross, Commission, Advance, Dues)`}
+                style={{ 
+                  cursor: onDayClick ? "pointer" : "default",
+                  userSelect: "none",
+                  transition: "background-color 0.15s ease"
+                }}
+              >
+                <div style={{ fontWeight: 700 }}>{day}</div>
                 <div style={{ fontSize: "0.6rem", textTransform: "uppercase" }}>{getDayOfWeekLabel(day)}</div>
               </div>
             );
