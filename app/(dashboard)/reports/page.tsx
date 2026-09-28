@@ -350,19 +350,45 @@ const ReportsContent = () => {
       pendingTotalRow
     ];
 
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-      + allCsvData.map(e => e.map(val => `"${String(val !== undefined && val !== null ? val : "").replace(/"/g, '""')}"`).join(",")).join("\n");
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    const csvBody = allCsvData
+      .map(e => e.map(val => `"${String(val !== undefined && val !== null ? val : "").replace(/"/g, '""')}"`).join(","))
+      .join("\r\n");
+
     const timeFrame = filterDate 
       ? `day_${filterDate}` 
       : `${filterMonth !== "all" ? filterMonth + "-" : ""}${filterYear !== "all" ? filterYear : "all-time"}`;
-    link.setAttribute("download", `brookvalley_hms_report_${timeFrame}.csv`);
+    const fileName = `brookvalley_hms_report_${timeFrame}.csv`;
+
+    const blob = new Blob(["\uFEFF" + csvBody], { type: "text/csv;charset=utf-8;" });
+
+    // iOS Safari / Mobile Native Share (Allows "Save to Files", Numbers, AirDrop, etc.)
+    if (typeof navigator !== "undefined" && navigator.canShare) {
+      try {
+        const file = new File([blob], fileName, { type: "text/csv" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: fileName,
+          });
+          return;
+        }
+      } catch (err: any) {
+        if (err?.name === "AbortError") return; // User cancelled share sheet
+        console.warn("Share failed, falling back to blob download:", err);
+      }
+    }
+
+    // Standard Blob URL download fallback
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", fileName);
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 150);
   };
 
   // Filter list data for BookingDetails Tab
@@ -662,7 +688,7 @@ const ReportsContent = () => {
           </select>
 
           <button className="btn btn-primary" onClick={handleExportCSV} style={{ display: "flex", alignItems: "center", gap: "0.5rem", boxShadow: "var(--shadow-sm)" }}>
-            <Download size={16} /> Export CSV
+            <Download size={16} /> Report
           </button>
         </div>
       </div>
