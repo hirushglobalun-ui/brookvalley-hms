@@ -191,7 +191,7 @@ const ReportsContent = () => {
     }, 0);
 
   // CSV Exporter Action helper
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     if (dateFilteredBookings.length === 0) {
       alert("No data available to export for this selected timeframe and property.");
       return;

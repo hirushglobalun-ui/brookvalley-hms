@@ -1,5 +1,5 @@
 -- AUTOMATIC FULL BACKUP RESTORE SCRIPT
--- Generated: 2026-09-28T06:29:12.785Z
+-- Generated: 2026-09-28T06:33:42.440Z
 
 -- --- DATA FOR TABLE: public.profiles ---
 INSERT INTO public.profiles (id, full_name, email, phone, role, status, created_at, position) VALUES ('d1706714-b905-48e1-b451-dfbbc5a3cb47', 'reshma', 'reshma@gmail.com', '0000000000', 'employee', 'active', '2026-08-11T08:48:41.086933+00:00', 'Staff Employee') ON CONFLICT DO NOTHING;
