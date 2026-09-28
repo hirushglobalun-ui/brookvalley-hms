@@ -1,0 +1,202 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - link "ClipCut" [ref=e5] [cursor=pointer]:
+        - /url: ./#Hero
+        - heading "ClipCut" [level=3] [ref=e12]
+      - link [ref=e16] [cursor=pointer]:
+        - /url: ./#footer
+        - paragraph [ref=e18]: Start Project
+    - generic [ref=e19]:
+      - banner [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - paragraph [ref=e24]: Where raw clips become powerful visual stories
+            - paragraph [ref=e26]: I focus on pacing, transitions, and color to ensure every second supports narrative and emotion.
+          - generic [ref=e27]:
+            - link [ref=e30] [cursor=pointer]:
+              - /url: ./#Featured Work
+              - paragraph [ref=e32]: Watch Showreel
+            - link [ref=e36] [cursor=pointer]:
+              - /url: ./#footer
+              - paragraph [ref=e38]: Start Project
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - paragraph [ref=e47]: Trusted by elite creators, startups, and agencies.
+          - generic [ref=e48]:
+            - paragraph [ref=e100]: 58+ happy client
+            - list [ref=e103]:
+              - listitem [aria-hidden] [ref=e104]
+              - listitem [aria-hidden] [ref=e700]
+              - listitem [aria-hidden] [ref=e703]
+        - generic [ref=e107]:
+          - generic [ref=e108]:
+            - heading "8+" [level=2] [ref=e112]
+            - paragraph [ref=e115]: Years of editing
+          - generic [ref=e118]:
+            - heading "120+" [level=2] [ref=e122]
+            - paragraph [ref=e125]: Projects delivered
+          - generic [ref=e128]:
+            - heading "94%" [level=2] [ref=e132]
+            - paragraph [ref=e135]: Client return rate
+          - generic [ref=e138]:
+            - heading "47M+" [level=2] [ref=e142]
+            - paragraph [ref=e145]: Total organic views
+      - generic [ref=e148]:
+        - generic [ref=e149]:
+          - paragraph [ref=e152]: Featured Work
+          - generic [ref=e158]:
+            - heading "The Timeline" [level=1] [ref=e160]
+            - paragraph [ref=e162]: A selection of cuts where pacing, emotion, and motion met the moment.
+        - generic [ref=e163]:
+          - generic [ref=e164]:
+            - generic [ref=e167] [cursor=pointer]:
+              - generic [ref=e168]:
+                - paragraph [ref=e175]: Narrative Film
+                - generic [ref=e186]:
+                  - paragraph [ref=e189]: Narrative Film
+                  - paragraph [ref=e194]: 12:04
+              - generic [ref=e196]:
+                - heading "Sidelight Odyssey" [level=2] [ref=e198]
+                - generic [ref=e199]:
+                  - paragraph [ref=e201]: "Client:"
+                  - paragraph [ref=e203]: Rogue Studio
+            - generic [ref=e206] [cursor=pointer]:
+              - generic [ref=e207]:
+                - paragraph [ref=e214]: Narrative Film
+                - generic [ref=e225]:
+                  - paragraph [ref=e228]: Narrative Film
+                  - paragraph [ref=e233]: 12:04
+              - generic [ref=e235]:
+                - heading "Neon Drift" [level=2] [ref=e237]
+                - generic [ref=e238]:
+                  - paragraph [ref=e240]: "Client:"
+                  - paragraph [ref=e242]: Apex Labs
+          - generic [ref=e243]:
+            - generic [ref=e246] [cursor=pointer]:
+              - generic [ref=e247]:
+                - paragraph [ref=e254]: Narrative Film
+                - generic [ref=e265]:
+                  - paragraph [ref=e268]: Narrative Film
+                  - paragraph [ref=e273]: 12:04
+              - generic [ref=e275]:
+                - heading "Echo Frame" [level=2] [ref=e277]
+                - generic [ref=e278]:
+                  - paragraph [ref=e280]: "Client:"
+                  - paragraph [ref=e282]: Echo Films
+            - generic [ref=e285] [cursor=pointer]:
+              - generic [ref=e286]:
+                - paragraph [ref=e293]: Narrative Film
+                - generic [ref=e304]:
+                  - paragraph [ref=e307]: Narrative Film
+                  - paragraph [ref=e312]: 12:04
+              - generic [ref=e314]:
+                - heading "Spectra Cut" [level=2] [ref=e316]
+                - generic [ref=e317]:
+                  - paragraph [ref=e319]: "Client:"
+                  - paragraph [ref=e321]: Spectra Media
+      - generic [ref=e322]:
+        - generic [ref=e323]:
+          - paragraph [ref=e326]: Services
+          - generic [ref=e332]:
+            - heading "The Signature Cut" [level=1] [ref=e334]
+            - paragraph [ref=e336]: Three ways I shape raw footage into stories that linger.
+        - generic [ref=e337]:
+          - generic [ref=e340] [cursor=pointer]:
+            - generic [ref=e343]:
+              - heading "Pacing & Rhythm" [level=2] [ref=e345]
+              - paragraph [ref=e347]: Commercials & Music Videos
+            - paragraph [ref=e350]: Commercials, music videos, and fast‑turnaround content live or die by their heartbeat. I cut with a stopwatch in one hand and a feeling in the other. Every frame lands exactly where it should- no drag, no rush.
+          - generic [ref=e357] [cursor=pointer]:
+            - generic [ref=e360]:
+              - heading "Emotional Arc" [level=2] [ref=e362]
+              - paragraph [ref=e364]: Documentaries & Storytelling
+            - paragraph [ref=e367]: Documentaries, brand narratives, and wedding films need a beginning that hooks, a middle that aches, and an end that lingers. I build invisible architecture that guides your audience from tension to release without them ever seeing the seams.
+          - generic [ref=e374] [cursor=pointer]:
+            - generic [ref=e377]:
+              - heading "Motion Graphics" [level=2] [ref=e379]
+              - paragraph [ref=e381]: Titles & Title Sequences
+            - paragraph [ref=e384]: Titles, lower thirds, call‑to‑action overlays, and animated data points – all designed to feel native to your brand, not slapped on. I animate with intention so your message pops without pulling focus.
+      - generic [ref=e389]:
+        - generic [ref=e390]:
+          - paragraph [ref=e393]: About Me
+          - heading "The L‑Cut" [level=1] [ref=e401]
+        - generic [ref=e402]:
+          - paragraph [ref=e415]: REC Lock
+          - generic [ref=e420]:
+            - generic [ref=e421]:
+              - heading "HI, I'M ALEX." [level=2] [ref=e423]
+              - paragraph [ref=e425]: I sit in dark, soundproof rooms rearranging glowing squares until they tell coherent stories. Working with corporate giants, indie storytellers, and viral‑scale creators, my job is to find the exact rhythm that commands absolute retention.
+            - generic [ref=e426]:
+              - heading "Tools of the trade" [level=3] [ref=e428]
+              - generic [ref=e429]:
+                - generic [ref=e430]:
+                  - paragraph [ref=e436]: Adobe Premiere Pro
+                  - paragraph [ref=e438]: For surgical narrative flow & proxy workflow scaling.
+                - generic [ref=e439]:
+                  - paragraph [ref=e445]: DaVinci Resolve
+                  - paragraph [ref=e447]: For flawless node‑based color grading & HDR mastery.
+                - generic [ref=e448]:
+                  - paragraph [ref=e454]: Adobe After Effects
+                  - paragraph [ref=e456]: For dynamic kinetic titles and custom vector trackers.
+      - generic [ref=e457]:
+        - generic [ref=e458]:
+          - paragraph [ref=e461]: Social Proof
+          - generic [ref=e467]:
+            - heading "Client Monitor" [level=1] [ref=e469]
+            - paragraph [ref=e471]: Tap a brand insignia below to feed their recorded testimony and project loop onto our master grading preview monitor.
+        - generic [ref=e474]:
+          - generic [ref=e476]:
+            - generic [ref=e480]:
+              - heading "MARCUS T." [level=3] [ref=e482]
+              - paragraph [ref=e484]: Head of Video at Nova Music
+            - paragraph [ref=e505]: "\"We needed a music video that felt like a fever dream. Alex delivered 3 different cuts, each one better than the last. The final edit got us signed to a major playlist within 48 hours.\"Project loop: 15‑sec music video excerpt"
+            - generic [ref=e506]:
+              - paragraph [ref=e508]: "[AUDIO: DUAL_STEREO_EMBED]"
+              - paragraph [ref=e510]: BEST OF 2026
+              - paragraph [ref=e512]: "[AUDIO: DUAL_STEREO_EMBED]"
+          - generic [ref=e513]:
+            - paragraph [ref=e520]: Nova music
+            - paragraph [ref=e527] [cursor=pointer]: APEX labs
+            - paragraph [ref=e534] [cursor=pointer]: Echo films
+            - paragraph [ref=e541] [cursor=pointer]: Spectra
+            - paragraph [ref=e548] [cursor=pointer]: Aura wear
+      - contentinfo [ref=e549]:
+        - generic [ref=e550]:
+          - paragraph [ref=e553]: Contact
+          - generic [ref=e559]:
+            - heading "The Render" [level=1] [ref=e561]
+            - paragraph [ref=e563]: Ready to sculpt time together? Let's skip the small talk and get to the rough cut.
+        - generic [ref=e565]:
+          - generic [ref=e566]:
+            - generic [ref=e567]:
+              - paragraph [ref=e569]: Name
+              - textbox "Name" [ref=e571]:
+                - /placeholder: Jane Smith
+            - generic [ref=e572]:
+              - paragraph [ref=e574]: Email
+              - textbox "Email" [ref=e576]:
+                - /placeholder: jane@framer.com
+          - generic [ref=e577]:
+            - paragraph [ref=e579]: Project type
+            - combobox "Project type" [ref=e581]:
+              - option "Select…" [disabled] [selected]
+              - option "Pacing & Rhythm"
+              - option "Emotional Arc"
+              - option "Motion Graphics"
+          - generic [ref=e582]:
+            - paragraph [ref=e584]: Project type
+            - textbox "Project type" [ref=e586]:
+              - /placeholder: Jane Smith
+          - generic [ref=e587]:
+            - generic [ref=e589] [cursor=pointer]
+            - generic [ref=e593] [cursor=pointer]
+            - generic [ref=e597] [cursor=pointer]
+          - button [ref=e602] [cursor=pointer]:
+            - paragraph [ref=e604]: Send a Message
+    - link [ref=e612]:
+      - /url: https://framer.link/Cap0sBH
+      - paragraph [ref=e614]: Get template for Free
+  - link [ref=e615] [cursor=pointer]:
+    - /url: https://www.framer.com
+    - paragraph [ref=e620]: Create a free website with Framer, the website builder loved by startups, designers and agencies.

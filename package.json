@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev -p 4000",
     "build": "next build",
+    "lint": "tsc --noEmit",
     "start": "next start -p 4000",
     "db:backup": "node scripts/backupDatabase.js",
     "db:backup:full": "node scripts/backupFullSystem.js",
